@@ -101,8 +101,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
-      <div className="max-w-sm m-auto h-fit w-full">
+    <section className="min-h-screen bg-zinc-50 dark:bg-transparent grid place-items-center px-4 py-16">
+      <div className="w-full" style={{ maxWidth: '400px' }}>
         <div className="p-6">
           <div className="text-center mb-6">
             <Link href="/" className="text-xl font-bold tracking-tight">Bluwa</Link>
@@ -172,12 +172,12 @@ export default function OnboardingPage() {
 
               {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" className="w-full" onClick={() => setStep(0)}>
-                  Retour
-                </Button>
+              <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Création...' : 'Créer mon espace'}
+                </Button>
+                <Button type="button" variant="outline" className="w-full" onClick={() => setStep(0)}>
+                  Retour
                 </Button>
               </div>
             </form>

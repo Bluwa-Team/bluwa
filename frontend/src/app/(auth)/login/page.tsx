@@ -57,8 +57,8 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
-      <form onSubmit={handleLogin} className="max-w-sm m-auto h-fit w-full">
+    <section className="min-h-screen bg-zinc-50 dark:bg-transparent grid place-items-center px-4 py-16">
+      <form onSubmit={handleLogin} className="w-full" style={{ maxWidth: '400px' }}>
         <div className="p-6">
           <div className="text-center">
             <Link href="/" aria-label="Accueil" className="text-xl font-bold tracking-tight">

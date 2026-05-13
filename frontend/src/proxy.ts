@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -24,34 +24,35 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   const path = request.nextUrl.pathname
-  const isPublicRoute = path.startsWith('/login') ||
-    path.startsWith('/signup') ||
-    path.startsWith('/onboarding') ||
-    path.startsWith('/auth')
 
-  // Pas connecté et route protégée
-  if (!user && !isPublicRoute) {
+  const isAuthPage = path === '/login' || path === '/signup'
+  const isOnboarding = path === '/onboarding'
+  const isAuthCallback = path.startsWith('/auth')
+  const isPublicAsset = isAuthCallback
+
+  // Non connecté
+  if (!user) {
+    if (isAuthPage || isPublicAsset) return supabaseResponse
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Connecté sur login ou signup
-  if (user && (path === '/login' || path === '/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Connecté : vérifier si profil existe
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  // Connecté SANS profil : doit faire l'onboarding
+  if (!profile) {
+    if (isOnboarding || isPublicAsset) return supabaseResponse
+    return NextResponse.redirect(new URL('/onboarding', request.url))
   }
 
-  // Connecté sans profil : forcer l'onboarding
-  if (user && !isPublicRoute && path !== '/onboarding') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile) {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
+  // Connecté AVEC profil : pas accès aux pages auth/onboarding
+  if (isAuthPage || isOnboarding) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return supabaseResponse

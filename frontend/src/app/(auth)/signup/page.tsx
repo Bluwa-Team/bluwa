@@ -21,28 +21,42 @@ export default function SignupPage() {
     setError('')
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    })
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, password }),
+      })
 
-    if (error) {
-      setError(error.message)
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Une erreur est survenue.')
+        setLoading(false)
+        return
+      }
+
+      // Le compte est créé, on connecte automatiquement
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (signInError) {
+        setError('Compte créé mais connexion impossible. Essayez de vous connecter.')
+        setLoading(false)
+        return
+      }
+
+      router.push('/onboarding')
+      router.refresh()
+    } catch {
+      setError('Impossible de contacter le serveur.')
       setLoading(false)
-      return
     }
-
-    router.push('/onboarding')
-    router.refresh()
   }
 
   return (
-    <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
-      <form onSubmit={handleSignup} className="max-w-sm m-auto h-fit w-full">
+    <section className="min-h-screen bg-zinc-50 dark:bg-transparent grid place-items-center px-4 py-16">
+      <form onSubmit={handleSignup} className="w-full" style={{ maxWidth: '400px' }}>
         <div className="p-6">
           <div className="text-center mb-6">
             <Link href="/" className="text-xl font-bold tracking-tight">Bluwa</Link>
