@@ -1,0 +1,443 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "archive": "Archiver",
+    "import": "Import",
+    "export": "Export",
+    "search": "Rechercher",
+    "loading": "Chargement…",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer",
+    "new": "Nouveau",
+    "actions": "Actions",
+    "status": "Statut",
+    "type": "Type",
+    "code": "Code",
+    "name": "Nom",
+    "all": "Tous",
+    "none": "Aucun",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "yes": "Oui",
+    "no": "Non",
+    "required": "obligatoire"
+  },
+  "nav": {
+    "main": "Principal",
+    "referenceData": "Données de référence",
+    "production": "Production",
+    "dashboard": "Tableau de bord",
+    "marginAnalysis": "Analyse de marge",
+    "articles": "Articles",
+    "clients": "Clients",
+    "suppliers": "Fournisseurs",
+    "productionBatches": "Lots de production",
+    "stocks": "Stocks",
+    "traceability": "Traçabilité",
+    "nonConformities": "Non-conformités",
+    "settings": "Paramètres"
+  },
+  "header": {
+    "aiAgent": "Agent IA",
+    "myProfile": "Mon profil",
+    "logout": "Se déconnecter",
+    "roles": {
+      "org_admin": "Administrateur",
+      "factory_admin": "Responsable d'usine",
+      "operator": "Opérateur",
+      "super_admin": "Super admin"
+    }
+  },
+  "dashboard": {
+    "title": "Vue d'ensemble",
+    "subtitle": "Activité de production en temps réel",
+    "stats": {
+      "activeBatches": "Lots en cours",
+      "totalStock": "Stock total",
+      "yield": "Rendement",
+      "nonConformities": "Non-conformités"
+    },
+    "statsHints": {
+      "activeBatches": "Aucun lot pour le moment",
+      "totalStock": "Aucune matière première",
+      "yield": "Données insuffisantes",
+      "nonConformities": "Aucune cette semaine"
+    },
+    "welcome": {
+      "title": "Bienvenue sur Bluwa",
+      "description": "Votre espace de production est prêt. Commencez par configurer vos matières premières et créer votre premier lot de production."
+    }
+  },
+  "articles": {
+    "title": "Référentiel Articles (MDM)",
+    "subtitle": "Règle de codification : {pattern}, 8 à 10 caractères",
+    "badge": "Système actif",
+    "new": "Nouvel article",
+    "print": "Étiquettes ({count})",
+    "searchPlaceholder": "Rechercher par SKU ou désignation…",
+    "count": "{count} article",
+    "countPlural": "{count} articles",
+    "loading": "Chargement des articles…",
+    "empty": "Aucun article ne correspond aux filtres sélectionnés.",
+    "allFamilies": "Toutes les familles",
+    "allStatuses": "Tous statuts",
+    "allAppro": "Tout appro.",
+    "columns": {
+      "code": "Code / SKU",
+      "designation": "Désignation",
+      "type": "Type",
+      "family": "Famille",
+      "stockUnit": "U. Stock",
+      "pmp": "PMP",
+      "salePrice": "Prix vente",
+      "safetyStock": "Stk. séc.",
+      "appro": "Appro.",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "types": {
+      "MP": "Matière première",
+      "PSF": "Produit semi-fini",
+      "PF": "Produit fini",
+      "AC": "Article de conditionnement",
+      "CS": "Consommable"
+    },
+    "statuts": {
+      "Actif": "Actif",
+      "Bloque": "Bloqué",
+      "EnCreation": "En création"
+    },
+    "appro": {
+      "Achete": "Acheté",
+      "Fabrique": "Fabriqué"
+    },
+    "modal": {
+      "new": "Nouvel article",
+      "edit": "Modifier : {code}",
+      "steps": {
+        "identification": "Identification",
+        "identificationDesc": "Code, désignation, type et famille",
+        "units": "Unités",
+        "unitsDesc": "Unités de stock, de vente et conversion",
+        "pricing": "Valorisation",
+        "pricingDesc": "Prix d'achat, PMP et prix de vente",
+        "physical": "Physique",
+        "physicalDesc": "Poids, volume et durée de vie",
+        "stock": "Stock",
+        "stockDesc": "Paramètres de réapprovisionnement"
+      },
+      "fields": {
+        "designation": "Désignation",
+        "type": "Type d'article",
+        "family": "Famille",
+        "appro": "Approvisionnement",
+        "stockUnit": "Unité de stock",
+        "saleUnit": "Unité de vente",
+        "convCoeff": "Coefficient de conversion",
+        "lastPurchasePrice": "Dernier prix d'achat",
+        "pmp": "Prix Moyen Pondéré (PMP)",
+        "salePrice": "Prix de vente (PF uniquement)",
+        "weight": "Poids unitaire (kg)",
+        "volume": "Volume unitaire (L)",
+        "shelfLife": "Durée de vie (jours)",
+        "safetyStock": "Stock de sécurité",
+        "reorderPoint": "Point de commande",
+        "barcode": "Code-barres",
+        "qrCode": "QR Code",
+        "status": "Statut"
+      }
+    }
+  },
+  "clients": {
+    "title": "Référentiel Clients",
+    "subtitle": "Grilles tarifaires PF négociées et historique des commandes par client",
+    "new": "Nouveau client",
+    "searchPlaceholder": "Rechercher par code ou raison sociale…",
+    "count": "{count} client",
+    "countPlural": "{count} clients",
+    "loading": "Chargement des clients…",
+    "empty": "Aucun client ne correspond aux filtres sélectionnés.",
+    "allStatuses": "Tous statuts",
+    "allSectors": "Tous secteurs",
+    "types": {
+      "Grossiste": "Grossiste",
+      "Detaillant": "Détaillant",
+      "Institutionnel": "Institutionnel",
+      "ONG": "ONG",
+      "Export": "Export",
+      "Autre": "Autre"
+    },
+    "statuts": {
+      "Actif": "Actif",
+      "Inactif": "Inactif"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Raison sociale",
+      "type": "Type",
+      "country": "Pays",
+      "paymentTerm": "Condition paiement",
+      "creditLimit": "Limite crédit",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "notFound": "Client introuvable.",
+    "backToList": "Retour à la liste",
+    "detail": {
+      "tabs": {
+        "profile": "Fiche client",
+        "tariffs": "Grille tarifaire",
+        "orders": "Historique commandes",
+        "deliveries": "Historique livraisons"
+      },
+      "sections": {
+        "identity": "Identité",
+        "contact": "Contact",
+        "commercial": "Conditions commerciales"
+      },
+      "fields": {
+        "name": "Raison sociale / Nom",
+        "type": "Type",
+        "sector": "Secteur d'activité",
+        "language": "Langue",
+        "status": "Statut",
+        "mainContact": "Contact principal",
+        "phone": "Téléphone",
+        "email": "Email",
+        "city": "Ville / Village",
+        "country": "Pays",
+        "incoterm": "Incoterm contractuel",
+        "transport": "Transport affecté",
+        "creditLimit": "Limite de crédit",
+        "paymentTerm": "Condition de paiement",
+        "mobilePayment": "Paiement mobile",
+        "mobilePaymentAccepted": "Accepté"
+      },
+      "tariffs": {
+        "empty": "Aucune grille tarifaire négociée pour ce client.",
+        "columns": {
+          "articleCode": "Code article",
+          "designation": "Désignation",
+          "negotiatedPrice": "Prix négocié",
+          "currency": "Devise"
+        }
+      },
+      "orders": {
+        "columns": {
+          "ref": "Référence",
+          "date": "Date",
+          "amount": "Montant (XOF)",
+          "plannedDelay": "Délai prévu",
+          "actualDelay": "Délai réel",
+          "status": "Statut"
+        }
+      },
+      "deliveries": {
+        "columns": {
+          "deliveryNote": "Bon de livraison",
+          "date": "Date",
+          "articles": "Articles livrés",
+          "conformity": "Conformité"
+        }
+      }
+    },
+    "modal": {
+      "new": "Nouveau client",
+      "edit": "Modifier : {code}",
+      "steps": {
+        "identity": "Identité",
+        "identityDesc": "Raison sociale, type et secteur d'activité",
+        "contact": "Contact",
+        "contactDesc": "Coordonnées et localisation",
+        "commercial": "Conditions",
+        "commercialDesc": "Incoterm, paiement et limite de crédit"
+      },
+      "fields": {
+        "name": "Raison sociale / Nom",
+        "type": "Type de client",
+        "sector": "Secteur d'activité",
+        "language": "Langue",
+        "status": "Statut",
+        "mainContact": "Contact principal",
+        "phone": "Téléphone",
+        "email": "Email",
+        "city": "Ville / Village",
+        "country": "Pays",
+        "incoterm": "Incoterm contractuel",
+        "transport": "Transport affecté",
+        "creditLimit": "Limite de crédit (XOF)",
+        "paymentTerm": "Condition de paiement",
+        "mobilePayment": "Paiement mobile accepté"
+      }
+    }
+  },
+  "fournisseurs": {
+    "title": "Référentiel Fournisseurs",
+    "subtitle": "Score de fiabilité calculé automatiquement : délai, qualité, prix",
+    "new": "Nouveau fournisseur",
+    "searchPlaceholder": "Rechercher par code ou raison sociale…",
+    "count": "{count} fournisseur",
+    "countPlural": "{count} fournisseurs",
+    "loading": "Chargement des fournisseurs…",
+    "empty": "Aucun fournisseur ne correspond aux filtres sélectionnés.",
+    "allStatuses": "Tous statuts",
+    "allCategories": "Toutes catégories",
+    "qualifications": {
+      "Agree": "Agréé",
+      "AQualifier": "À qualifier",
+      "Suspendu": "Suspendu"
+    },
+    "statuts": {
+      "Formel": "Formel",
+      "Informel": "Informel"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Raison sociale",
+      "status": "Statut",
+      "qualification": "Qualification",
+      "category": "Catégorie",
+      "country": "Pays",
+      "currency": "Devise",
+      "score": "Score",
+      "actions": "Actions"
+    },
+    "notFound": "Fournisseur introuvable.",
+    "backToList": "Retour à la liste",
+    "detail": {
+      "tabs": {
+        "profile": "Fiche fournisseur",
+        "orders": "Historique commandes",
+        "deliveries": "Historique livraisons"
+      },
+      "sections": {
+        "score": "Score de fiabilité",
+        "identity": "Identité",
+        "contact": "Contact",
+        "history": "Historique"
+      },
+      "scoreDescription": "Calculé automatiquement à partir du respect des délais, de la conformité qualité et de la stabilité des prix.",
+      "notCalculated": "Non calculé",
+      "fields": {
+        "name": "Raison sociale / Nom",
+        "category": "Catégorie",
+        "currency": "Devise",
+        "logistics": "Mode logistique",
+        "status": "Statut",
+        "qualification": "Qualification",
+        "mobilePayment": "Paiement mobile",
+        "mobilePaymentAccepted": "Accepté",
+        "mainContact": "Contact principal",
+        "phone": "Téléphone",
+        "email": "Email",
+        "city": "Ville / Village",
+        "country": "Pays",
+        "createdAt": "Créé le",
+        "updatedAt": "Mis à jour le"
+      },
+      "orders": {
+        "columns": {
+          "ref": "Référence",
+          "date": "Date",
+          "amount": "Montant (XOF)",
+          "plannedDelay": "Délai prévu",
+          "actualDelay": "Délai réel",
+          "status": "Statut"
+        }
+      },
+      "deliveries": {
+        "columns": {
+          "deliveryNote": "Bon de livraison",
+          "date": "Date",
+          "articles": "Articles livrés",
+          "conformity": "Conformité"
+        }
+      }
+    },
+    "modal": {
+      "new": "Nouveau fournisseur",
+      "edit": "Modifier : {code}",
+      "steps": {
+        "identity": "Identité",
+        "identityDesc": "Raison sociale, catégorie et statut",
+        "contact": "Contact",
+        "contactDesc": "Coordonnées et localisation",
+        "commercial": "Conditions",
+        "commercialDesc": "Devise, incoterm et paiement"
+      }
+    }
+  },
+  "stocks": {
+    "title": "Gestion des stocks",
+    "subtitle": "Multi-entrepôts, valorisation PMP, FIFO / FEFO",
+    "newMovement": "Nouveau mouvement",
+    "loading": "Chargement des stocks…",
+    "tabs": {
+      "stocks": "Stocks",
+      "movements": "Mouvements",
+      "lots": "Lots"
+    },
+    "movements": {
+      "title": "Nouveau mouvement de stock",
+      "subtitle": "Enregistrez une entrée, sortie, transfert ou ajustement",
+      "types": {
+        "Entree": "Entrée",
+        "Sortie": "Sortie",
+        "Transfert": "Transfert",
+        "Ajustement": "Ajustement"
+      },
+      "fields": {
+        "type": "Type de mouvement",
+        "article": "Article",
+        "lot": "Numéro de lot",
+        "quantity": "Quantité",
+        "quantityAdjust": "Quantité (+ ou -)",
+        "reference": "Référence",
+        "sourceWarehouse": "Entrepôt source",
+        "destWarehouse": "Entrepôt destination",
+        "reason": "Motif"
+      },
+      "columns": {
+        "date": "Date",
+        "type": "Type",
+        "article": "Article",
+        "lot": "Lot",
+        "quantity": "Quantité",
+        "reference": "Référence",
+        "reason": "Motif",
+        "operator": "Opérateur"
+      },
+      "empty": "Aucun mouvement enregistré.",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer le mouvement"
+    },
+    "stockColumns": {
+      "article": "Article",
+      "warehouse": "Entrepôt",
+      "quantity": "Quantité",
+      "pmp": "PMP",
+      "value": "Valeur stock",
+      "safetyStock": "Stk. séc.",
+      "status": "Statut"
+    },
+    "lotsColumns": {
+      "lot": "Lot",
+      "article": "Article",
+      "location": "Entrepôt / Emplacement",
+      "quantity": "Quantité",
+      "reception": "Date réception",
+      "expiry": "Péremption",
+      "daysLeft": "Jours restants"
+    }
+  },
+  "analyseMarges": {
+    "title": "Analyse de marge",
+    "subtitle": "Suivez la rentabilité de vos productions et analysez vos marges par article.",
+    "underConstruction": "Page en construction"
+  }
+}

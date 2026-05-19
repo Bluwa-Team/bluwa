@@ -1,0 +1,443 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "archive": "Archive",
+    "import": "Import",
+    "export": "Export",
+    "search": "Search",
+    "loading": "Loading…",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "new": "New",
+    "actions": "Actions",
+    "status": "Status",
+    "type": "Type",
+    "code": "Code",
+    "name": "Name",
+    "all": "All",
+    "none": "None",
+    "active": "Active",
+    "inactive": "Inactive",
+    "yes": "Yes",
+    "no": "No",
+    "required": "required"
+  },
+  "nav": {
+    "main": "Main",
+    "referenceData": "Reference Data",
+    "production": "Production",
+    "dashboard": "Dashboard",
+    "marginAnalysis": "Margin Analysis",
+    "articles": "Items",
+    "clients": "Clients",
+    "suppliers": "Suppliers",
+    "productionBatches": "Production Batches",
+    "stocks": "Inventory",
+    "traceability": "Traceability",
+    "nonConformities": "Non-Conformities",
+    "settings": "Settings"
+  },
+  "header": {
+    "aiAgent": "AI Agent",
+    "myProfile": "My profile",
+    "logout": "Sign out",
+    "roles": {
+      "org_admin": "Administrator",
+      "factory_admin": "Factory Manager",
+      "operator": "Operator",
+      "super_admin": "Super admin"
+    }
+  },
+  "dashboard": {
+    "title": "Overview",
+    "subtitle": "Real-time production activity",
+    "stats": {
+      "activeBatches": "Active batches",
+      "totalStock": "Total stock",
+      "yield": "Yield",
+      "nonConformities": "Non-conformities"
+    },
+    "statsHints": {
+      "activeBatches": "No batches yet",
+      "totalStock": "No raw materials",
+      "yield": "Insufficient data",
+      "nonConformities": "None this week"
+    },
+    "welcome": {
+      "title": "Welcome to Bluwa",
+      "description": "Your production workspace is ready. Start by configuring your raw materials and creating your first production batch."
+    }
+  },
+  "articles": {
+    "title": "Items Master Data (MDM)",
+    "subtitle": "Codification rule: {pattern}, 8 to 10 characters",
+    "badge": "System active",
+    "new": "New item",
+    "print": "Labels ({count})",
+    "searchPlaceholder": "Search by SKU or description…",
+    "count": "{count} item",
+    "countPlural": "{count} items",
+    "loading": "Loading items…",
+    "empty": "No items match the selected filters.",
+    "allFamilies": "All families",
+    "allStatuses": "All statuses",
+    "allAppro": "All supply",
+    "columns": {
+      "code": "Code / SKU",
+      "designation": "Description",
+      "type": "Type",
+      "family": "Family",
+      "stockUnit": "Stock unit",
+      "pmp": "WAC",
+      "salePrice": "Sale price",
+      "safetyStock": "Safety stk.",
+      "appro": "Supply",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "types": {
+      "MP": "Raw material",
+      "PSF": "Semi-finished product",
+      "PF": "Finished product",
+      "AC": "Packaging material",
+      "CS": "Consumable"
+    },
+    "statuts": {
+      "Actif": "Active",
+      "Bloque": "Blocked",
+      "EnCreation": "In creation"
+    },
+    "appro": {
+      "Achete": "Purchased",
+      "Fabrique": "Manufactured"
+    },
+    "modal": {
+      "new": "New item",
+      "edit": "Edit: {code}",
+      "steps": {
+        "identification": "Identification",
+        "identificationDesc": "Code, description, type and family",
+        "units": "Units",
+        "unitsDesc": "Stock, sale units and conversion",
+        "pricing": "Pricing",
+        "pricingDesc": "Purchase price, WAC and sale price",
+        "physical": "Physical",
+        "physicalDesc": "Weight, volume and shelf life",
+        "stock": "Inventory",
+        "stockDesc": "Replenishment parameters"
+      },
+      "fields": {
+        "designation": "Description",
+        "type": "Item type",
+        "family": "Family",
+        "appro": "Supply type",
+        "stockUnit": "Stock unit",
+        "saleUnit": "Sale unit",
+        "convCoeff": "Conversion coefficient",
+        "lastPurchasePrice": "Last purchase price",
+        "pmp": "Weighted Average Cost (WAC)",
+        "salePrice": "Sale price (finished products only)",
+        "weight": "Unit weight (kg)",
+        "volume": "Unit volume (L)",
+        "shelfLife": "Shelf life (days)",
+        "safetyStock": "Safety stock",
+        "reorderPoint": "Reorder point",
+        "barcode": "Barcode",
+        "qrCode": "QR Code",
+        "status": "Status"
+      }
+    }
+  },
+  "clients": {
+    "title": "Clients Directory",
+    "subtitle": "Negotiated pricing grids and order history by client",
+    "new": "New client",
+    "searchPlaceholder": "Search by code or name…",
+    "count": "{count} client",
+    "countPlural": "{count} clients",
+    "loading": "Loading clients…",
+    "empty": "No clients match the selected filters.",
+    "allStatuses": "All statuses",
+    "allSectors": "All sectors",
+    "types": {
+      "Grossiste": "Wholesaler",
+      "Detaillant": "Retailer",
+      "Institutionnel": "Institutional",
+      "ONG": "NGO",
+      "Export": "Export",
+      "Autre": "Other"
+    },
+    "statuts": {
+      "Actif": "Active",
+      "Inactif": "Inactive"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "type": "Type",
+      "country": "Country",
+      "paymentTerm": "Payment term",
+      "creditLimit": "Credit limit",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "notFound": "Client not found.",
+    "backToList": "Back to list",
+    "detail": {
+      "tabs": {
+        "profile": "Client profile",
+        "tariffs": "Pricing grid",
+        "orders": "Order history",
+        "deliveries": "Delivery history"
+      },
+      "sections": {
+        "identity": "Identity",
+        "contact": "Contact",
+        "commercial": "Commercial terms"
+      },
+      "fields": {
+        "name": "Company name / Name",
+        "type": "Type",
+        "sector": "Industry sector",
+        "language": "Language",
+        "status": "Status",
+        "mainContact": "Main contact",
+        "phone": "Phone",
+        "email": "Email",
+        "city": "City / Village",
+        "country": "Country",
+        "incoterm": "Contractual incoterm",
+        "transport": "Assigned transport",
+        "creditLimit": "Credit limit",
+        "paymentTerm": "Payment term",
+        "mobilePayment": "Mobile payment",
+        "mobilePaymentAccepted": "Accepted"
+      },
+      "tariffs": {
+        "empty": "No negotiated pricing grid for this client.",
+        "columns": {
+          "articleCode": "Item code",
+          "designation": "Description",
+          "negotiatedPrice": "Negotiated price",
+          "currency": "Currency"
+        }
+      },
+      "orders": {
+        "columns": {
+          "ref": "Reference",
+          "date": "Date",
+          "amount": "Amount (XOF)",
+          "plannedDelay": "Planned lead time",
+          "actualDelay": "Actual lead time",
+          "status": "Status"
+        }
+      },
+      "deliveries": {
+        "columns": {
+          "deliveryNote": "Delivery note",
+          "date": "Date",
+          "articles": "Delivered items",
+          "conformity": "Conformity"
+        }
+      }
+    },
+    "modal": {
+      "new": "New client",
+      "edit": "Edit: {code}",
+      "steps": {
+        "identity": "Identity",
+        "identityDesc": "Company name, type and sector",
+        "contact": "Contact",
+        "contactDesc": "Contact details and location",
+        "commercial": "Terms",
+        "commercialDesc": "Incoterm, payment and credit limit"
+      },
+      "fields": {
+        "name": "Company name / Name",
+        "type": "Client type",
+        "sector": "Industry sector",
+        "language": "Language",
+        "status": "Status",
+        "mainContact": "Main contact",
+        "phone": "Phone",
+        "email": "Email",
+        "city": "City / Village",
+        "country": "Country",
+        "incoterm": "Contractual incoterm",
+        "transport": "Assigned transport",
+        "creditLimit": "Credit limit (XOF)",
+        "paymentTerm": "Payment term",
+        "mobilePayment": "Mobile payment accepted"
+      }
+    }
+  },
+  "fournisseurs": {
+    "title": "Suppliers Directory",
+    "subtitle": "Reliability score calculated automatically: lead time, quality, price",
+    "new": "New supplier",
+    "searchPlaceholder": "Search by code or name…",
+    "count": "{count} supplier",
+    "countPlural": "{count} suppliers",
+    "loading": "Loading suppliers…",
+    "empty": "No suppliers match the selected filters.",
+    "allStatuses": "All statuses",
+    "allCategories": "All categories",
+    "qualifications": {
+      "Agree": "Approved",
+      "AQualifier": "To qualify",
+      "Suspendu": "Suspended"
+    },
+    "statuts": {
+      "Formel": "Formal",
+      "Informel": "Informal"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "status": "Status",
+      "qualification": "Qualification",
+      "category": "Category",
+      "country": "Country",
+      "currency": "Currency",
+      "score": "Score",
+      "actions": "Actions"
+    },
+    "notFound": "Supplier not found.",
+    "backToList": "Back to list",
+    "detail": {
+      "tabs": {
+        "profile": "Supplier profile",
+        "orders": "Order history",
+        "deliveries": "Delivery history"
+      },
+      "sections": {
+        "score": "Reliability score",
+        "identity": "Identity",
+        "contact": "Contact",
+        "history": "History"
+      },
+      "scoreDescription": "Automatically calculated from lead time compliance, quality conformity and price stability.",
+      "notCalculated": "Not calculated",
+      "fields": {
+        "name": "Company name / Name",
+        "category": "Category",
+        "currency": "Currency",
+        "logistics": "Logistics mode",
+        "status": "Status",
+        "qualification": "Qualification",
+        "mobilePayment": "Mobile payment",
+        "mobilePaymentAccepted": "Accepted",
+        "mainContact": "Main contact",
+        "phone": "Phone",
+        "email": "Email",
+        "city": "City / Village",
+        "country": "Country",
+        "createdAt": "Created on",
+        "updatedAt": "Updated on"
+      },
+      "orders": {
+        "columns": {
+          "ref": "Reference",
+          "date": "Date",
+          "amount": "Amount (XOF)",
+          "plannedDelay": "Planned lead time",
+          "actualDelay": "Actual lead time",
+          "status": "Status"
+        }
+      },
+      "deliveries": {
+        "columns": {
+          "deliveryNote": "Delivery note",
+          "date": "Date",
+          "articles": "Delivered items",
+          "conformity": "Conformity"
+        }
+      }
+    },
+    "modal": {
+      "new": "New supplier",
+      "edit": "Edit: {code}",
+      "steps": {
+        "identity": "Identity",
+        "identityDesc": "Company name, category and status",
+        "contact": "Contact",
+        "contactDesc": "Contact details and location",
+        "commercial": "Terms",
+        "commercialDesc": "Currency, incoterm and payment"
+      }
+    }
+  },
+  "stocks": {
+    "title": "Inventory Management",
+    "subtitle": "Multi-warehouse, WAC valuation, FIFO / FEFO",
+    "newMovement": "New movement",
+    "loading": "Loading inventory…",
+    "tabs": {
+      "stocks": "Stock",
+      "movements": "Movements",
+      "lots": "Batches"
+    },
+    "movements": {
+      "title": "New stock movement",
+      "subtitle": "Record an inbound, outbound, transfer or adjustment",
+      "types": {
+        "Entree": "Inbound",
+        "Sortie": "Outbound",
+        "Transfert": "Transfer",
+        "Ajustement": "Adjustment"
+      },
+      "fields": {
+        "type": "Movement type",
+        "article": "Item",
+        "lot": "Batch number",
+        "quantity": "Quantity",
+        "quantityAdjust": "Quantity (+ or -)",
+        "reference": "Reference",
+        "sourceWarehouse": "Source warehouse",
+        "destWarehouse": "Destination warehouse",
+        "reason": "Reason"
+      },
+      "columns": {
+        "date": "Date",
+        "type": "Type",
+        "article": "Item",
+        "lot": "Batch",
+        "quantity": "Quantity",
+        "reference": "Reference",
+        "reason": "Reason",
+        "operator": "Operator"
+      },
+      "empty": "No movements recorded.",
+      "saving": "Saving…",
+      "save": "Save movement"
+    },
+    "stockColumns": {
+      "article": "Item",
+      "warehouse": "Warehouse",
+      "quantity": "Quantity",
+      "pmp": "WAC",
+      "value": "Stock value",
+      "safetyStock": "Safety stk.",
+      "status": "Status"
+    },
+    "lotsColumns": {
+      "lot": "Batch",
+      "article": "Item",
+      "location": "Warehouse / Location",
+      "quantity": "Quantity",
+      "reception": "Reception date",
+      "expiry": "Expiry",
+      "daysLeft": "Days left"
+    }
+  },
+  "analyseMarges": {
+    "title": "Margin Analysis",
+    "subtitle": "Track the profitability of your productions and analyze your margins by item.",
+    "underConstruction": "Page under construction"
+  }
+}

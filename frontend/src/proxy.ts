@@ -1,8 +1,41 @@
+import createIntlMiddleware from 'next-intl/middleware'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { routing } from './i18n/routing'
+
+const intlMiddleware = createIntlMiddleware(routing)
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const path = request.nextUrl.pathname
+
+  const isAuthCallback = path.startsWith('/auth')
+
+  // Let auth callback pass through without i18n or auth checks
+  if (isAuthCallback) {
+    return NextResponse.next()
+  }
+
+  // Apply next-intl locale routing first
+  const intlResponse = intlMiddleware(request)
+
+  // If intl issued a redirect, honour it immediately
+  if (intlResponse.status === 307 || intlResponse.status === 308 || intlResponse.status === 302 || intlResponse.status === 301) {
+    return intlResponse
+  }
+
+  // Determine the locale-stripped path for auth route detection
+  const locales = routing.locales as readonly string[]
+  const segments = path.split('/')
+  const maybeLocale = segments[1]
+  const localePath = locales.includes(maybeLocale)
+    ? '/' + segments.slice(2).join('/')
+    : path
+
+  const isAuthPage = localePath === '/login' || localePath === '/signup'
+  const isOnboarding = localePath === '/onboarding'
+
+  // Create Supabase client propagating cookies from intlResponse
+  let supabaseResponse = intlResponse
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,40 +57,35 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const path = request.nextUrl.pathname
+  const locale = locales.includes(maybeLocale) ? maybeLocale : routing.defaultLocale
 
-  const isAuthPage = path === '/login' || path === '/signup'
-  const isOnboarding = path === '/onboarding'
-  const isAuthCallback = path.startsWith('/auth')
-  const isPublicAsset = isAuthCallback
-
-  // Non connecté
+  // Not logged in
   if (!user) {
-    if (isAuthPage || isPublicAsset) return supabaseResponse
-    return NextResponse.redirect(new URL('/login', request.url))
+    if (isAuthPage) return supabaseResponse
+    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
   }
 
-  // Connecté : vérifier si profil existe
+  // Logged in: check if profile exists
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
     .eq('id', user.id)
     .maybeSingle()
 
-  // Connecté SANS profil : doit faire l'onboarding
+  // Logged in WITHOUT profile: must complete onboarding
   if (!profile) {
-    if (isOnboarding || isPublicAsset) return supabaseResponse
-    return NextResponse.redirect(new URL('/onboarding', request.url))
+    if (isOnboarding) return supabaseResponse
+    return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url))
   }
 
-  // Connecté AVEC profil : pas accès aux pages auth/onboarding
+  // Logged in WITH profile: block access to auth/onboarding pages
   if (isAuthPage || isOnboarding) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url))
   }
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 }

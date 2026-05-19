@@ -1,7 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Package,
@@ -10,7 +8,12 @@ import {
   Truck,
   AlertTriangle,
   Settings,
+  BookOpen,
+  TrendingUp,
+  Users,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { Link, usePathname } from '@/i18n/navigation'
 import {
   Sidebar,
   SidebarContent,
@@ -24,26 +27,45 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-const NAV_ITEMS = [
-  { title: 'Vue d\'ensemble', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Lots de production', url: '/lots', icon: Package },
-  { title: 'Stocks', url: '/stocks', icon: Boxes },
-  { title: 'Traçabilité', url: '/tracabilite', icon: ScanLine },
-  { title: 'Fournisseurs', url: '/fournisseurs', icon: Truck },
-  { title: 'Non-conformités', url: '/non-conformites', icon: AlertTriangle },
-]
-
 export function AppSidebar({ orgName }: { orgName: string }) {
   const pathname = usePathname()
+  const t = useTranslations('nav')
+
+  const NAV_GROUPS = [
+    {
+      label: t('main'),
+      items: [
+        { title: t('dashboard'), url: '/dashboard', icon: LayoutDashboard, disabled: false },
+        { title: t('marginAnalysis'), url: '/analyse-marge', icon: TrendingUp, disabled: true },
+      ],
+    },
+    {
+      label: t('referenceData'),
+      items: [
+        { title: t('articles'), url: '/articles', icon: BookOpen, disabled: false },
+        { title: t('clients'), url: '/clients', icon: Users, disabled: false },
+        { title: t('suppliers'), url: '/fournisseurs', icon: Truck, disabled: false },
+      ],
+    },
+    {
+      label: t('production'),
+      items: [
+        { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
+        { title: t('stocks'), url: '/stocks', icon: Boxes, disabled: false },
+        { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
+        { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
+      ],
+    },
+  ]
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 py-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+        <Link href="/dashboard" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+          <div className="w-8 h-8 shrink-0 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
             B
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold leading-none">Bluwa</span>
             <span className="text-xs text-muted-foreground mt-1 truncate max-w-[140px]">{orgName}</span>
           </div>
@@ -51,35 +73,47 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Production</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={pathname === item.url}
-                  >
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {NAV_GROUPS.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    {item.disabled ? (
+                      <SidebarMenuButton
+                        disabled
+                        className="opacity-40 cursor-not-allowed"
+                      >
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton
+                        render={<Link href={item.url} />}
+                        isActive={pathname === item.url}
+                      >
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              render={<Link href="/settings" />}
-              isActive={pathname === '/settings'}
+              disabled
+              className="opacity-40 cursor-not-allowed"
             >
               <Settings className="size-4" />
-              <span>Paramètres</span>
+              <span>{t('settings')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
