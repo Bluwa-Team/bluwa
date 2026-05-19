@@ -1,3 +1,5 @@
+export const runtime = 'edge'
+
 import { getTranslations } from 'next-intl/server'
 import { Package, AlertTriangle, TrendingUp, Boxes } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'

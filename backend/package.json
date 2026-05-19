@@ -22,8 +22,13 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "hono": "^4.12.20",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "ws": "^8.20.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260519.1",
+    "wrangler": "^4.86.0"
   }
 }

@@ -8,3 +8,6 @@ const nextConfig: NextConfig = {
 }
 
 export default withNextIntl(nextConfig)
+
+// Cloudflare Pages: build with `npm run deploy` (opennextjs-cloudflare build)
+
