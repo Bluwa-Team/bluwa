@@ -439,5 +439,35 @@
     "title": "Analyse de marge",
     "subtitle": "Suivez la rentabilité de vos productions et analysez vos marges par article.",
     "underConstruction": "Page en construction"
+  },
+  "onboarding": {
+    "steps": {
+      "organization": "Organisation",
+      "factory": "Usine"
+    },
+    "organization": {
+      "title": "Votre organisation",
+      "subtitle": "Le nom de votre groupe ou entreprise",
+      "nameLabel": "Nom de l'organisation",
+      "namePlaceholder": "Groupe Sedima",
+      "urlHint": "URL : app.bluwa.com/",
+      "continue": "Continuer"
+    },
+    "factory": {
+      "title": "Votre première usine",
+      "subtitle": "Vous pourrez en ajouter d'autres depuis les paramètres",
+      "nameLabel": "Nom de l'usine",
+      "namePlaceholder": "Usine Dakar",
+      "locationLabel": "Localisation",
+      "locationOptional": "(optionnel)",
+      "locationPlaceholder": "Dakar, Sénégal",
+      "submit": "Créer mon espace",
+      "submitting": "Création…",
+      "back": "Retour"
+    },
+    "errors": {
+      "generic": "Une erreur est survenue.",
+      "network": "Impossible de contacter le serveur."
+    }
   }
 }

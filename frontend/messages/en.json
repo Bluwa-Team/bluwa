@@ -439,5 +439,35 @@
     "title": "Margin Analysis",
     "subtitle": "Track the profitability of your productions and analyze your margins by item.",
     "underConstruction": "Page under construction"
+  },
+  "onboarding": {
+    "steps": {
+      "organization": "Organization",
+      "factory": "Factory"
+    },
+    "organization": {
+      "title": "Your organization",
+      "subtitle": "The name of your group or company",
+      "nameLabel": "Organization name",
+      "namePlaceholder": "Sedima Group",
+      "urlHint": "URL: app.bluwa.com/",
+      "continue": "Continue"
+    },
+    "factory": {
+      "title": "Your first factory",
+      "subtitle": "You can add more from settings later",
+      "nameLabel": "Factory name",
+      "namePlaceholder": "Dakar Factory",
+      "locationLabel": "Location",
+      "locationOptional": "(optional)",
+      "locationPlaceholder": "Dakar, Senegal",
+      "submit": "Create my workspace",
+      "submitting": "Creating…",
+      "back": "Back"
+    },
+    "errors": {
+      "generic": "Something went wrong.",
+      "network": "Unable to reach the server."
+    }
   }
 }

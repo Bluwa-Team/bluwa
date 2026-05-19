@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { Link, useRouter } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,19 +14,15 @@ type FormData = {
   factoryLocation: string
 }
 
-const STEPS = ['Organisation', 'Usine']
-
-function StepIndicator({ current }: { current: number }) {
+function StepIndicator({ current, labels }: { current: number; labels: string[] }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
-      {STEPS.map((label, i) => (
+      {labels.map((label, i) => (
         <div key={i} className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                i < current
-                  ? 'bg-primary text-primary-foreground'
-                  : i === current
+                i <= current
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
               }`}
@@ -37,7 +33,7 @@ function StepIndicator({ current }: { current: number }) {
               {label}
             </span>
           </div>
-          {i < STEPS.length - 1 && (
+          {i < labels.length - 1 && (
             <div className={`w-8 h-px ${i < current ? 'bg-primary' : 'bg-border'}`} />
           )}
         </div>
@@ -47,6 +43,7 @@ function StepIndicator({ current }: { current: number }) {
 }
 
 export default function OnboardingPage() {
+  const t = useTranslations('onboarding')
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -87,7 +84,7 @@ export default function OnboardingPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Une erreur est survenue.')
+        setError(data.error || t('errors.generic'))
         setLoading(false)
         return
       }
@@ -95,10 +92,13 @@ export default function OnboardingPage() {
       router.push('/dashboard')
       router.refresh()
     } catch {
-      setError('Impossible de contacter le serveur.')
+      setError(t('errors.network'))
       setLoading(false)
     }
   }
+
+  const stepLabels = [t('steps.organization'), t('steps.factory')]
+  const slug = form.orgName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
   return (
     <section className="min-h-screen bg-zinc-50 dark:bg-transparent grid place-items-center px-4 py-16">
@@ -108,50 +108,51 @@ export default function OnboardingPage() {
             <Link href="/" className="text-xl font-bold tracking-tight">Bluwa</Link>
           </div>
 
-          <StepIndicator current={step} />
+          <StepIndicator current={step} labels={stepLabels} />
 
           {step === 0 && (
-            <form onSubmit={(e) => { e.preventDefault(); setError(''); setStep(1) }} className="space-y-5">
+            <form
+              onSubmit={(e) => { e.preventDefault(); setError(''); setStep(1) }}
+              className="space-y-5"
+            >
               <div>
-                <h1 className="text-xl font-semibold">Votre organisation</h1>
-                <p className="text-muted-foreground text-sm mt-1">Le nom de votre groupe ou entreprise</p>
+                <h1 className="text-xl font-semibold">{t('organization.title')}</h1>
+                <p className="text-muted-foreground text-sm mt-1">{t('organization.subtitle')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="orgName">Nom de l&apos;organisation</Label>
+                <Label htmlFor="orgName">{t('organization.nameLabel')}</Label>
                 <Input
                   id="orgName"
-                  placeholder="Groupe Sedima"
+                  placeholder={t('organization.namePlaceholder')}
                   value={form.orgName}
                   onChange={(e) => update('orgName', e.target.value)}
                   required
                 />
                 {form.orgName && (
                   <p className="text-xs text-muted-foreground">
-                    URL : app.bluwa.com/
-                    <span className="font-medium text-foreground">
-                      {form.orgName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
-                    </span>
+                    {t('organization.urlHint')}
+                    <span className="font-medium text-foreground">{slug}</span>
                   </p>
                 )}
               </div>
 
-              <Button type="submit" className="w-full">Continuer</Button>
+              <Button type="submit" className="w-full">{t('organization.continue')}</Button>
             </form>
           )}
 
           {step === 1 && (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <h1 className="text-xl font-semibold">Votre première usine</h1>
-                <p className="text-muted-foreground text-sm mt-1">Vous pourrez en ajouter d&apos;autres depuis les paramètres</p>
+                <h1 className="text-xl font-semibold">{t('factory.title')}</h1>
+                <p className="text-muted-foreground text-sm mt-1">{t('factory.subtitle')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="factoryName">Nom de l&apos;usine</Label>
+                <Label htmlFor="factoryName">{t('factory.nameLabel')}</Label>
                 <Input
                   id="factoryName"
-                  placeholder="Usine Dakar"
+                  placeholder={t('factory.namePlaceholder')}
                   value={form.factoryName}
                   onChange={(e) => update('factoryName', e.target.value)}
                   required
@@ -160,11 +161,12 @@ export default function OnboardingPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="factoryLocation">
-                  Localisation <span className="text-muted-foreground">(optionnel)</span>
+                  {t('factory.locationLabel')}{' '}
+                  <span className="text-muted-foreground">{t('factory.locationOptional')}</span>
                 </Label>
                 <Input
                   id="factoryLocation"
-                  placeholder="Dakar, Sénégal"
+                  placeholder={t('factory.locationPlaceholder')}
                   value={form.factoryLocation}
                   onChange={(e) => update('factoryLocation', e.target.value)}
                 />
@@ -174,10 +176,15 @@ export default function OnboardingPage() {
 
               <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Création...' : 'Créer mon espace'}
+                  {loading ? t('factory.submitting') : t('factory.submit')}
                 </Button>
-                <Button type="button" variant="outline" className="w-full" onClick={() => setStep(0)}>
-                  Retour
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep(0)}
+                >
+                  {t('factory.back')}
                 </Button>
               </div>
             </form>
