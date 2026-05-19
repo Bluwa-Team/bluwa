@@ -78,14 +78,10 @@ export default function OnboardingPage() {
       factoryLocation: form.factoryLocation,
     })
 
-    if (!result.ok) {
+    if (result && !result.ok) {
       setError(result.error || t('errors.generic'))
       setLoading(false)
-      return
     }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]

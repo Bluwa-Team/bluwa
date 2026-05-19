@@ -1,5 +1,7 @@
 'use server'
 
+import { redirect } from 'next/navigation'
+import { getLocale } from 'next-intl/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
@@ -110,5 +112,6 @@ export async function completeOnboardingAction(input: {
     return { ok: false, error: profileError.message }
   }
 
-  return { ok: true, data: { slug: org.slug } }
+  const locale = await getLocale()
+  redirect(`/${locale}/dashboard`)
 }
