@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { completeOnboardingAction } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -71,30 +72,20 @@ export default function OnboardingPage() {
       return
     }
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(form),
-      })
+    const result = await completeOnboardingAction({
+      orgName: form.orgName,
+      factoryName: form.factoryName,
+      factoryLocation: form.factoryLocation,
+    })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || t('errors.generic'))
-        setLoading(false)
-        return
-      }
-
-      router.push('/dashboard')
-      router.refresh()
-    } catch {
-      setError(t('errors.network'))
+    if (!result.ok) {
+      setError(result.error || t('errors.generic'))
       setLoading(false)
+      return
     }
+
+    router.push('/dashboard')
+    router.refresh()
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]

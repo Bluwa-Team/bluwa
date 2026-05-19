@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { signupAction } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,37 +22,25 @@ export default function SignupPage() {
     setError('')
     setLoading(true)
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password }),
-      })
+    const result = await signupAction({ fullName, email, password })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Une erreur est survenue.')
-        setLoading(false)
-        return
-      }
-
-      // Le compte est créé, on connecte automatiquement
-      const supabase = createClient()
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-      if (signInError) {
-        setError('Compte créé mais connexion impossible. Essayez de vous connecter.')
-        setLoading(false)
-        return
-      }
-
-      router.push('/onboarding')
-      router.refresh()
-    } catch {
-      setError('Impossible de contacter le serveur.')
+    if (!result.ok) {
+      setError(result.error)
       setLoading(false)
+      return
     }
+
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (signInError) {
+      setError('Compte créé mais connexion impossible. Essayez de vous connecter.')
+      setLoading(false)
+      return
+    }
+
+    router.push('/onboarding')
+    router.refresh()
   }
 
   return (
