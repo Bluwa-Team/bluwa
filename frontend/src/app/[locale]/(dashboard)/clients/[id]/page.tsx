@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, Smartphone, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ClientModal } from '../_components/client-modal'
@@ -42,6 +43,7 @@ export default function ClientDetailPage() {
   const router = useRouter()
   const t = useTranslations('clients')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
   const [client, setClient] = useState<Client | null | undefined>(undefined)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -159,7 +161,7 @@ export default function ClientDetailPage() {
                 <div>
                   <InfoRow label={t('detail.fields.creditLimit')} value={
                     c.limiteCredit !== null
-                      ? <span className="font-mono">{c.limiteCredit.toLocaleString('fr-FR')} XOF</span>
+                      ? <span className="font-mono">{formatNumber(c.limiteCredit, locale)} XOF</span>
                       : 'N/A'
                   } />
                   <InfoRow label={t('detail.fields.paymentTerm')} value={c.conditionPaiement || 'N/A'} />
@@ -195,7 +197,7 @@ export default function ClientDetailPage() {
                       <td className="px-4 py-3 font-mono text-xs font-medium">{g.articleCode}</td>
                       <td className="px-4 py-3">{g.designation}</td>
                       <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-700">
-                        {g.prixNegecie.toLocaleString('fr-FR')}
+                        {formatNumber(g.prixNegecie, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-muted-foreground">{g.devise}</td>
                     </tr>
@@ -227,7 +229,7 @@ export default function ClientDetailPage() {
                     <tr key={cmd.ref} className="border-t">
                       <td className="px-4 py-3 font-mono text-xs font-medium">{cmd.ref}</td>
                       <td className="px-4 py-3 text-muted-foreground">{cmd.date}</td>
-                      <td className="px-4 py-3 text-right font-mono">{cmd.montant.toLocaleString('fr-FR')}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatNumber(cmd.montant, locale)}</td>
                       <td className="px-4 py-3 text-center text-muted-foreground">{cmd.delaiPrevu}j</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center gap-1 font-medium ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>

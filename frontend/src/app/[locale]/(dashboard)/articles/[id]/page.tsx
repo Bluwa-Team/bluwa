@@ -7,7 +7,8 @@ import {
   ArrowLeft, Pencil, Archive, Printer, Package,
   TrendingUp, Clock, ShoppingCart, Factory,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -68,6 +69,7 @@ export default function ArticleDetailPage() {
   const router = useRouter()
   const t = useTranslations('articles')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
   const [article, setArticle] = useState<Article | null | undefined>(undefined)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -180,13 +182,13 @@ export default function ArticleDetailPage() {
             </Section>
 
             <Section title="Valorisation" icon={TrendingUp}>
-              <InfoRow label={t('modal.fields.lastPurchasePrice')} value={article.dernierPrixAchat ? `${article.dernierPrixAchat.toLocaleString('fr-FR')} FCFA` : null} />
+              <InfoRow label={t('modal.fields.lastPurchasePrice')} value={article.dernierPrixAchat ? `${formatNumber(article.dernierPrixAchat, locale)} FCFA` : null} />
               <InfoRow label={t('modal.fields.salePrice')} value={
                 article.type === 'PF' && article.prixVente
-                  ? <span className="text-emerald-700 font-semibold">{article.prixVente.toLocaleString('fr-FR')} FCFA</span>
+                  ? <span className="text-emerald-700 font-semibold">{formatNumber(article.prixVente, locale)} FCFA</span>
                   : null
               } />
-              <InfoRow label={t('modal.fields.pmp')} value={article.pmp ? `${article.pmp.toLocaleString('fr-FR')} FCFA` : null} />
+              <InfoRow label={t('modal.fields.pmp')} value={article.pmp ? `${formatNumber(article.pmp, locale)} FCFA` : null} />
             </Section>
 
             <Section title="Caractéristiques physiques" icon={Package}>
@@ -196,8 +198,8 @@ export default function ArticleDetailPage() {
             </Section>
 
             <Section title="Gestion des stocks" icon={Clock}>
-              <InfoRow label={t('modal.fields.safetyStock')} value={article.stockSecurite !== null ? `${article.stockSecurite.toLocaleString('fr-FR')} ${article.uniteStock}` : null} />
-              <InfoRow label={t('modal.fields.reorderPoint')} value={article.pointCommande !== null ? `${article.pointCommande.toLocaleString('fr-FR')} ${article.uniteStock}` : null} />
+              <InfoRow label={t('modal.fields.safetyStock')} value={article.stockSecurite !== null ? `${formatNumber(article.stockSecurite, locale)} ${article.uniteStock}` : null} />
+              <InfoRow label={t('modal.fields.reorderPoint')} value={article.pointCommande !== null ? `${formatNumber(article.pointCommande, locale)} ${article.uniteStock}` : null} />
             </Section>
           </div>
         </TabsContent>
@@ -226,7 +228,7 @@ export default function ArticleDetailPage() {
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{m.lot}</td>
                     <td className={`px-4 py-3 text-right font-mono font-semibold ${m.qte > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {m.qte > 0 ? '+' : ''}{m.qte.toLocaleString('fr-FR')} {m.unite}
+                      {m.qte > 0 ? '+' : ''}{formatNumber(m.qte, locale)} {m.unite}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{m.origine}</td>
                   </tr>
@@ -254,9 +256,9 @@ export default function ArticleDetailPage() {
                   <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-3 font-mono text-xs">{p.date}</td>
                     <td className="px-4 py-3">{p.fournisseur}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold">{p.prix.toLocaleString('fr-FR')} F</td>
-                    <td className="px-4 py-3 text-right font-mono">{p.qte.toLocaleString('fr-FR')} KG</td>
-                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">{(p.prix * p.qte).toLocaleString('fr-FR')} F</td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold">{formatNumber(p.prix, locale)} F</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatNumber(p.qte, locale)} KG</td>
+                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">{formatNumber(p.prix * p.qte, locale)} F</td>
                   </tr>
                 ))}
               </tbody>
@@ -284,7 +286,7 @@ export default function ArticleDetailPage() {
                     <td className="px-4 py-3">
                       <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{l.statut}</span>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono">{l.qte.toLocaleString('fr-FR')} KG</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatNumber(l.qte, locale)} KG</td>
                   </tr>
                 ))}
               </tbody>

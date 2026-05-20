@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, Smartphone, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FournisseurModal } from '../_components/fournisseur-modal'
@@ -55,6 +56,7 @@ export default function FournisseurDetailPage() {
   const router = useRouter()
   const t = useTranslations('fournisseurs')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
   const [fournisseur, setFournisseur] = useState<Fournisseur | null | undefined>(undefined)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -205,7 +207,7 @@ export default function FournisseurDetailPage() {
                     <tr key={c.ref} className="border-t">
                       <td className="px-4 py-3 font-mono text-xs font-medium">{c.ref}</td>
                       <td className="px-4 py-3 text-muted-foreground">{c.date}</td>
-                      <td className="px-4 py-3 text-right font-mono">{c.montant.toLocaleString('fr-FR')}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatNumber(c.montant, locale)}</td>
                       <td className="px-4 py-3 text-center text-muted-foreground">{c.delaiPrevu}j</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center gap-1 font-medium ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>

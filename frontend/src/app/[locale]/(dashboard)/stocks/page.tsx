@@ -5,7 +5,8 @@ import {
   AlertTriangle, ArrowDownToLine, ArrowUpFromLine,
   ArrowLeftRight, Package, Search, SlidersHorizontal, Loader2,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -40,19 +41,20 @@ function MouvIcon({ type }: { type: TypeMouvement }) {
   return <SlidersHorizontal className="size-3.5 text-purple-600" />
 }
 
-function fmt(n: number | null) {
+function fmt(n: number | null, locale: string) {
   if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return n.toLocaleString('fr-FR')
+  return formatNumber(n, locale)
 }
 
-function fmtVal(n: number | null) {
+function fmtVal(n: number | null, locale: string) {
   if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return <span>{n.toLocaleString('fr-FR')} <span className="text-muted-foreground text-xs">F</span></span>
+  return <span>{formatNumber(n, locale)} <span className="text-muted-foreground text-xs">F</span></span>
 }
 
 export default function StocksPage() {
   const t = useTranslations('stocks')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
 
   const [stocks, setStocks] = useState<StockLigne[]>([])
   const [mouvements, setMouvements] = useState<Mouvement[]>([])
@@ -144,7 +146,7 @@ export default function StocksPage() {
       <div className="grid grid-cols-4 gap-4">
         <KpiCard
           label="Valeur totale du stock"
-          value={`${valeurTotale.toLocaleString('fr-FR')} F`}
+          value={`${formatNumber(valeurTotale, locale)} F`}
           sub="Valorisation au PMP"
         />
         <KpiCard
@@ -252,10 +254,10 @@ export default function StocksPage() {
                       <TableCell className="text-xs text-muted-foreground">{ENTREPOTS[s.entrepot]?.nom ?? s.entrepot}</TableCell>
                       <TableCell><span className="font-mono text-xs">{s.lot}</span></TableCell>
                       <TableCell className="text-right font-mono text-sm font-semibold">
-                        {s.quantite.toLocaleString('fr-FR')} <span className="text-muted-foreground font-normal text-xs">{s.unite}</span>
+                        {formatNumber(s.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{s.unite}</span>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(s.pmp)}</TableCell>
-                      <TableCell className="text-right text-sm">{fmtVal(s.valeurStock)}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{fmt(s.pmp, locale)}</TableCell>
+                      <TableCell className="text-right text-sm">{fmtVal(s.valeurStock, locale)}</TableCell>
                       <TableCell className="text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_STOCK_COLORS[s.statut]}`}>
                           {STATUT_STOCK_LABELS[s.statut]}
@@ -325,7 +327,7 @@ export default function StocksPage() {
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{m.lot}</td>
                     <td className="px-4 py-3 text-right font-mono font-semibold">
-                      {m.type === 'Ajustement' && m.quantite > 0 ? '+' : ''}{m.quantite.toLocaleString('fr-FR')} <span className="text-muted-foreground font-normal text-xs">{m.unite}</span>
+                      {m.type === 'Ajustement' && m.quantite > 0 ? '+' : ''}{formatNumber(m.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{m.unite}</span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{m.reference || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{m.motif || 'N/A'}</td>
@@ -383,7 +385,7 @@ export default function StocksPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{ENTREPOTS[l.entrepot]?.nom ?? l.entrepot} - {l.emplacement}</td>
                     <td className="px-4 py-3 text-right font-mono font-semibold">
-                      {l.quantite.toLocaleString('fr-FR')} <span className="text-muted-foreground font-normal text-xs">{l.unite}</span>
+                      {formatNumber(l.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{l.unite}</span>
                     </td>
                     <td className="px-4 py-3 text-center text-muted-foreground text-xs">{l.dateReception}</td>
                     <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption ?? 'N/A'}</td>
@@ -443,10 +445,10 @@ export default function StocksPage() {
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">{ENTREPOTS[s.entrepot]?.nom ?? s.entrepot}</td>
                             <td className="px-4 py-3 text-right font-mono font-bold text-red-600">
-                              {s.quantite.toLocaleString('fr-FR')} <span className="text-xs font-normal">{s.unite}</span>
+                              {formatNumber(s.quantite, locale)} <span className="text-xs font-normal">{s.unite}</span>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.stockSecurite)}</td>
-                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.pointCommande)}</td>
+                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.stockSecurite, locale)}</td>
+                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.pointCommande, locale)}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_STOCK_COLORS[s.statut]}`}>
                                 {STATUT_STOCK_LABELS[s.statut]}
@@ -483,7 +485,7 @@ export default function StocksPage() {
                           <tr key={l.id} className={`border-t ${l.statut === 'Expire' ? 'bg-red-50/60' : 'bg-orange-50/40'}`}>
                             <td className="px-4 py-3 font-mono text-xs">{l.lotCode}</td>
                             <td className="px-4 py-3">{l.articleDesignation}</td>
-                            <td className="px-4 py-3 text-right font-mono">{l.quantite.toLocaleString('fr-FR')} {l.unite}</td>
+                            <td className="px-4 py-3 text-right font-mono">{formatNumber(l.quantite, locale)} {l.unite}</td>
                             <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption}</td>
                             <td className="px-4 py-3 text-center font-semibold text-red-600">
                               {l.joursRestants !== null && l.joursRestants < 0

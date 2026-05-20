@@ -6,7 +6,8 @@ import {
   Plus, Search, Download, Upload, Printer,
   Pencil, Archive, Loader2, RotateCcw,
 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -53,14 +54,15 @@ function generateCode(type: string, famille: string): string {
   return `${type}-${famCode}-${seq}`
 }
 
-function fmt(n: number | null, suffix = '') {
+function fmt(n: number | null, locale: string, suffix = '') {
   if (n === null || n === undefined) return <span className="text-muted-foreground">N/A</span>
-  return `${n.toLocaleString('fr-FR')}${suffix}`
+  return `${formatNumber(n, locale)}${suffix}`
 }
 
 export default function ArticlesPage() {
   const t = useTranslations('articles')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
 
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
@@ -340,15 +342,15 @@ export default function ArticlesPage() {
                   <TableCell className="text-right text-sm font-mono">{article.uniteStock}</TableCell>
                   <TableCell className="text-right text-sm font-mono">
                     {article.pmp ? (
-                      <span>{article.pmp.toLocaleString('fr-FR')} <span className="text-muted-foreground text-xs">F</span></span>
-                    ) : fmt(null)}
+                      <span>{formatNumber(article.pmp, locale)} <span className="text-muted-foreground text-xs">F</span></span>
+                    ) : fmt(null, locale)}
                   </TableCell>
                   <TableCell className="text-right text-sm font-mono">
                     {article.type === 'PF' && article.prixVente ? (
-                      <span className="text-emerald-700 font-medium">{article.prixVente.toLocaleString('fr-FR')} <span className="text-xs">F</span></span>
-                    ) : fmt(null)}
+                      <span className="text-emerald-700 font-medium">{formatNumber(article.prixVente, locale)} <span className="text-xs">F</span></span>
+                    ) : fmt(null, locale)}
                   </TableCell>
-                  <TableCell className="text-right text-sm font-mono">{fmt(article.stockSecurite)}</TableCell>
+                  <TableCell className="text-right text-sm font-mono">{fmt(article.stockSecurite, locale)}</TableCell>
                   <TableCell>
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${APPRO_COLORS[article.appro]}`}>
                       {t(`appro.${article.appro}` as any)}

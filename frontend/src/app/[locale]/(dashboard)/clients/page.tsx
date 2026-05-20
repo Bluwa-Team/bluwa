@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Download, Upload, Pencil, Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -24,14 +25,15 @@ function generateCode(pays: string, seq: number): string {
   return `CLT-${paysCode}-${String(seq).padStart(3, '0')}`
 }
 
-function fmt(n: number | null) {
+function fmt(n: number | null, locale: string) {
   if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return `${n.toLocaleString('fr-FR')} XOF`
+  return `${formatNumber(n, locale)} XOF`
 }
 
 export default function ClientsPage() {
   const t = useTranslations('clients')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
 
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -209,7 +211,7 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-sm">{c.pays}</TableCell>
                     <TableCell className="text-sm">{c.conditionPaiement || <span className="text-muted-foreground">N/A</span>}</TableCell>
-                    <TableCell className="text-right text-sm font-mono">{fmt(c.limiteCredit)}</TableCell>
+                    <TableCell className="text-right text-sm font-mono">{fmt(c.limiteCredit, locale)}</TableCell>
                     <TableCell>
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[c.statut]}`}>
                         {t(`statuts.${c.statut}` as any)}
