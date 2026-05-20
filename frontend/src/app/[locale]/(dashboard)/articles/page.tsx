@@ -19,14 +19,13 @@ import {
 } from '@/hooks/use-resizable-columns'
 import { ArticleModal } from './_components/article-modal'
 import {
-  Article, ArticleType, ArticleStatut, ArticleAppro,
-  TYPE_COLORS, STATUT_COLORS, APPRO_COLORS, FAMILLES,
+  Article, ArticleType, ArticleStatut,
+  TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from './_components/types'
 import { getArticles, createArticle, updateArticle } from '@/lib/actions/articles'
 
 const TYPES: Array<'TOUS' | ArticleType> = ['TOUS', 'MP', 'PSF', 'PF', 'AC', 'CS']
 const STATUTS: Array<'Tous' | ArticleStatut> = ['Tous', 'Actif', 'Bloque', 'EnCreation']
-const APPROS: Array<'Tous' | ArticleAppro> = ['Tous', 'Achete', 'Fabrique']
 
 // `designation` flexes to fill remaining space; every other column has a
 // fixed width and can be resized by dragging its right edge.
@@ -55,7 +54,7 @@ function generateCode(type: string, famille: string): string {
 }
 
 function fmt(n: number | null, suffix = '') {
-  if (n === null || n === undefined) return <span className="text-muted-foreground">-</span>
+  if (n === null || n === undefined) return <span className="text-muted-foreground">N/A</span>
   return `${n.toLocaleString('fr-FR')}${suffix}`
 }
 
@@ -67,9 +66,7 @@ export default function ArticlesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<'TOUS' | ArticleType>('TOUS')
-  const [filterFamille, setFilterFamille] = useState('Toutes')
   const [filterStatut, setFilterStatut] = useState<'Tous' | ArticleStatut>('Tous')
-  const [filterAppro, setFilterAppro] = useState<'Tous' | ArticleAppro>('Tous')
   const [modalOpen, setModalOpen] = useState(false)
   const [editArticle, setEditArticle] = useState<Article | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -94,12 +91,10 @@ export default function ArticlesPage() {
         if (!a.code.toLowerCase().includes(q) && !a.designation.toLowerCase().includes(q)) return false
       }
       if (filterType !== 'TOUS' && a.type !== filterType) return false
-      if (filterFamille !== 'Toutes' && a.famille !== filterFamille) return false
       if (filterStatut !== 'Tous' && a.statut !== filterStatut) return false
-      if (filterAppro !== 'Tous' && a.appro !== filterAppro) return false
       return true
     })
-  }, [articles, search, filterType, filterFamille, filterStatut, filterAppro])
+  }, [articles, search, filterType, filterStatut])
 
   async function handleSave(data: Partial<Article>): Promise<boolean> {
     if (editArticle) {
@@ -206,18 +201,6 @@ export default function ArticlesPage() {
           ))}
         </div>
 
-        <Select value={filterFamille} onValueChange={(v) => setFilterFamille(v ?? 'Toutes')}>
-          <SelectTrigger className="w-44 h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Toutes">{t('allFamilies')}</SelectItem>
-            {Object.keys(FAMILLES).map((f) => (
-              <SelectItem key={f} value={f}>{f}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
           <SelectTrigger className="w-44 h-9">
             <SelectValue />
@@ -229,17 +212,6 @@ export default function ArticlesPage() {
                 {t(`statuts.${s}` as any)}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterAppro} onValueChange={(v) => setFilterAppro(v as typeof filterAppro)}>
-          <SelectTrigger className="w-40 h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Tous">{t('allAppro')}</SelectItem>
-            <SelectItem value="Achete">{t('appro.Achete')}</SelectItem>
-            <SelectItem value="Fabrique">{t('appro.Fabrique')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -280,44 +252,44 @@ export default function ArticlesPage() {
                   className="rounded border-input"
                 />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
                 {t('columns.code')}
                 <ColumnResizer columnId="code" onStart={startResize} />
               </TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide">{t('columns.designation')}</TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+              <TableHead className="font-semibold text-xs tracking-wide">{t('columns.designation')}</TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
                 {t('columns.type')}
                 <ColumnResizer columnId="type" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
                 {t('columns.family')}
                 <ColumnResizer columnId="family" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+              <TableHead className="relative font-semibold text-xs tracking-wide text-right">
                 {t('columns.stockUnit')}
                 <ColumnResizer columnId="stockUnit" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+              <TableHead className="relative font-semibold text-xs tracking-wide text-right">
                 {t('columns.pmp')}
                 <ColumnResizer columnId="pmp" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+              <TableHead className="relative font-semibold text-xs tracking-wide text-right">
                 {t('columns.salePrice')}
                 <ColumnResizer columnId="salePrice" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+              <TableHead className="relative font-semibold text-xs tracking-wide text-right">
                 {t('columns.safetyStock')}
                 <ColumnResizer columnId="safetyStock" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
                 {t('columns.appro')}
                 <ColumnResizer columnId="appro" onStart={startResize} />
               </TableHead>
-              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
                 {t('columns.status')}
                 <ColumnResizer columnId="status" onStart={startResize} />
               </TableHead>
-              <TableHead className="font-semibold text-xs uppercase tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+              <TableHead className="font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -363,7 +335,7 @@ export default function ArticlesPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-sm truncate" title={article.famille || undefined}>
-                    {article.famille || <span className="text-muted-foreground">-</span>}
+                    {article.famille || <span className="text-muted-foreground">N/A</span>}
                   </TableCell>
                   <TableCell className="text-right text-sm font-mono">{article.uniteStock}</TableCell>
                   <TableCell className="text-right text-sm font-mono">

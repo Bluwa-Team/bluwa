@@ -18,7 +18,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between py-2.5 border-b last:border-0">
       <span className="text-sm text-muted-foreground min-w-[200px]">{label}</span>
-      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">-</span>}</span>
+      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">N/A</span>}</span>
     </div>
   )
 }
@@ -70,7 +70,7 @@ export default function ClientDetailPage() {
     return !!updated
   }
 
-  const incotermLabel = (INCOTERMS_CLIENT.find((i) => i.code === c.incoterm)?.label) ?? (c.incoterm || '-')
+  const incotermLabel = (INCOTERMS_CLIENT.find((i) => i.code === c.incoterm)?.label) ?? (c.incoterm || 'N/A')
 
   return (
     <div className="space-y-5">
@@ -127,7 +127,7 @@ export default function ClientDetailPage() {
                   {t(`types.${c.type}` as any)}
                 </span>
               } />
-              <InfoRow label={t('detail.fields.sector')} value={c.secteur || '-'} />
+              <InfoRow label={t('detail.fields.sector')} value={c.secteur || 'N/A'} />
               <InfoRow label={t('detail.fields.language')} value={c.langue} />
               <InfoRow label={t('detail.fields.status')} value={
                 <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[c.statut]}`}>
@@ -138,14 +138,14 @@ export default function ClientDetailPage() {
 
             <div className="rounded-lg border p-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('detail.sections.contact')}</p>
-              <InfoRow label={t('detail.fields.mainContact')} value={c.contactPrincipal || '-'} />
-              <InfoRow label={t('detail.fields.phone')} value={c.telephone || '-'} />
+              <InfoRow label={t('detail.fields.mainContact')} value={c.contactPrincipal || 'N/A'} />
+              <InfoRow label={t('detail.fields.phone')} value={c.telephone || 'N/A'} />
               <InfoRow label={t('detail.fields.email')} value={
                 c.email
                   ? <a href={`mailto:${c.email}`} className="text-primary hover:underline">{c.email}</a>
-                  : '-'
+                  : 'N/A'
               } />
-              <InfoRow label={t('detail.fields.city')} value={c.ville || '-'} />
+              <InfoRow label={t('detail.fields.city')} value={c.ville || 'N/A'} />
               <InfoRow label={t('detail.fields.country')} value={c.pays} />
             </div>
 
@@ -154,15 +154,15 @@ export default function ClientDetailPage() {
               <div className="grid grid-cols-3 gap-x-10">
                 <div>
                   <InfoRow label={t('detail.fields.incoterm')} value={incotermLabel} />
-                  <InfoRow label={t('detail.fields.transport')} value={c.transport || '-'} />
+                  <InfoRow label={t('detail.fields.transport')} value={c.transport || 'N/A'} />
                 </div>
                 <div>
                   <InfoRow label={t('detail.fields.creditLimit')} value={
                     c.limiteCredit !== null
                       ? <span className="font-mono">{c.limiteCredit.toLocaleString('fr-FR')} XOF</span>
-                      : '-'
+                      : 'N/A'
                   } />
-                  <InfoRow label={t('detail.fields.paymentTerm')} value={c.conditionPaiement || '-'} />
+                  <InfoRow label={t('detail.fields.paymentTerm')} value={c.conditionPaiement || 'N/A'} />
                 </div>
                 <div>
                   <InfoRow label={t('detail.fields.mobilePayment')} value={c.paiementMobile ? t('detail.fields.mobilePaymentAccepted') : tCommon('no')} />
@@ -183,10 +183,10 @@ export default function ClientDetailPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.tariffs.columns.articleCode')}</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.tariffs.columns.designation')}</th>
-                    <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.tariffs.columns.negotiatedPrice')}</th>
-                    <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.tariffs.columns.currency')}</th>
+                    <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.articleCode')}</th>
+                    <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.designation')}</th>
+                    <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.negotiatedPrice')}</th>
+                    <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.currency')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,12 +212,12 @@ export default function ClientDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.ref')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.date')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.amount')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.status')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.ref')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.date')}</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.amount')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,10 +252,10 @@ export default function ClientDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.articles')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.date')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.articles')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
                 </tr>
               </thead>
               <tbody>

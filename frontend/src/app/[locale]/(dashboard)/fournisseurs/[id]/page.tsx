@@ -18,7 +18,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between py-2.5 border-b last:border-0">
       <span className="text-sm text-muted-foreground min-w-[200px]">{label}</span>
-      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">-</span>}</span>
+      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">N/A</span>}</span>
     </div>
   )
 }
@@ -83,7 +83,7 @@ export default function FournisseurDetailPage() {
     return !!updated
   }
 
-  const modeLabel = (MODES_LOGISTIQUE.find((m) => m.code === f.modeLogistique)?.label) ?? (f.modeLogistique || '-')
+  const modeLabel = (MODES_LOGISTIQUE.find((m) => m.code === f.modeLogistique)?.label) ?? (f.modeLogistique || 'N/A')
 
   return (
     <div className="space-y-5">
@@ -146,7 +146,7 @@ export default function FournisseurDetailPage() {
               <InfoRow label={t('detail.fields.category')} value={fournisseur.categorie} />
               <InfoRow label={t('detail.fields.currency')} value={<span className="font-mono">{fournisseur.devise}</span>} />
               <InfoRow label={t('detail.fields.logistics')} value={modeLabel} />
-              <InfoRow label={t('detail.fields.status')} value={
+              <InfoRow label={t('detail.fields.structureType')} value={
                 <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[fournisseur.statut]}`}>
                   {t(`statuts.${fournisseur.statut}` as any)}
                 </span>
@@ -162,14 +162,14 @@ export default function FournisseurDetailPage() {
             {/* Contact & localisation */}
             <div className="rounded-lg border p-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('detail.sections.contact')}</p>
-              <InfoRow label={t('detail.fields.mainContact')} value={fournisseur.contactPrincipal || '-'} />
-              <InfoRow label={t('detail.fields.phone')} value={fournisseur.telephone || '-'} />
+              <InfoRow label={t('detail.fields.mainContact')} value={fournisseur.contactPrincipal || 'N/A'} />
+              <InfoRow label={t('detail.fields.phone')} value={fournisseur.telephone || 'N/A'} />
               <InfoRow label={t('detail.fields.email')} value={
                 fournisseur.email
                   ? <a href={`mailto:${fournisseur.email}`} className="text-primary hover:underline">{fournisseur.email}</a>
-                  : '-'
+                  : 'N/A'
               } />
-              <InfoRow label={t('detail.fields.city')} value={fournisseur.ville || '-'} />
+              <InfoRow label={t('detail.fields.city')} value={fournisseur.ville || 'N/A'} />
               <InfoRow label={t('detail.fields.country')} value={fournisseur.pays} />
             </div>
 
@@ -190,12 +190,12 @@ export default function FournisseurDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.ref')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.date')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.amount')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.orders.columns.status')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.ref')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.date')}</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.amount')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -230,10 +230,10 @@ export default function FournisseurDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.articles')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.date')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.articles')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
                 </tr>
               </thead>
               <tbody>

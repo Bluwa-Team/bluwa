@@ -22,7 +22,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between py-2.5 border-b last:border-0">
       <span className="text-sm text-muted-foreground min-w-[180px]">{label}</span>
-      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">-</span>}</span>
+      <span className="text-sm font-medium text-right">{value ?? <span className="text-muted-foreground font-normal">N/A</span>}</span>
     </div>
   )
 }
@@ -161,8 +161,8 @@ export default function ArticleDetailPage() {
                   {t(`appro.${article.appro}` as any)}
                 </span>
               } />
-              <InfoRow label={t('modal.fields.barcode')} value={<span className="font-mono text-xs">{article.codeBarres || '-'}</span>} />
-              <InfoRow label={t('modal.fields.qrCode')} value={<span className="font-mono text-xs">{article.qrCode || '-'}</span>} />
+              <InfoRow label={t('modal.fields.barcode')} value={<span className="font-mono text-xs">{article.codeBarres || 'N/A'}</span>} />
+              <InfoRow label={t('modal.fields.qrCode')} value={<span className="font-mono text-xs">{article.qrCode || 'N/A'}</span>} />
               <InfoRow label="Créé le" value={article.createdAt} />
               <InfoRow label="Mis à jour le" value={article.updatedAt} />
             </Section>
@@ -208,11 +208,11 @@ export default function ArticleDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Type</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Lot</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Quantité</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Origine</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Type</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Origine</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,11 +242,11 @@ export default function ArticleDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Fournisseur</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Prix unitaire</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Quantité</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Montant total</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Fournisseur</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Prix unitaire</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Montant total</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,10 +270,10 @@ export default function ArticleDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Lot</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Produit fini</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Statut</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Qté consommée</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Produit fini</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Qté consommée</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,9 +298,9 @@ export default function ArticleDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Réf. nomenclature</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide">Produit fini</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide">Qté par unité</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Réf. nomenclature</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Produit fini</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Qté par unité</th>
                 </tr>
               </thead>
               <tbody>

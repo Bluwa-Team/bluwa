@@ -152,7 +152,7 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
                       placeholder="Ex: SATREC Sénégal"
                     />
                   </Field>
-                  <Field label={t('detail.fields.status')}>
+                  <Field label={t('detail.fields.structureType')}>
                     <Select value={form.statut} onValueChange={(v) => set('statut', v ?? 'Formel')}>
                       <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>

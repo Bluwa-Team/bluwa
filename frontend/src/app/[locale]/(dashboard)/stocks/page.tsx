@@ -41,12 +41,12 @@ function MouvIcon({ type }: { type: TypeMouvement }) {
 }
 
 function fmt(n: number | null) {
-  if (n === null) return <span className="text-muted-foreground">-</span>
+  if (n === null) return <span className="text-muted-foreground">N/A</span>
   return n.toLocaleString('fr-FR')
 }
 
 function fmtVal(n: number | null) {
-  if (n === null) return <span className="text-muted-foreground">-</span>
+  if (n === null) return <span className="text-muted-foreground">N/A</span>
   return <span>{n.toLocaleString('fr-FR')} <span className="text-muted-foreground text-xs">F</span></span>
 }
 
@@ -224,15 +224,15 @@ export default function StocksPage() {
               <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wide">Code</TableHead>
-                    <TableHead className="font-semibold text-xs uppercase tracking-wide">Désignation</TableHead>
-                    <TableHead className="w-[60px] font-semibold text-xs uppercase tracking-wide">Type</TableHead>
-                    <TableHead className="w-[160px] font-semibold text-xs uppercase tracking-wide">{t('stockColumns.warehouse')}</TableHead>
-                    <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wide">Lot</TableHead>
-                    <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wide text-right">{t('stockColumns.quantity')}</TableHead>
-                    <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wide text-right">{t('stockColumns.pmp')}</TableHead>
-                    <TableHead className="w-[120px] font-semibold text-xs uppercase tracking-wide text-right">{t('stockColumns.value')}</TableHead>
-                    <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wide text-center">{t('stockColumns.status')}</TableHead>
+                    <TableHead className="w-[130px] font-semibold text-xs tracking-wide">Code</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide">Désignation</TableHead>
+                    <TableHead className="w-[60px] font-semibold text-xs tracking-wide">Type</TableHead>
+                    <TableHead className="w-[160px] font-semibold text-xs tracking-wide">{t('stockColumns.warehouse')}</TableHead>
+                    <TableHead className="w-[100px] font-semibold text-xs tracking-wide">Lot</TableHead>
+                    <TableHead className="w-[100px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.quantity')}</TableHead>
+                    <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.pmp')}</TableHead>
+                    <TableHead className="w-[120px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.value')}</TableHead>
+                    <TableHead className="w-[90px] font-semibold text-xs tracking-wide text-center">{t('stockColumns.status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,14 +291,14 @@ export default function StocksPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[110px]">{t('movements.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[120px]">{t('movements.columns.type')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('movements.columns.article')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[130px]">{t('movements.columns.lot')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[100px]">{t('movements.columns.quantity')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[130px]">{t('movements.columns.reference')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('movements.columns.reason')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide w-[110px]">{t('movements.columns.operator')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[110px]">{t('movements.columns.date')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[120px]">{t('movements.columns.type')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('movements.columns.article')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[130px]">{t('movements.columns.lot')}</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide w-[100px]">{t('movements.columns.quantity')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[130px]">{t('movements.columns.reference')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('movements.columns.reason')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[110px]">{t('movements.columns.operator')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,8 +327,8 @@ export default function StocksPage() {
                     <td className="px-4 py-3 text-right font-mono font-semibold">
                       {m.type === 'Ajustement' && m.quantite > 0 ? '+' : ''}{m.quantite.toLocaleString('fr-FR')} <span className="text-muted-foreground font-normal text-xs">{m.unite}</span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs">{m.reference || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{m.motif || '-'}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{m.reference || 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{m.motif || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm">{m.operateur}</td>
                   </tr>
                 ))}
@@ -355,14 +355,14 @@ export default function StocksPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.lot')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.article')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.location')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.quantity')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.reception')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.expiry')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.daysLeft')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{tCommon('status')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.lot')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.article')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.location')}</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.quantity')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.reception')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.expiry')}</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.daysLeft')}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -386,10 +386,10 @@ export default function StocksPage() {
                       {l.quantite.toLocaleString('fr-FR')} <span className="text-muted-foreground font-normal text-xs">{l.unite}</span>
                     </td>
                     <td className="px-4 py-3 text-center text-muted-foreground text-xs">{l.dateReception}</td>
-                    <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption ?? '-'}</td>
+                    <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption ?? 'N/A'}</td>
                     <td className="px-4 py-3 text-center">
                       {l.joursRestants === null ? (
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-muted-foreground">N/A</span>
                       ) : (
                         <span className={`font-semibold ${l.joursRestants < 0 ? 'text-red-600' : l.joursRestants < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
                           {l.joursRestants < 0 ? `${Math.abs(l.joursRestants)}j dépassé` : `${l.joursRestants}j`}
@@ -426,12 +426,12 @@ export default function StocksPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-muted/40">
                         <tr>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('stockColumns.article')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('stockColumns.warehouse')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('stockColumns.quantity')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('stockColumns.safetyStock')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">Pt. commande</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{tCommon('status')}</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.article')}</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.warehouse')}</th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.quantity')}</th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.safetyStock')}</th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">Pt. commande</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -470,12 +470,12 @@ export default function StocksPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-muted/40">
                         <tr>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.lot')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.article')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.quantity')}</th>
-                          <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.expiry')}</th>
-                          <th className="text-center px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{t('lotsColumns.daysLeft')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs uppercase tracking-wide">{tCommon('status')}</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.lot')}</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.article')}</th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.quantity')}</th>
+                          <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.expiry')}</th>
+                          <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.daysLeft')}</th>
+                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
                         </tr>
                       </thead>
                       <tbody>

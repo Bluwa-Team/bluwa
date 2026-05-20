@@ -76,9 +76,9 @@ export const TYPE_COLORS: Record<ArticleType, string> = {
 }
 
 export const STATUT_COLORS: Record<ArticleStatut, string> = {
-  Actif: 'bg-emerald-100 text-emerald-700',
-  Bloque: 'bg-red-100 text-red-600',
-  EnCreation: 'bg-yellow-100 text-yellow-700',
+  Actif: 'bg-emerald-100 text-emerald-800',
+  Bloque: 'bg-red-600 text-white',
+  EnCreation: 'bg-orange-400 text-orange-950',
 }
 
 export const STATUT_LABELS: Record<ArticleStatut, string> = {

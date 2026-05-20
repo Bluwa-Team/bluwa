@@ -58,9 +58,9 @@ export const ENTREPOTS: Record<string, { nom: string; emplacements: string[] }> 
 }
 
 export const STATUT_STOCK_COLORS: Record<StatutStock, string> = {
-  OK: 'bg-emerald-100 text-emerald-700',
-  Alerte: 'bg-amber-100 text-amber-700',
-  Rupture: 'bg-red-100 text-red-600',
+  OK: 'bg-emerald-100 text-emerald-800',
+  Alerte: 'bg-amber-400 text-amber-950',
+  Rupture: 'bg-red-600 text-white',
   Exces: 'bg-blue-100 text-blue-700',
 }
 
@@ -86,10 +86,10 @@ export const MOUVEMENT_LABELS: Record<TypeMouvement, string> = {
 }
 
 export const STATUT_LOT_COLORS: Record<StatutLot, string> = {
-  OK: 'bg-emerald-100 text-emerald-700',
-  Quarantaine: 'bg-amber-100 text-amber-700',
-  ProcheExpiration: 'bg-orange-100 text-orange-700',
-  Expire: 'bg-red-100 text-red-600',
+  OK: 'bg-emerald-100 text-emerald-800',
+  Quarantaine: 'bg-amber-400 text-amber-950',
+  ProcheExpiration: 'bg-orange-400 text-orange-950',
+  Expire: 'bg-red-600 text-white',
 }
 
 export const STATUT_LOT_LABELS: Record<StatutLot, string> = {

@@ -27,7 +27,7 @@ function generateCode(pays: string, seq: number): string {
 }
 
 function ScoreBadge({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-muted-foreground text-sm">-</span>
+  if (score === null) return <span className="text-muted-foreground text-sm">N/A</span>
   const color = score >= 70 ? 'bg-emerald-100 text-emerald-700' : score >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${color}`}>
@@ -145,7 +145,7 @@ export default function FournisseursPage() {
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
           <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Tous">{t('allStatuses')}</SelectItem>
+            <SelectItem value="Tous">{t('allStructureTypes')}</SelectItem>
             <SelectItem value="Formel">{t('statuts.Formel')}</SelectItem>
             <SelectItem value="Informel">{t('statuts.Informel')}</SelectItem>
           </SelectContent>
@@ -170,15 +170,15 @@ export default function FournisseursPage() {
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-[140px] font-semibold text-xs uppercase tracking-wide">{t('columns.code')}</TableHead>
-                <TableHead className="font-semibold text-xs uppercase tracking-wide">{t('columns.name')}</TableHead>
-                <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wide">{t('columns.status')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs uppercase tracking-wide">{t('columns.qualification')}</TableHead>
-                <TableHead className="w-[200px] font-semibold text-xs uppercase tracking-wide">{t('columns.category')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs uppercase tracking-wide">{t('columns.country')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wide">{t('columns.currency')}</TableHead>
-                <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wide text-center">{t('columns.score')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+                <TableHead className="w-[140px] font-semibold text-xs tracking-wide">{t('columns.code')}</TableHead>
+                <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
+                <TableHead className="w-[110px] font-semibold text-xs tracking-wide">{t('columns.structureType')}</TableHead>
+                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.qualification')}</TableHead>
+                <TableHead className="w-[200px] font-semibold text-xs tracking-wide">{t('columns.category')}</TableHead>
+                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.country')}</TableHead>
+                <TableHead className="w-[80px] font-semibold text-xs tracking-wide">{t('columns.currency')}</TableHead>
+                <TableHead className="w-[100px] font-semibold text-xs tracking-wide text-center">{t('columns.score')}</TableHead>
+                <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

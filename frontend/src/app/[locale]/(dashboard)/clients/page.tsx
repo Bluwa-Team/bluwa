@@ -25,7 +25,7 @@ function generateCode(pays: string, seq: number): string {
 }
 
 function fmt(n: number | null) {
-  if (n === null) return <span className="text-muted-foreground">-</span>
+  if (n === null) return <span className="text-muted-foreground">N/A</span>
   return `${n.toLocaleString('fr-FR')} XOF`
 }
 
@@ -163,14 +163,14 @@ export default function ClientsPage() {
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-[140px] font-semibold text-xs uppercase tracking-wide">{t('columns.code')}</TableHead>
-                <TableHead className="font-semibold text-xs uppercase tracking-wide">{t('columns.name')}</TableHead>
-                <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wide">{t('columns.type')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs uppercase tracking-wide">{t('columns.country')}</TableHead>
-                <TableHead className="w-[160px] font-semibold text-xs uppercase tracking-wide">{t('columns.paymentTerm')}</TableHead>
-                <TableHead className="w-[150px] font-semibold text-xs uppercase tracking-wide text-right">{t('columns.creditLimit')}</TableHead>
-                <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wide">{t('columns.status')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+                <TableHead className="w-[140px] font-semibold text-xs tracking-wide">{t('columns.code')}</TableHead>
+                <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
+                <TableHead className="w-[130px] font-semibold text-xs tracking-wide">{t('columns.type')}</TableHead>
+                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.country')}</TableHead>
+                <TableHead className="w-[160px] font-semibold text-xs tracking-wide">{t('columns.paymentTerm')}</TableHead>
+                <TableHead className="w-[150px] font-semibold text-xs tracking-wide text-right">{t('columns.creditLimit')}</TableHead>
+                <TableHead className="w-[90px] font-semibold text-xs tracking-wide">{t('columns.status')}</TableHead>
+                <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -208,7 +208,7 @@ export default function ClientsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">{c.pays}</TableCell>
-                    <TableCell className="text-sm">{c.conditionPaiement || <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="text-sm">{c.conditionPaiement || <span className="text-muted-foreground">N/A</span>}</TableCell>
                     <TableCell className="text-right text-sm font-mono">{fmt(c.limiteCredit)}</TableCell>
                     <TableCell>
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[c.statut]}`}>

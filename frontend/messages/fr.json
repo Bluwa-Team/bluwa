@@ -286,7 +286,6 @@
     "countPlural": "{count} fournisseurs",
     "loading": "Chargement des fournisseurs…",
     "empty": "Aucun fournisseur ne correspond aux filtres sélectionnés.",
-    "allStatuses": "Tous statuts",
     "allCategories": "Toutes catégories",
     "qualifications": {
       "Agree": "Agréé",
@@ -300,13 +299,13 @@
     "columns": {
       "code": "Code",
       "name": "Raison sociale",
-      "status": "Statut",
       "qualification": "Qualification",
       "category": "Catégorie",
       "country": "Pays",
       "currency": "Devise",
       "score": "Score",
-      "actions": "Actions"
+      "actions": "Actions",
+      "structureType": "Type de structure"
     },
     "notFound": "Fournisseur introuvable.",
     "backToList": "Retour à la liste",
@@ -329,7 +328,6 @@
         "category": "Catégorie",
         "currency": "Devise",
         "logistics": "Mode logistique",
-        "status": "Statut",
         "qualification": "Qualification",
         "mobilePayment": "Paiement mobile",
         "mobilePaymentAccepted": "Accepté",
@@ -339,7 +337,8 @@
         "city": "Ville / Village",
         "country": "Pays",
         "createdAt": "Créé le",
-        "updatedAt": "Mis à jour le"
+        "updatedAt": "Mis à jour le",
+        "structureType": "Type de structure"
       },
       "orders": {
         "columns": {
@@ -365,13 +364,14 @@
       "edit": "Modifier : {code}",
       "steps": {
         "identity": "Identité",
-        "identityDesc": "Raison sociale, catégorie et statut",
+        "identityDesc": "Raison sociale, catégorie et type de structure",
         "contact": "Contact",
         "contactDesc": "Coordonnées et localisation",
         "commercial": "Conditions",
         "commercialDesc": "Devise, incoterm et paiement"
       }
-    }
+    },
+    "allStructureTypes": "Tous types"
   },
   "stocks": {
     "title": "Gestion des stocks",

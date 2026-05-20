@@ -286,7 +286,6 @@
     "countPlural": "{count} suppliers",
     "loading": "Loading suppliers…",
     "empty": "No suppliers match the selected filters.",
-    "allStatuses": "All statuses",
     "allCategories": "All categories",
     "qualifications": {
       "Agree": "Approved",
@@ -300,13 +299,13 @@
     "columns": {
       "code": "Code",
       "name": "Name",
-      "status": "Status",
       "qualification": "Qualification",
       "category": "Category",
       "country": "Country",
       "currency": "Currency",
       "score": "Score",
-      "actions": "Actions"
+      "actions": "Actions",
+      "structureType": "Structure type"
     },
     "notFound": "Supplier not found.",
     "backToList": "Back to list",
@@ -329,7 +328,6 @@
         "category": "Category",
         "currency": "Currency",
         "logistics": "Logistics mode",
-        "status": "Status",
         "qualification": "Qualification",
         "mobilePayment": "Mobile payment",
         "mobilePaymentAccepted": "Accepted",
@@ -339,7 +337,8 @@
         "city": "City / Village",
         "country": "Country",
         "createdAt": "Created on",
-        "updatedAt": "Updated on"
+        "updatedAt": "Updated on",
+        "structureType": "Structure type"
       },
       "orders": {
         "columns": {
@@ -365,13 +364,14 @@
       "edit": "Edit: {code}",
       "steps": {
         "identity": "Identity",
-        "identityDesc": "Company name, category and status",
+        "identityDesc": "Company name, category and structure type",
         "contact": "Contact",
         "contactDesc": "Contact details and location",
         "commercial": "Terms",
         "commercialDesc": "Currency, incoterm and payment"
       }
-    }
+    },
+    "allStructureTypes": "All types"
   },
   "stocks": {
     "title": "Inventory Management",

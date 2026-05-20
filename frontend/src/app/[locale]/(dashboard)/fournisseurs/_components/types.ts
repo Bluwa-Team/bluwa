@@ -23,11 +23,9 @@ export interface Fournisseur {
 
 export const CATEGORIES_FOURNISSEUR = [
   'Matières premières agricoles',
-  'Emballages & conditionnement',
-  'Ingrédients & additifs',
-  'Services & maintenance',
-  'Transport & logistique',
-  'Énergie & utilities',
+  'Ingrédients & Additifs',
+  'Emballages & Conditionnement',
+  'Services & Logistique',
   'Autres',
 ]
 
@@ -56,9 +54,9 @@ export const MODES_LOGISTIQUE = [
 ]
 
 export const QUALIFICATION_COLORS: Record<FournisseurQualification, string> = {
-  Agree: 'bg-emerald-100 text-emerald-700',
-  AQualifier: 'bg-yellow-100 text-yellow-700',
-  Suspendu: 'bg-red-100 text-red-600',
+  Agree: 'bg-emerald-100 text-emerald-800',
+  AQualifier: 'bg-amber-400 text-amber-950',
+  Suspendu: 'bg-red-600 text-white',
 }
 
 export const QUALIFICATION_LABELS: Record<FournisseurQualification, string> = {
@@ -124,7 +122,7 @@ export const MOCK_FOURNISSEURS: Fournisseur[] = [
     raisonSociale: 'PackAfrique SARL',
     statut: 'Formel',
     qualification: 'Agree',
-    categorie: 'Emballages & conditionnement',
+    categorie: 'Emballages & Conditionnement',
     devise: 'XOF',
     contactPrincipal: 'Jean-Paul Konan',
     telephone: '+225 07 654 32 10',
@@ -143,7 +141,7 @@ export const MOCK_FOURNISSEURS: Fournisseur[] = [
     raisonSociale: 'Royal Ingredients BV',
     statut: 'Formel',
     qualification: 'Agree',
-    categorie: 'Ingrédients & additifs',
+    categorie: 'Ingrédients & Additifs',
     devise: 'EUR',
     contactPrincipal: 'Lars van der Berg',
     telephone: '+31 20 555 44 33',
@@ -162,7 +160,7 @@ export const MOCK_FOURNISSEURS: Fournisseur[] = [
     raisonSociale: 'TransSahel Logistics',
     statut: 'Formel',
     qualification: 'AQualifier',
-    categorie: 'Transport & logistique',
+    categorie: 'Services & Logistique',
     devise: 'XOF',
     contactPrincipal: 'Issouf Traoré',
     telephone: '+226 70 111 22 33',

@@ -50,20 +50,15 @@ export const CLIENT_TYPE_COLORS: Record<ClientType, string> = {
 }
 
 export const STATUT_COLORS: Record<ClientStatut, string> = {
-  Actif: 'bg-emerald-100 text-emerald-700',
-  Inactif: 'bg-gray-100 text-gray-500',
+  Actif: 'bg-emerald-100 text-emerald-800',
+  Inactif: 'bg-gray-200 text-gray-600',
 }
 
 export const SECTEURS = [
-  'Grande distribution',
-  'Commerce de détail',
-  'Restauration collective',
-  'Aide humanitaire',
-  'Industrie agroalimentaire',
-  'Hôtellerie & restauration',
-  'Administrations publiques',
-  'Export / Négoce',
-  'Autre',
+  'Alimentaire / Distribution',
+  'Industrie',
+  'Institutionnel / ONG',
+  'Export',
 ]
 
 export const LANGUES = ['Français', 'Anglais', 'Portugais', 'Arabe', 'Wolof', 'Autre']
@@ -106,7 +101,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'CASINO Distribution Dakar',
     statut: 'Actif',
     type: 'Grossiste',
-    secteur: 'Grande distribution',
+    secteur: 'Alimentaire / Distribution',
     langue: 'Français',
     ville: 'Dakar',
     pays: 'Sénégal',
@@ -131,7 +126,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'Marché Central Bamako SARL',
     statut: 'Actif',
     type: 'Grossiste',
-    secteur: 'Commerce de détail',
+    secteur: 'Alimentaire / Distribution',
     langue: 'Français',
     ville: 'Bamako',
     pays: 'Mali',
@@ -155,7 +150,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'PAM Sénégal',
     statut: 'Actif',
     type: 'ONG',
-    secteur: 'Aide humanitaire',
+    secteur: 'Institutionnel / ONG',
     langue: 'Français',
     ville: 'Dakar',
     pays: 'Sénégal',
@@ -179,7 +174,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'Supermarché Hayat Abidjan',
     statut: 'Actif',
     type: 'Detaillant',
-    secteur: 'Grande distribution',
+    secteur: 'Alimentaire / Distribution',
     langue: 'Français',
     ville: 'Abidjan',
     pays: "Côte d'Ivoire",
@@ -203,7 +198,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'AfricaExport Ltd',
     statut: 'Actif',
     type: 'Export',
-    secteur: 'Export / Négoce',
+    secteur: 'Export',
     langue: 'Anglais',
     ville: 'Accra',
     pays: 'Ghana',
@@ -228,7 +223,7 @@ export const MOCK_CLIENTS: Client[] = [
     raisonSociale: 'Restaurant Teranga Dakar',
     statut: 'Inactif',
     type: 'Detaillant',
-    secteur: 'Hôtellerie & restauration',
+    secteur: 'Alimentaire / Distribution',
     langue: 'Français',
     ville: 'Dakar',
     pays: 'Sénégal',

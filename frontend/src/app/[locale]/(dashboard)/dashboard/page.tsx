@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   const STATS = [
     { labelKey: 'stats.activeBatches', value: '0', icon: Package, hintKey: 'statsHints.activeBatches' },
     { labelKey: 'stats.totalStock', value: '0 kg', icon: Boxes, hintKey: 'statsHints.totalStock' },
-    { labelKey: 'stats.yield', value: '-', icon: TrendingUp, hintKey: 'statsHints.yield' },
+    { labelKey: 'stats.yield', value: 'N/A', icon: TrendingUp, hintKey: 'statsHints.yield' },
     { labelKey: 'stats.nonConformities', value: '0', icon: AlertTriangle, hintKey: 'statsHints.nonConformities' },
   ]
 
