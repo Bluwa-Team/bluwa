@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Plus, Search, Download, Upload, Printer,
-  Pencil, Archive, Loader2,
+  Pencil, Archive, Loader2, RotateCcw,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import {
+  useResizableColumns, ColumnResizer, type ResizableColumn,
+} from '@/hooks/use-resizable-columns'
 import { ArticleModal } from './_components/article-modal'
 import {
   Article, ArticleType, ArticleStatut, ArticleAppro,
@@ -24,6 +27,24 @@ import { getArticles, createArticle, updateArticle } from '@/lib/actions/article
 const TYPES: Array<'TOUS' | ArticleType> = ['TOUS', 'MP', 'PSF', 'PF', 'AC', 'CS']
 const STATUTS: Array<'Tous' | ArticleStatut> = ['Tous', 'Actif', 'Bloque', 'EnCreation']
 const APPROS: Array<'Tous' | ArticleAppro> = ['Tous', 'Achete', 'Fabrique']
+
+// `designation` flexes to fill remaining space; every other column has a
+// fixed width and can be resized by dragging its right edge.
+const ARTICLE_COLUMNS: ResizableColumn[] = [
+  { id: 'select', defaultWidth: 44 },
+  { id: 'code', defaultWidth: 120, minWidth: 84 },
+  { id: 'designation', defaultWidth: null },
+  { id: 'type', defaultWidth: 66, minWidth: 52 },
+  { id: 'family', defaultWidth: 130, minWidth: 84 },
+  { id: 'stockUnit', defaultWidth: 78, minWidth: 58 },
+  { id: 'pmp', defaultWidth: 98, minWidth: 72 },
+  { id: 'salePrice', defaultWidth: 108, minWidth: 82 },
+  { id: 'safetyStock', defaultWidth: 96, minWidth: 72 },
+  { id: 'appro', defaultWidth: 90, minWidth: 66 },
+  { id: 'status', defaultWidth: 96, minWidth: 66 },
+  { id: 'actions', defaultWidth: 96 },
+]
+const DESIGNATION_MIN = 240
 
 function generateCode(type: string, famille: string): string {
   const famCode = famille
@@ -52,6 +73,15 @@ export default function ArticlesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editArticle, setEditArticle] = useState<Article | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const { widths, startResize, reset, isCustomized } = useResizableColumns(
+    'bluwa:cols:articles',
+    ARTICLE_COLUMNS,
+  )
+  const tableMinWidth = ARTICLE_COLUMNS.reduce(
+    (sum, c) => sum + (c.defaultWidth == null ? DESIGNATION_MIN : (widths[c.id] ?? c.defaultWidth)),
+    0,
+  )
 
   useEffect(() => {
     getArticles().then((data) => { setArticles(data); setLoading(false) })
@@ -213,16 +243,36 @@ export default function ArticlesPage() {
           </SelectContent>
         </Select>
 
-        <span className="text-sm text-muted-foreground ml-auto">{countLabel}</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {isCustomized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs text-muted-foreground"
+              onClick={reset}
+            >
+              <RotateCcw className="size-3.5" />
+              {t('resetColumns')}
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">{countLabel}</span>
+        </div>
       </div>
 
       {/* Tableau */}
-      <div className="rounded-lg border overflow-x-auto">
-        <div className="min-w-[1150px]">
-        <Table className="table-fixed w-full">
+      <div className="rounded-lg border">
+        <Table className="table-fixed" style={{ minWidth: tableMinWidth }}>
+          <colgroup>
+            {ARTICLE_COLUMNS.map((c) => (
+              <col
+                key={c.id}
+                style={c.defaultWidth == null ? undefined : { width: widths[c.id] }}
+              />
+            ))}
+          </colgroup>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-12 pl-4">
+              <TableHead className="pl-4">
                 <input
                   type="checkbox"
                   checked={selected.size === filtered.length && filtered.length > 0}
@@ -230,17 +280,44 @@ export default function ArticlesPage() {
                   className="rounded border-input"
                 />
               </TableHead>
-              <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wide">{t('columns.code')}</TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+                {t('columns.code')}
+                <ColumnResizer columnId="code" onStart={startResize} />
+              </TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide">{t('columns.designation')}</TableHead>
-              <TableHead className="w-[70px] font-semibold text-xs uppercase tracking-wide">{t('columns.type')}</TableHead>
-              <TableHead className="w-[140px] font-semibold text-xs uppercase tracking-wide">{t('columns.family')}</TableHead>
-              <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wide text-right">{t('columns.stockUnit')}</TableHead>
-              <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wide text-right">{t('columns.pmp')}</TableHead>
-              <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wide text-right">{t('columns.salePrice')}</TableHead>
-              <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wide text-right">{t('columns.safetyStock')}</TableHead>
-              <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wide">{t('columns.appro')}</TableHead>
-              <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wide">{t('columns.status')}</TableHead>
-              <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+                {t('columns.type')}
+                <ColumnResizer columnId="type" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+                {t('columns.family')}
+                <ColumnResizer columnId="family" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+                {t('columns.stockUnit')}
+                <ColumnResizer columnId="stockUnit" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+                {t('columns.pmp')}
+                <ColumnResizer columnId="pmp" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+                {t('columns.salePrice')}
+                <ColumnResizer columnId="salePrice" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide text-right">
+                {t('columns.safetyStock')}
+                <ColumnResizer columnId="safetyStock" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+                {t('columns.appro')}
+                <ColumnResizer columnId="appro" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs uppercase tracking-wide">
+                {t('columns.status')}
+                <ColumnResizer columnId="status" onStart={startResize} />
+              </TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -285,7 +362,9 @@ export default function ArticlesPage() {
                       {article.type}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm">{article.famille || <span className="text-muted-foreground">-</span>}</TableCell>
+                  <TableCell className="text-sm truncate" title={article.famille || undefined}>
+                    {article.famille || <span className="text-muted-foreground">-</span>}
+                  </TableCell>
                   <TableCell className="text-right text-sm font-mono">{article.uniteStock}</TableCell>
                   <TableCell className="text-right text-sm font-mono">
                     {article.pmp ? (
@@ -323,7 +402,6 @@ export default function ArticlesPage() {
             )}
           </TableBody>
         </Table>
-        </div>
       </div>
 
       <ArticleModal

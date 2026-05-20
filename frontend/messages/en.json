@@ -151,7 +151,8 @@
         "qrCode": "QR Code",
         "status": "Status"
       }
-    }
+    },
+    "resetColumns": "Reset columns"
   },
   "clients": {
     "title": "Clients Directory",

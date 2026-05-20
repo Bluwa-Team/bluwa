@@ -151,7 +151,8 @@
         "qrCode": "QR Code",
         "status": "Statut"
       }
-    }
+    },
+    "resetColumns": "Réinitialiser les colonnes"
   },
   "clients": {
     "title": "Référentiel Clients",
