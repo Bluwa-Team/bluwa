@@ -25,7 +25,8 @@
     "inactive": "Inactive",
     "yes": "Yes",
     "no": "No",
-    "required": "required"
+    "required": "required",
+    "noData": "No data available yet"
   },
   "nav": {
     "main": "Main",
@@ -75,7 +76,7 @@
   },
   "articles": {
     "title": "Items Master Data (MDM)",
-    "subtitle": "Codification rule: {pattern}, 8 to 10 characters",
+    "subtitle": "Codification rule: {pattern}",
     "badge": "System active",
     "new": "New item",
     "print": "Labels ({count})",

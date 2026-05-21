@@ -40,29 +40,13 @@ function Section({ title, icon: Icon, children }: { title: string; icon?: React.
   )
 }
 
-const MOCK_MOUVEMENTS = [
-  { date: '2025-05-10', type: 'Entrée', lot: 'LOT-2025-042', qte: 2500, unite: 'KG', origine: 'Réception fournisseur' },
-  { date: '2025-05-08', type: 'Sortie', lot: 'LOT-2025-041', qte: -800, unite: 'KG', origine: 'Production lot 041' },
-  { date: '2025-04-30', type: 'Sortie', lot: 'LOT-2025-039', qte: -1200, unite: 'KG', origine: 'Production lot 039' },
-  { date: '2025-04-20', type: 'Entrée', lot: 'LOT-2025-035', qte: 5000, unite: 'KG', origine: 'Réception fournisseur' },
-]
-
-const MOCK_PRIX = [
-  { date: '2025-05-10', fournisseur: 'SOGEMA SA', prix: 185, qte: 2500 },
-  { date: '2025-04-20', fournisseur: 'SOGEMA SA', prix: 190, qte: 5000 },
-  { date: '2025-03-05', fournisseur: 'AGRI-TOGO', prix: 195, qte: 3000 },
-  { date: '2025-01-15', fournisseur: 'SOGEMA SA', prix: 200, qte: 4000 },
-]
-
-const MOCK_LOTS = [
-  { code: 'LOT-2025-042', produit: 'Farine infantile 1kg', statut: 'En cours', qte: 800 },
-  { code: 'LOT-2025-040', produit: 'Farine famille 2kg', statut: 'En cours', qte: 1200 },
-]
-
-const MOCK_NOMENCLATURES = [
-  { code: 'NOM-FAR-001', produit: 'Farine infantile 1kg', qteParUnite: 1.1, unite: 'KG' },
-  { code: 'NOM-FAR-002', produit: 'Farine famille 2kg', qteParUnite: 2.15, unite: 'KG' },
-]
+function EmptyTab({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed flex items-center justify-center py-16 text-sm text-muted-foreground">
+      {label}
+    </div>
+  )
+}
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -206,116 +190,22 @@ export default function ArticleDetailPage() {
 
         {/* Mouvements */}
         <TabsContent value="mouvements" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Type</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Origine</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_MOUVEMENTS.map((m, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3 font-mono text-xs">{m.date}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${m.type === 'Entrée' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                        {m.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">{m.lot}</td>
-                    <td className={`px-4 py-3 text-right font-mono font-semibold ${m.qte > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {m.qte > 0 ? '+' : ''}{formatNumber(m.qte, locale)} {m.unite}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{m.origine}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
         {/* Historique prix */}
         <TabsContent value="prix" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Fournisseur</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Prix unitaire</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Montant total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_PRIX.map((p, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3 font-mono text-xs">{p.date}</td>
-                    <td className="px-4 py-3">{p.fournisseur}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold">{formatNumber(p.prix, locale)} F</td>
-                    <td className="px-4 py-3 text-right font-mono">{formatNumber(p.qte, locale)} KG</td>
-                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">{formatNumber(p.prix * p.qte, locale)} F</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
         {/* Lots en cours */}
         <TabsContent value="lots" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Produit fini</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Qté consommée</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_LOTS.map((l, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3 font-mono text-xs">{l.code}</td>
-                    <td className="px-4 py-3">{l.produit}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{l.statut}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">{formatNumber(l.qte, locale)} KG</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
         {/* Nomenclatures */}
         <TabsContent value="nomenclatures" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/40 border-b">
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Réf. nomenclature</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Produit fini</th>
-                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Qté par unité</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_NOMENCLATURES.map((n, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3 font-mono text-xs">{n.code}</td>
-                    <td className="px-4 py-3">{n.produit}</td>
-                    <td className="px-4 py-3 text-right font-mono">{n.qteParUnite} {n.unite}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
       </Tabs>
 

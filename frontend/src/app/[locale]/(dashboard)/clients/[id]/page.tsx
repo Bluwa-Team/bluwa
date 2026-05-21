@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Smartphone, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ArrowLeft, Pencil, Smartphone } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
@@ -24,19 +24,13 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-const MOCK_COMMANDES = [
-  { ref: 'VTE-2025-0088', date: '2025-05-02', montant: 3120000, statut: 'Livrée', delaiPrevu: 5, delaiReel: 5 },
-  { ref: 'VTE-2025-0071', date: '2025-04-10', montant: 1850000, statut: 'Livrée', delaiPrevu: 5, delaiReel: 7 },
-  { ref: 'VTE-2025-0055', date: '2025-03-18', montant: 2640000, statut: 'Livrée', delaiPrevu: 5, delaiReel: 4 },
-  { ref: 'VTE-2025-0032', date: '2025-02-05', montant: 980000, statut: 'Livrée', delaiPrevu: 5, delaiReel: 5 },
-]
-
-const MOCK_LIVRAISONS = [
-  { ref: 'BLC-2025-0088', date: '2025-05-07', articles: 'Farine infantile 1kg × 500 sachets', statut: 'Conforme', conformite: true },
-  { ref: 'BLC-2025-0071', date: '2025-04-17', articles: 'Spaghetti 500g × 800 sachets', statut: 'Conforme', conformite: true },
-  { ref: 'BLC-2025-0055', date: '2025-03-22', articles: 'Farine infantile 1kg × 1 000 sachets', statut: 'Litige (quantité)', conformite: false },
-  { ref: 'BLC-2025-0032', date: '2025-02-10', articles: 'Farine infantile 1kg × 400 sachets', statut: 'Conforme', conformite: true },
-]
+function EmptyTab({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed flex items-center justify-center py-16 text-sm text-muted-foreground">
+      {label}
+    </div>
+  )
+}
 
 export default function ClientDetailPage() {
   const { id } = useParams()
@@ -210,72 +204,12 @@ export default function ClientDetailPage() {
 
         {/* Commandes */}
         <TabsContent value="commandes" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.ref')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.date')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.amount')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_COMMANDES.map((cmd) => {
-                  const diff = cmd.delaiReel - cmd.delaiPrevu
-                  return (
-                    <tr key={cmd.ref} className="border-t">
-                      <td className="px-4 py-3 font-mono text-xs font-medium">{cmd.ref}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{cmd.date}</td>
-                      <td className="px-4 py-3 text-right font-mono">{formatNumber(cmd.montant, locale)}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">{cmd.delaiPrevu}j</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 font-medium ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                          {diff > 0 ? <TrendingUp className="size-3" /> : diff < 0 ? <TrendingDown className="size-3" /> : <Minus className="size-3" />}
-                          {cmd.delaiReel}j
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">{cmd.statut}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
         {/* Livraisons */}
         <TabsContent value="livraisons" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.articles')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_LIVRAISONS.map((l) => (
-                  <tr key={l.ref} className="border-t">
-                    <td className="px-4 py-3 font-mono text-xs font-medium">{l.ref}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{l.date}</td>
-                    <td className="px-4 py-3">{l.articles}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${l.conformite ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                        {l.statut}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
       </Tabs>
 

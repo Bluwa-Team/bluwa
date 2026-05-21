@@ -10,12 +10,14 @@ import { Button } from '@/components/ui/button'
 import { X, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { TypeMouvement, ENTREPOTS, Mouvement } from './types'
-import { MOCK_ARTICLES_LIGHT } from './articles-ref'
+
+export type ArticleOption = { code: string; designation: string; unite: string }
 
 interface Props {
   open: boolean
   onClose: () => void
   onSave: (m: Partial<Mouvement>) => Promise<boolean>
+  articles: ArticleOption[]
 }
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -41,7 +43,7 @@ const EMPTY = {
   motif: '',
 }
 
-export function MouvementModal({ open, onClose, onSave }: Props) {
+export function MouvementModal({ open, onClose, onSave, articles }: Props) {
   const t = useTranslations('stocks')
   const tCommon = useTranslations('common')
 
@@ -60,7 +62,7 @@ export function MouvementModal({ open, onClose, onSave }: Props) {
   const isEntree = form.type === 'Entree'
   const isSortie = form.type === 'Sortie' || form.type === 'Ajustement'
 
-  const article = MOCK_ARTICLES_LIGHT.find((a) => a.code === form.articleCode)
+  const article = articles.find((a) => a.code === form.articleCode)
 
   function isValid() {
     return !!form.articleCode && !!form.lot && !!form.quantite
@@ -143,7 +145,7 @@ export function MouvementModal({ open, onClose, onSave }: Props) {
                   <Select value={form.articleCode} onValueChange={(v) => set('articleCode', v ?? '')}>
                     <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                     <SelectContent>
-                      {MOCK_ARTICLES_LIGHT.map((a) => (
+                      {articles.map((a) => (
                         <SelectItem key={a.code} value={a.code}>
                           <span className="font-mono text-xs mr-2">{a.code}</span>
                           <span className="text-muted-foreground">{a.designation}</span>

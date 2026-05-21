@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MouvementModal } from './_components/mouvement-modal'
+import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 import {
   StockLigne, Mouvement, Lot,
   STATUT_STOCK_COLORS, STATUT_STOCK_LABELS,
@@ -21,6 +21,7 @@ import {
   ENTREPOTS, StatutStock, TypeMouvement, StatutLot,
 } from './_components/types'
 import { getStocks, getMouvements, getLots, createMouvement } from '@/lib/actions/stocks'
+import { getArticles } from '@/lib/actions/articles'
 
 const TYPES_ARTICLE = ['Tous', 'MP', 'PSF', 'PF', 'AC', 'CS']
 
@@ -59,14 +60,18 @@ export default function StocksPage() {
   const [stocks, setStocks] = useState<StockLigne[]>([])
   const [mouvements, setMouvements] = useState<Mouvement[]>([])
   const [lots, setLots] = useState<Lot[]>([])
+  const [articleOptions, setArticleOptions] = useState<ArticleOption[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
-    Promise.all([getStocks(), getMouvements(), getLots()]).then(([s, m, l]) => {
+    Promise.all([getStocks(), getMouvements(), getLots(), getArticles()]).then(([s, m, l, a]) => {
       setStocks(s)
       setMouvements(m)
       setLots(l)
+      setArticleOptions(
+        a.map((art) => ({ code: art.code, designation: art.designation, unite: art.uniteStock })),
+      )
       setLoading(false)
     })
   }, [])
@@ -509,7 +514,7 @@ export default function StocksPage() {
         </TabsContent>
       </Tabs>
 
-      <MouvementModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleMouvement} />
+      <MouvementModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleMouvement} articles={articleOptions} />
     </div>
   )
 }

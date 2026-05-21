@@ -46,12 +46,9 @@ const ARTICLE_COLUMNS: ResizableColumn[] = [
 ]
 const DESIGNATION_MIN = 240
 
-function generateCode(type: string, famille: string): string {
-  const famCode = famille
-    ? famille.normalize('NFD').replace(/[̀-ͯ]/g, '').slice(0, 3).toUpperCase()
-    : 'XXX'
-  const seq = String(Math.floor(Math.random() * 900) + 100)
-  return `${type}-${famCode}-${seq}`
+function generateCode(type: string): string {
+  const seq = String(Math.floor(Math.random() * 9000) + 1000)
+  return `${type}-${seq}`
 }
 
 function fmt(n: number | null, locale: string, suffix = '') {
@@ -107,7 +104,7 @@ export default function ArticlesPage() {
     }
     const type = (data.type as ArticleType) || 'MP'
     const famille = data.famille || ''
-    const code = generateCode(type, famille)
+    const code = generateCode(type)
     const created = await createArticle({ ...data, code, type, famille } as Article & { code: string })
     if (!created) return false
     setArticles((prev) => [created, ...prev])
@@ -149,7 +146,7 @@ export default function ArticlesPage() {
             </Badge>
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            {t('subtitle', { pattern: 'TYPE-FAM-XXX' })}
+            {t('subtitle', { pattern: 'TYPE-XXXX' })}
           </p>
         </div>
         <div className="flex items-center gap-2">

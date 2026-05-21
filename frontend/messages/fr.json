@@ -25,7 +25,8 @@
     "inactive": "Inactif",
     "yes": "Oui",
     "no": "Non",
-    "required": "obligatoire"
+    "required": "obligatoire",
+    "noData": "Aucune donnée disponible pour le moment"
   },
   "nav": {
     "main": "Principal",
@@ -75,7 +76,7 @@
   },
   "articles": {
     "title": "Référentiel Articles (MDM)",
-    "subtitle": "Règle de codification : {pattern}, 8 à 10 caractères",
+    "subtitle": "Règle de codification : {pattern}",
     "badge": "Système actif",
     "new": "Nouvel article",
     "print": "Étiquettes ({count})",

@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Smartphone, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTranslations, useLocale } from 'next-intl'
-import { formatNumber } from '@/lib/format'
+import { ArrowLeft, Pencil, Smartphone } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FournisseurModal } from '../_components/fournisseur-modal'
@@ -37,26 +36,19 @@ function ScoreBar({ score, notCalcLabel }: { score: number | null; notCalcLabel:
   )
 }
 
-const MOCK_COMMANDES = [
-  { ref: 'CMD-2025-0042', date: '2025-04-10', montant: 1850000, statut: 'Livrée', delaiPrevu: 7, delaiReel: 6 },
-  { ref: 'CMD-2025-0031', date: '2025-03-02', montant: 920000, statut: 'Livrée', delaiPrevu: 7, delaiReel: 9 },
-  { ref: 'CMD-2025-0018', date: '2025-02-14', montant: 2340000, statut: 'Livrée', delaiPrevu: 10, delaiReel: 10 },
-  { ref: 'CMD-2024-0095', date: '2024-12-01', montant: 1100000, statut: 'Livrée', delaiPrevu: 7, delaiReel: 7 },
-]
-
-const MOCK_LIVRAISONS = [
-  { ref: 'BL-2025-0042', date: '2025-04-16', articles: 'Maïs grain sec - 5 000 kg', statut: 'Conforme', conformite: true },
-  { ref: 'BL-2025-0031', date: '2025-03-11', articles: 'Maïs grain sec - 2 500 kg', statut: 'Non conforme (humidité)', conformite: false },
-  { ref: 'BL-2025-0018', date: '2025-02-24', articles: 'Mil décortiqué - 6 000 kg', statut: 'Conforme', conformite: true },
-  { ref: 'BL-2024-0095', date: '2024-12-08', articles: 'Maïs grain sec - 3 000 kg', statut: 'Conforme', conformite: true },
-]
+function EmptyTab({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed flex items-center justify-center py-16 text-sm text-muted-foreground">
+      {label}
+    </div>
+  )
+}
 
 export default function FournisseurDetailPage() {
   const { id } = useParams()
   const router = useRouter()
   const t = useTranslations('fournisseurs')
   const tCommon = useTranslations('common')
-  const locale = useLocale()
   const [fournisseur, setFournisseur] = useState<Fournisseur | null | undefined>(undefined)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -188,72 +180,12 @@ export default function FournisseurDetailPage() {
 
         {/* Commandes */}
         <TabsContent value="commandes" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.ref')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.date')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.amount')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.plannedDelay')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.actualDelay')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.orders.columns.status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_COMMANDES.map((c) => {
-                  const diff = c.delaiReel - c.delaiPrevu
-                  return (
-                    <tr key={c.ref} className="border-t">
-                      <td className="px-4 py-3 font-mono text-xs font-medium">{c.ref}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{c.date}</td>
-                      <td className="px-4 py-3 text-right font-mono">{formatNumber(c.montant, locale)}</td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">{c.delaiPrevu}j</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 font-medium ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                          {diff > 0 ? <TrendingUp className="size-3" /> : diff < 0 ? <TrendingDown className="size-3" /> : <Minus className="size-3" />}
-                          {c.delaiReel}j
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">{c.statut}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
         {/* Livraisons */}
         <TabsContent value="livraisons" className="mt-4">
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.deliveryNote')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.articles')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.deliveries.columns.conformity')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_LIVRAISONS.map((l) => (
-                  <tr key={l.ref} className="border-t">
-                    <td className="px-4 py-3 font-mono text-xs font-medium">{l.ref}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{l.date}</td>
-                    <td className="px-4 py-3">{l.articles}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${l.conformite ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                        {l.statut}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EmptyTab label={tCommon('noData')} />
         </TabsContent>
       </Tabs>
 
