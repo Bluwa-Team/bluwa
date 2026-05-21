@@ -140,7 +140,7 @@ export default function ArticleDetailPage() {
           <TabsTrigger value="fiche" className="flex-1">Fiche article</TabsTrigger>
           <TabsTrigger value="mouvements" className="flex-1">Mouvements de stock</TabsTrigger>
           <TabsTrigger value="prix" className="flex-1">Historique des prix</TabsTrigger>
-          <TabsTrigger value="lots" className="flex-1">Lots en cours</TabsTrigger>
+          <TabsTrigger value="lots" className="flex-1">Lots</TabsTrigger>
           <TabsTrigger value="nomenclatures" className="flex-1">Nomenclatures</TabsTrigger>
         </TabsList>
 
