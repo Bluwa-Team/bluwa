@@ -201,10 +201,12 @@ export default function ArticlesPage() {
         </div>
 
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
-          <SelectTrigger className="w-44 h-9">
-            <SelectValue />
+          <SelectTrigger className="w-auto min-w-[9rem] h-9">
+            <span className="text-sm">
+              {filterStatut === 'Tous' ? t('columns.status') : t(`statuts.${filterStatut}` as any)}
+            </span>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="min-w-[10rem]">
             <SelectItem value="Tous">{t('allStatuses')}</SelectItem>
             {STATUTS.filter(s => s !== 'Tous').map((s) => (
               <SelectItem key={s} value={s}>
