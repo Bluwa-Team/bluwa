@@ -3,14 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Smartphone } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { ArrowLeft, Pencil, Smartphone, Plus } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { FournisseurModal } from '../_components/fournisseur-modal'
 import {
-  Fournisseur, QUALIFICATION_COLORS,
-  STATUT_COLORS, MODES_LOGISTIQUE, scoreColor,
+  Fournisseur, QUALIFICATION_COLORS, STATUT_COLORS, MODES_LOGISTIQUE, scoreColor,
+  ContratAchat, CONTRAT_STATUT_COLORS, CONTRAT_STATUT_LABELS,
 } from '../_components/types'
 import { getFournisseurById, updateFournisseur } from '@/lib/actions/fournisseurs'
 
@@ -44,12 +48,17 @@ function EmptyTab({ label }: { label: string }) {
   )
 }
 
+// Contrats mock — à brancher sur Supabase quand la table sera créée
+const MOCK_CONTRATS: ContratAchat[] = []
+
 export default function FournisseurDetailPage() {
   const { id } = useParams()
   const router = useRouter()
   const t = useTranslations('fournisseurs')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
   const [fournisseur, setFournisseur] = useState<Fournisseur | null | undefined>(undefined)
+  const [contrats] = useState<ContratAchat[]>(MOCK_CONTRATS)
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
@@ -118,6 +127,7 @@ export default function FournisseurDetailPage() {
       <Tabs defaultValue="fiche">
         <TabsList className="w-full">
           <TabsTrigger value="fiche" className="flex-1">{t('detail.tabs.profile')}</TabsTrigger>
+          <TabsTrigger value="contrats" className="flex-1">{t('detail.tabs.contracts')}</TabsTrigger>
           <TabsTrigger value="commandes" className="flex-1">{t('detail.tabs.orders')}</TabsTrigger>
           <TabsTrigger value="livraisons" className="flex-1">{t('detail.tabs.deliveries')}</TabsTrigger>
         </TabsList>
@@ -176,6 +186,59 @@ export default function FournisseurDetailPage() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Contrats */}
+        <TabsContent value="contrats" className="mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground">
+              {contrats.length} contrat{contrats.length !== 1 ? 's' : ''} cadre{contrats.length !== 1 ? 's' : ''}
+            </p>
+            <Button size="sm" className="gap-1.5">
+              <Plus className="size-3.5" />
+              Nouveau contrat
+            </Button>
+          </div>
+          {contrats.length === 0 ? (
+            <EmptyTab label="Aucun contrat cadre pour ce fournisseur" />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="font-semibold text-xs tracking-wide">Référence</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide">Article</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide">Début</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide">Fin</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide text-right">Prix unit.</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide text-right">Qté min.</TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wide">Statut</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contrats.map((c) => (
+                    <TableRow key={c.id} className="hover:bg-muted/20">
+                      <TableCell className="font-mono text-sm font-medium">{c.reference}</TableCell>
+                      <TableCell className="text-sm">{c.article}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.dateDebut}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.dateFin}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">
+                        {formatNumber(c.prixUnitaire, locale)} {c.devise}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm">
+                        {formatNumber(c.quantiteMin, locale)} {c.unite}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${CONTRAT_STATUT_COLORS[c.statut]}`}>
+                          {CONTRAT_STATUT_LABELS[c.statut]}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Commandes */}

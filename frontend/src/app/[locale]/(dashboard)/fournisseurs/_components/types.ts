@@ -70,6 +70,33 @@ export const STATUT_COLORS: Record<FournisseurStatut, string> = {
   Informel: 'bg-gray-100 text-gray-600',
 }
 
+export type ContratStatut = 'Actif' | 'Expire' | 'EnNegociation'
+
+export interface ContratAchat {
+  id: string
+  reference: string
+  article: string
+  dateDebut: string
+  dateFin: string
+  prixUnitaire: number
+  devise: string
+  quantiteMin: number
+  unite: string
+  statut: ContratStatut
+}
+
+export const CONTRAT_STATUT_COLORS: Record<ContratStatut, string> = {
+  Actif: 'bg-emerald-100 text-emerald-800',
+  Expire: 'bg-red-100 text-red-700',
+  EnNegociation: 'bg-amber-100 text-amber-800',
+}
+
+export const CONTRAT_STATUT_LABELS: Record<ContratStatut, string> = {
+  Actif: 'Actif',
+  Expire: 'Expiré',
+  EnNegociation: 'En négociation',
+}
+
 export function scoreColor(score: number | null): string {
   if (score === null) return 'text-muted-foreground'
   if (score >= 70) return 'text-emerald-600'

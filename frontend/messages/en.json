@@ -42,8 +42,8 @@
     "traceability": "Traceability",
     "nonConformities": "Non-Conformities",
     "settings": "Settings",
-    "sourcing": "Sourcing & Supply",
-    "purchases": "Purchases"
+    "logistique": "Logistics",
+    "reception": "Receiving"
   },
   "header": {
     "aiAgent": "AI Agent",
@@ -315,6 +315,7 @@
     "detail": {
       "tabs": {
         "profile": "Supplier profile",
+        "contracts": "Contracts",
         "orders": "Order history",
         "deliveries": "Delivery history"
       },

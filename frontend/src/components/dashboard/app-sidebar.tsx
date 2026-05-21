@@ -112,9 +112,9 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       ],
     },
     {
-      label: t('sourcing'),
+      label: t('logistique'),
       items: [
-        { title: t('purchases'), url: '/achats', icon: ShoppingCart, disabled: false },
+        { title: t('reception'), url: '/reception', icon: ShoppingCart, disabled: false },
       ],
     },
   ]
