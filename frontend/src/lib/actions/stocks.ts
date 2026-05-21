@@ -120,6 +120,42 @@ export async function getLots(): Promise<Lot[]> {
   }
 }
 
+export async function getMouvementsByArticle(articleCode: string): Promise<Mouvement[]> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('mouvements_stock')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('article_code', articleCode)
+      .order('date', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(toMouvement)
+  } catch (e) {
+    console.error('[supabase action] error:', e)
+    return []
+  }
+}
+
+export async function getLotsByArticle(articleCode: string): Promise<Lot[]> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('stocks')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('article_code', articleCode)
+      .not('lot', 'is', null)
+      .neq('lot', '')
+      .order('date_peremption', { ascending: true, nullsFirst: false })
+    if (error) throw error
+    return (data ?? []).map(toLot)
+  } catch (e) {
+    console.error('[supabase action] error:', e)
+    return []
+  }
+}
+
 export async function createMouvement(m: Partial<Mouvement>): Promise<Mouvement | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()

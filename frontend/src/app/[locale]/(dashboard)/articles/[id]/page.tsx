@@ -17,7 +17,12 @@ import { ArticleModal } from '../_components/article-modal'
 import {
   Article, TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from '../_components/types'
+import {
+  Mouvement, Lot, MOUVEMENT_COLORS, MOUVEMENT_LABELS,
+  STATUT_LOT_COLORS, STATUT_LOT_LABELS,
+} from '../../stocks/_components/types'
 import { getArticleById, updateArticle } from '@/lib/actions/articles'
+import { getMouvementsByArticle, getLotsByArticle } from '@/lib/actions/stocks'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -55,10 +60,18 @@ export default function ArticleDetailPage() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const [article, setArticle] = useState<Article | null | undefined>(undefined)
+  const [mouvements, setMouvements] = useState<Mouvement[]>([])
+  const [lots, setLots] = useState<Lot[]>([])
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
-    getArticleById(id).then(setArticle)
+    getArticleById(id).then((art) => {
+      setArticle(art)
+      if (art) {
+        getMouvementsByArticle(art.code).then(setMouvements)
+        getLotsByArticle(art.code).then(setLots)
+      }
+    })
   }, [id])
 
   if (article === undefined) {
@@ -190,7 +203,40 @@ export default function ArticleDetailPage() {
 
         {/* Mouvements */}
         <TabsContent value="mouvements" className="mt-4">
-          <EmptyTab label={tCommon('noData')} />
+          {mouvements.length === 0 ? (
+            <EmptyTab label={tCommon('noData')} />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/40 border-b">
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Type</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
+                    <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Référence</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Motif</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mouvements.map((m) => (
+                    <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
+                      <td className="px-4 py-3 font-mono text-xs">{m.date}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${MOUVEMENT_COLORS[m.type]}`}>
+                          {MOUVEMENT_LABELS[m.type]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">{m.lot || 'N/A'}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatNumber(m.quantite, locale)} {m.unite}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{m.reference || 'N/A'}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{m.motif || 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Historique prix */}
@@ -200,7 +246,40 @@ export default function ArticleDetailPage() {
 
         {/* Lots en cours */}
         <TabsContent value="lots" className="mt-4">
-          <EmptyTab label={tCommon('noData')} />
+          {lots.length === 0 ? (
+            <EmptyTab label={tCommon('noData')} />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/40 border-b">
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Entrepôt</th>
+                    <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Réception</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Péremption</th>
+                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lots.map((l) => (
+                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
+                      <td className="px-4 py-3 font-mono text-xs">{l.lotCode}</td>
+                      <td className="px-4 py-3 text-xs">{l.entrepot || 'N/A'}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatNumber(l.quantite, locale)} {l.unite}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{l.dateReception || 'N/A'}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{l.datePeremption || 'N/A'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_LOT_COLORS[l.statut]}`}>
+                          {STATUT_LOT_LABELS[l.statut]}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Nomenclatures */}
