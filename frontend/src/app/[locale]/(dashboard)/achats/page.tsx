@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Printer, FileText, TrendingUp, ShoppingCart } from 'lucide-react'
+import { Plus, Printer, FileText, PackageCheck } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
@@ -49,16 +49,12 @@ export default function AchatsPage() {
       <Tabs defaultValue="bons">
         <TabsList>
           <TabsTrigger value="bons" className="gap-1.5">
-            <ShoppingCart className="size-3.5" />
-            Bons d&apos;achat
+            <PackageCheck className="size-3.5" />
+            Réception
           </TabsTrigger>
           <TabsTrigger value="contrats" className="gap-1.5">
             <FileText className="size-3.5" />
             Contrats cadres
-          </TabsTrigger>
-          <TabsTrigger value="historique" className="gap-1.5">
-            <TrendingUp className="size-3.5" />
-            Historique des prix
           </TabsTrigger>
         </TabsList>
 
@@ -146,10 +142,6 @@ export default function AchatsPage() {
           <EmptyTab label="Aucun contrat cadre" />
         </TabsContent>
 
-        {/* Historique des prix */}
-        <TabsContent value="historique" className="mt-4">
-          <EmptyTab label="Aucun historique de prix" />
-        </TabsContent>
       </Tabs>
     </div>
   )
