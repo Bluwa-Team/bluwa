@@ -41,7 +41,9 @@
     "stocks": "Stocks",
     "traceability": "Traçabilité",
     "nonConformities": "Non-conformités",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "sourcing": "Sourcing & Supply",
+    "purchases": "Achats"
   },
   "header": {
     "aiAgent": "Agent IA",

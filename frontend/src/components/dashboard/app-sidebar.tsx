@@ -12,6 +12,7 @@ import {
   BookOpen,
   TrendingUp,
   Users,
+  ShoppingCart,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
@@ -108,6 +109,12 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('stocks'), url: '/stocks', icon: Boxes, disabled: false },
         { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
         { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
+      ],
+    },
+    {
+      label: t('sourcing'),
+      items: [
+        { title: t('purchases'), url: '/achats', icon: ShoppingCart, disabled: false },
       ],
     },
   ]

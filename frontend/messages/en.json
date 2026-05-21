@@ -41,7 +41,9 @@
     "stocks": "Inventory",
     "traceability": "Traceability",
     "nonConformities": "Non-Conformities",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sourcing": "Sourcing & Supply",
+    "purchases": "Purchases"
   },
   "header": {
     "aiAgent": "AI Agent",
