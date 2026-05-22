@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import {
-  Plus, Printer, FileText, Leaf, Barcode,
+  Plus, Printer, Barcode,
   Check, AlertTriangle, Clock, RotateCcw, CheckCheck,
-  MoreHorizontal, Package, CheckCircle2,
+  MoreHorizontal, Package, CheckCircle2, Search, X, FileDown,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -13,7 +13,8 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  Reception, STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS, MOCK_RECEPTIONS,
+  Reception, STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
+  StatutReception, MOCK_RECEPTIONS,
 } from './_components/types'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
@@ -22,19 +23,31 @@ const STATUT_ICONS: Record<string, React.ReactNode> = {
   Attente: <Clock className="size-3" />,
 }
 
-// `article` flexes to fill remaining space; every other column has a fixed
-// width and can be resized by dragging its right edge.
+function CommandeBadge({ value }: { value: string | null }) {
+  if (!value) return null
+  const isBA = value.startsWith('BA')
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+      isBA ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+    }`}>
+      ↳ {value}
+    </span>
+  )
+}
+
+
 const RECEPTION_COLUMNS: ResizableColumn[] = [
-  { id: 'numero', defaultWidth: 120, minWidth: 90 },
-  { id: 'fournisseur', defaultWidth: 190, minWidth: 120 },
-  { id: 'type', defaultWidth: 100, minWidth: 80 },
+  { id: 'numero', defaultWidth: 130, minWidth: 100 },
+  { id: 'commande', defaultWidth: 150, minWidth: 110 },
+  { id: 'bon', defaultWidth: 110, minWidth: 90 },
+  { id: 'fournisseur', defaultWidth: 170, minWidth: 120 },
   { id: 'article', defaultWidth: null },
-  { id: 'quantite', defaultWidth: 100, minWidth: 72 },
-  { id: 'lot', defaultWidth: 140, minWidth: 100 },
-  { id: 'bon', defaultWidth: 120, minWidth: 90 },
-  { id: 'codeBarres', defaultWidth: 168, minWidth: 110 },
-  { id: 'date', defaultWidth: 110, minWidth: 90 },
-  { id: 'statut', defaultWidth: 122, minWidth: 96 },
+  { id: 'quantite', defaultWidth: 130, minWidth: 100 },
+  { id: 'lotStock', defaultWidth: 130, minWidth: 100 },
+  { id: 'lotFourn', defaultWidth: 120, minWidth: 90 },
+  { id: 'dlc', defaultWidth: 100, minWidth: 80 },
+  { id: 'date', defaultWidth: 100, minWidth: 80 },
+  { id: 'statut', defaultWidth: 140, minWidth: 110 },
   { id: 'action', defaultWidth: 80, minWidth: 64 },
 ]
 const ARTICLE_MIN = 180
@@ -53,13 +66,10 @@ function StatCard({
   icon: React.ElementType
 }) {
   const trendColor = { up: 'text-emerald-600', down: 'text-orange-500', neutral: 'text-muted-foreground' }[trendVariant]
-  const trendArrow = { up: '↑', down: '↓', neutral: '—' }[trendVariant]
+  const trendArrow = { up: '↑', down: '↓', neutral: '' }[trendVariant]
 
   return (
-    <div
-      className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}
-    >
-      {/* Header */}
+    <div className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBgClass}`}>
@@ -71,8 +81,6 @@ function StatCard({
           <MoreHorizontal className="size-4" />
         </button>
       </div>
-
-      {/* Value panel */}
       <div className="bg-white dark:bg-background rounded-xl px-4 py-3 shadow-sm">
         <p className="text-3xl font-bold">{value}</p>
         <div className="flex items-end justify-between mt-1 gap-2">
@@ -91,6 +99,9 @@ function StatCard({
 export default function ReceptionPage() {
   const locale = useLocale()
   const [receptions] = useState<Reception[]>(MOCK_RECEPTIONS)
+  const [search, setSearch] = useState('')
+  const [statutFilter, setStatutFilter] = useState<StatutReception | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'Formel' | 'Informel'>('all')
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:reception',
@@ -108,6 +119,33 @@ export default function ReceptionPage() {
     avecReserve: receptions.filter((r) => r.statut === 'Reserve').length,
     codesScannes: receptions.filter((r) => r.codeBarres !== null).length,
   }), [receptions])
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    return receptions.filter((r) => {
+      if (statutFilter !== 'all' && r.statut !== statutFilter) return false
+      if (typeFilter !== 'all' && r.typeFournisseur !== typeFilter) return false
+      if (q) {
+        return (
+          r.numero.toLowerCase().includes(q)
+          || r.fournisseur.toLowerCase().includes(q)
+          || r.article.toLowerCase().includes(q)
+          || (r.numeroBon?.toLowerCase().includes(q) ?? false)
+          || (r.lot?.toLowerCase().includes(q) ?? false)
+          || (r.lotFourn?.toLowerCase().includes(q) ?? false)
+        )
+      }
+      return true
+    })
+  }, [receptions, search, statutFilter, typeFilter])
+
+  const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
+
+  function clearFilters() {
+    setSearch('')
+    setStatutFilter('all')
+    setTypeFilter('all')
+  }
 
   return (
     <div className="space-y-6">
@@ -174,96 +212,163 @@ export default function ReceptionPage() {
         />
       </div>
 
-      {/* Reset columns */}
-      {isCustomized && (
-        <div className="flex justify-end -mb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 text-xs text-muted-foreground"
-            onClick={reset}
-          >
-            <RotateCcw className="size-3.5" />
-            Réinitialiser les colonnes
-          </Button>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Search */}
+        <div className="relative flex-1 min-w-64 max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Rechercher par N°, fournisseur, article, lot…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
+          />
         </div>
-      )}
+
+        {/* Statut filter */}
+        <select
+          value={statutFilter}
+          onChange={(e) => setStatutFilter(e.target.value as StatutReception | 'all')}
+          className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+        >
+          <option value="all">Tous statuts</option>
+          <option value="Conforme">Conforme</option>
+          <option value="Reserve">Réserve</option>
+          <option value="Attente">Attente</option>
+        </select>
+
+        {/* Type fournisseur filter */}
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as 'all' | 'Formel' | 'Informel')}
+          className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+        >
+          <option value="all">Tous types</option>
+          <option value="Formel">Formel</option>
+          <option value="Informel">Informel</option>
+        </select>
+
+        {/* Clear + count + reset columns */}
+        <div className="flex items-center gap-2 ml-auto">
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="h-7 px-2.5 text-xs rounded-md flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <X className="size-3" />
+              Réinitialiser
+            </button>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
+          </span>
+          {isCustomized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs text-muted-foreground"
+              onClick={reset}
+            >
+              <RotateCcw className="size-3.5" />
+              Réinitialiser les colonnes
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Table */}
       <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
           <colgroup>
             {RECEPTION_COLUMNS.map((c) => (
-              <col
-                key={c.id}
-                style={c.defaultWidth == null ? undefined : { width: widths[c.id] }}
-              />
+              <col key={c.id} style={c.defaultWidth == null ? undefined : { width: widths[c.id] }} />
             ))}
           </colgroup>
           <thead>
             <tr className="bg-muted/40 border-b">
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                N°
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                N° Rec
                 <ColumnResizer columnId="numero" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                Fournisseur
-                <ColumnResizer columnId="fournisseur" onStart={startResize} />
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Commande
+                <ColumnResizer columnId="commande" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                Type
-                <ColumnResizer columnId="type" onStart={startResize} />
-              </th>
-              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Article</th>
-              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                Qté
-                <ColumnResizer columnId="quantite" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                Lot
-                <ColumnResizer columnId="lot" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                 Bon
                 <ColumnResizer columnId="bon" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                Code-barres
-                <ColumnResizer columnId="codeBarres" onStart={startResize} />
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Fournisseur
+                <ColumnResizer columnId="fournisseur" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Article</th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Qté reçue
+                <ColumnResizer columnId="quantite" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Lot stock
+                <ColumnResizer columnId="lotStock" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Lot fourn.
+                <ColumnResizer columnId="lotFourn" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                DLC
+                <ColumnResizer columnId="dlc" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                 Date
                 <ColumnResizer columnId="date" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                 Statut
                 <ColumnResizer columnId="statut" onStart={startResize} />
               </th>
-              <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Action</th>
+              <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">Action</th>
             </tr>
           </thead>
           <tbody>
-            {receptions.map((r) => (
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  Aucune réception ne correspond aux filtres.
+                </td>
+              </tr>
+            ) : filtered.map((r) => (
               <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20">
 
-                {/* N° */}
-                <td className="px-4 py-3 font-mono text-xs font-medium truncate">
+                {/* N° Rec */}
+                <td className="px-4 py-3 font-mono text-xs font-semibold truncate">
                   {r.numero}
                 </td>
 
-                {/* Fournisseur */}
-                <td className="px-4 py-3 text-sm font-medium truncate" title={r.fournisseur}>
-                  {r.fournisseur}
+                {/* Commande */}
+                <td className="px-4 py-3 truncate">
+                  <CommandeBadge value={r.numeroBon} />
                 </td>
 
-                {/* Type */}
+                {/* Bon */}
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {r.typeFournisseur === 'Formel'
-                      ? <FileText className="size-3.5 shrink-0 text-slate-500" />
-                      : <Leaf className="size-3.5 shrink-0 text-emerald-500" />}
-                    {r.typeFournisseur}
-                  </span>
+                  <button
+                    title={r.typeFournisseur === 'Formel' ? 'Télécharger le bon de commande' : "Télécharger le bon d'achat"}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      r.typeFournisseur === 'Formel'
+                        ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+                        : 'text-orange-700 bg-orange-50 hover:bg-orange-100'
+                    }`}
+                  >
+                    <FileDown className="size-3.5 shrink-0" />
+                    {r.typeFournisseur === 'Formel' ? 'BC' : 'BA'}
+                  </button>
+                </td>
+
+                {/* Fournisseur */}
+                <td className="px-4 py-3 text-sm truncate" title={r.fournisseur}>
+                  {r.fournisseur}
                 </td>
 
                 {/* Article */}
@@ -271,40 +376,33 @@ export default function ReceptionPage() {
                   {r.article}
                 </td>
 
-                {/* Qté */}
+                {/* Qté reçue */}
                 <td className="px-4 py-3 text-right text-sm font-mono truncate">
                   {formatNumber(r.quantite, locale)}{' '}
                   <span className="text-muted-foreground text-xs">{r.unite}</span>
                 </td>
 
-                {/* Lot */}
+                {/* Lot stock */}
                 <td className="px-4 py-3 font-mono text-xs truncate">
-                  {r.lot ?? <span className="text-muted-foreground">N/A</span>}
+                  {r.lot}
                 </td>
 
-                {/* Bon */}
+                {/* Lot fournisseur */}
                 <td className="px-4 py-3 font-mono text-xs truncate">
-                  {r.numeroBon ?? <span className="text-muted-foreground">N/A</span>}
+                  {r.lotFourn}
                 </td>
 
-                {/* Code-barres */}
-                <td className="px-4 py-3 truncate">
-                  {r.codeBarres ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-mono">
-                      <Barcode className="size-3.5 shrink-0 text-muted-foreground" />
-                      {r.codeBarres}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">N/A</span>
-                  )}
+                {/* DLC */}
+                <td className="px-4 py-3 font-mono text-xs truncate">
+                  {r.dlc}
                 </td>
 
                 {/* Date */}
                 <td className="px-4 py-3 font-mono text-xs truncate">{r.date}</td>
 
                 {/* Statut */}
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_RECEPTION_COLORS[r.statut]}`}>
+                <td className="px-4 py-3 overflow-hidden">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_RECEPTION_COLORS[r.statut]}`}>
                     {STATUT_ICONS[r.statut]}
                     {STATUT_RECEPTION_LABELS[r.statut]}
                   </span>

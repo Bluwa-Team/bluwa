@@ -43,7 +43,9 @@
     "nonConformities": "Non-conformités",
     "settings": "Paramètres",
     "logistique": "Logistique",
-    "reception": "Réception"
+    "reception": "Réception",
+    "sourcingSupply": "Sourcing & Supply",
+    "approvisionnement": "Approvisionnement"
   },
   "header": {
     "aiAgent": "Agent IA",

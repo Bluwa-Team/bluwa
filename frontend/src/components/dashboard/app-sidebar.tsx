@@ -13,7 +13,9 @@ import {
   TrendingUp,
   Users,
   ShoppingCart,
+  ClipboardList,
 } from 'lucide-react'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/navigation'
 import {
@@ -103,18 +105,24 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       ],
     },
     {
-      label: t('production'),
+      label: t('sourcingSupply'),
       items: [
-        { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
-        { title: t('stocks'), url: '/stocks', icon: Boxes, disabled: false },
-        { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
-        { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
+        { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList, disabled: false },
       ],
     },
     {
       label: t('logistique'),
       items: [
         { title: t('reception'), url: '/reception', icon: ShoppingCart, disabled: false },
+      ],
+    },
+    {
+      label: t('production'),
+      items: [
+        { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
+        { title: t('stocks'), url: '/stocks', icon: Boxes, disabled: false },
+        { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
+        { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
       ],
     },
   ]
@@ -124,11 +132,11 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       <SidebarHeader className="px-4 py-4">
         <Link href="/dashboard" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
           <motion.div
-            className="w-8 h-8 shrink-0 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm"
+            className="w-8 h-8 shrink-0"
             whileHover={{ scale: 1.08, rotate: 3 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
-            B
+            <Image src="/logo_icon.png" alt="Bluwa" width={32} height={32} className="w-full h-full object-contain" />
           </motion.div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold leading-none">Bluwa</span>

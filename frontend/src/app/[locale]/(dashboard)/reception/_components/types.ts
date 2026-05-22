@@ -1,5 +1,6 @@
 export type StatutReception = 'Conforme' | 'Reserve' | 'Attente'
 export type TypeFournisseur = 'Formel' | 'Informel'
+export type StatutLot = 'Libere' | 'EnControle' | 'Bloque'
 
 export interface Reception {
   id: string
@@ -11,9 +12,12 @@ export interface Reception {
   article: string
   quantite: number
   unite: string
-  lot: string | null
+  lot: string | null        // lot stock interne
+  lotFourn: string | null   // référence lot fournisseur
+  dlc: string | null        // date limite de consommation
   codeBarres: string | null
   statut: StatutReception
+  statutLot: StatutLot | null
   cloturee: boolean
 }
 
@@ -29,35 +33,53 @@ export const STATUT_RECEPTION_LABELS: Record<StatutReception, string> = {
   Attente: 'Attente',
 }
 
+export const STATUT_LOT_LABELS: Record<StatutLot, string> = {
+  Libere: 'Lot libéré',
+  EnControle: 'Lot en contrôle',
+  Bloque: 'Lot bloqué',
+}
+
+export const STATUT_LOT_COLORS: Record<StatutLot, string> = {
+  Libere: 'text-emerald-600',
+  EnControle: 'text-amber-600',
+  Bloque: 'text-red-600',
+}
+
 export const MOCK_RECEPTIONS: Reception[] = [
   {
     id: '1',
     numero: 'REC-2026-001',
-    date: '2026-05-06',
-    numeroBon: 'BC-2026-018',
-    fournisseur: 'SOFRUITS SARL',
-    typeFournisseur: 'Formel',
-    article: "Fleurs d'hibiscus séchées",
-    quantite: 250,
-    unite: 'Kg',
-    lot: 'LOT-HIB-260105',
-    codeBarres: '3401597826541',
+    date: '2026-05-02',
+    numeroBon: 'BA-2026-019',
+    fournisseur: 'Maraîcher Pikine',
+    typeFournisseur: 'Informel',
+    article: 'Gingembre frais',
+    quantite: 30,
+    unite: 'kg',
+    lot: 'LOT-GIN-001',
+    lotFourn: 'MP-GIN-2604',
+    dlc: '2026-05-15',
+    codeBarres: null,
     statut: 'Conforme',
+    statutLot: 'EnControle',
     cloturee: false,
   },
   {
     id: '2',
     numero: 'REC-2026-002',
-    date: '2026-05-07',
-    numeroBon: 'BA-INF-024',
-    fournisseur: 'Mama Aïssata (marché Sandaga)',
-    typeFournisseur: 'Informel',
-    article: 'Gingembre frais',
-    quantite: 40,
-    unite: 'Kg',
-    lot: 'LOT-GIN-260507',
+    date: '2026-05-09',
+    numeroBon: 'BC-2026-057',
+    fournisseur: 'Sucrerie Niari',
+    typeFournisseur: 'Formel',
+    article: 'Sucre cristallisé',
+    quantite: 500,
+    unite: 'kg',
+    lot: 'LOT-SUC-002',
+    lotFourn: 'SN-A23-08',
+    dlc: '2027-05-09',
     codeBarres: null,
     statut: 'Conforme',
+    statutLot: 'EnControle',
     cloturee: false,
   },
   {
@@ -70,9 +92,12 @@ export const MOCK_RECEPTIONS: Reception[] = [
     article: 'Bouteilles verre 1L',
     quantite: 1200,
     unite: 'Unité',
-    lot: 'LOT-VER-260508',
+    lot: 'LOT-VER-003',
+    lotFourn: 'VDO-260508',
+    dlc: null,
     codeBarres: '8901234567890',
     statut: 'Reserve',
+    statutLot: 'Bloque',
     cloturee: false,
   },
   {
@@ -84,10 +109,13 @@ export const MOCK_RECEPTIONS: Reception[] = [
     typeFournisseur: 'Formel',
     article: 'Sucre cristallisé',
     quantite: 500,
-    unite: 'Kg',
-    lot: 'LOT-SUC-260508',
+    unite: 'kg',
+    lot: null,
+    lotFourn: null,
+    dlc: null,
     codeBarres: null,
     statut: 'Attente',
+    statutLot: null,
     cloturee: false,
   },
 ]
