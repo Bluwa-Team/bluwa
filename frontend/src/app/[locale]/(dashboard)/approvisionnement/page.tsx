@@ -285,7 +285,7 @@ export default function ApprovisionnementPage() {
                   <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                     SKU<ColumnResizer columnId="sku" onStart={sSR} />
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Article</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Désignation</th>
                   <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                     Conso moy. (30j)<ColumnResizer columnId="consoMoy" onStart={sSR} />
                   </th>
@@ -509,7 +509,7 @@ export default function ApprovisionnementPage() {
                   <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                     Fournisseur<ColumnResizer columnId="fournisseur" onStart={startResize} />
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Désignation</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Article</th>
                   <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
                     Quantité<ColumnResizer columnId="quantite" onStart={startResize} />
                   </th>
