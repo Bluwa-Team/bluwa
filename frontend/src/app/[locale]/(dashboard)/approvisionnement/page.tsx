@@ -456,8 +456,8 @@ export default function ApprovisionnementPage() {
               className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
             >
               <option value="all">Tous types</option>
-              <option value="BC">BC — Bon de commande</option>
-              <option value="BA">BA — Bon d'achat</option>
+              <option value="BC">BC · Bon de commande</option>
+              <option value="BA">BA · Bon d'achat</option>
             </select>
 
             <div className="flex items-center gap-2 ml-auto">

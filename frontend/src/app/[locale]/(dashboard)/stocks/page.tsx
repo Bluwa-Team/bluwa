@@ -1,520 +1,395 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import {
-  AlertTriangle, ArrowDownToLine, ArrowUpFromLine,
-  ArrowLeftRight, Package, Search, SlidersHorizontal, Loader2,
+  Search, X, RotateCcw, MoreHorizontal,
+  Check, Moon, AlertTriangle, Clock, Lock,
+  FileText, Leaf, Wallet, TrendingUp,
+  ShoppingBasket, ShieldAlert, Layers,
 } from 'lucide-react'
-import { useTranslations, useLocale } from 'next-intl'
+import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 import {
-  StockLigne, Mouvement, Lot,
-  STATUT_STOCK_COLORS, STATUT_STOCK_LABELS,
-  MOUVEMENT_COLORS,
-  STATUT_LOT_COLORS, STATUT_LOT_LABELS,
-  ENTREPOTS, StatutStock, TypeMouvement, StatutLot,
+  useResizableColumns, ColumnResizer, type ResizableColumn,
+} from '@/hooks/use-resizable-columns'
+import {
+  LotStock, EtatLot, TypeArticle, StatutQC,
+  ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
+  STATUT_QC_COLORS, STATUT_QC_LABELS, MOCK_LOTS,
 } from './_components/types'
-import { getStocks, getMouvements, getLots, createMouvement } from '@/lib/actions/stocks'
-import { getArticles } from '@/lib/actions/articles'
 
-const TYPES_ARTICLE = ['Tous', 'MP', 'PSF', 'PF', 'AC', 'CS']
+type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
 
-function KpiCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
+const ETAT_ICONS: Record<EtatLot, React.ReactNode> = {
+  Disponible: <Check className="size-3 shrink-0" />,
+  Dormant:    <Moon className="size-3 shrink-0" />,
+  Obsolete:   <AlertTriangle className="size-3 shrink-0" />,
+}
+
+const QC_ICONS: Record<StatutQC, React.ReactNode> = {
+  EnControle: <Clock className="size-3 shrink-0" />,
+  Libere:     <Check className="size-3 shrink-0" />,
+  Bloque:     <Lock className="size-3 shrink-0" />,
+}
+
+const LOT_COLUMNS: ResizableColumn[] = [
+  { id: 'numero',     defaultWidth: 130, minWidth: 100 },
+  { id: 'sku',        defaultWidth: 130, minWidth: 100 },
+  { id: 'designation',defaultWidth: null               },
+  { id: 'type',       defaultWidth: 80,  minWidth: 64  },
+  { id: 'quantite',   defaultWidth: 110, minWidth: 85  },
+  { id: 'pmp',        defaultWidth: 90,  minWidth: 70  },
+  { id: 'valeur',     defaultWidth: 130, minWidth: 100 },
+  { id: 'bcBa',       defaultWidth: 130, minWidth: 100 },
+  { id: 'reception',  defaultWidth: 130, minWidth: 100 },
+  { id: 'dateEntree', defaultWidth: 110, minWidth: 90  },
+  { id: 'dlc',        defaultWidth: 110, minWidth: 90  },
+  { id: 'origine',    defaultWidth: 110, minWidth: 85  },
+  { id: 'statutQC',   defaultWidth: 120, minWidth: 90  },
+  { id: 'etat',       defaultWidth: 140, minWidth: 110 },
+]
+const DESIGNATION_MIN = 180
+
+function StatCard({
+  label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon,
+}: {
+  label: string; value: string; sub: string
+  bgClass: string; iconBgClass: string; iconColorClass: string; icon: React.ElementType
+}) {
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-1">
-      <p className="text-xs text-muted-foreground font-medium">{label}</p>
-      <p className={`text-2xl font-bold ${color ?? 'text-foreground'}`}>{value}</p>
-      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+    <div className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBgClass}`}>
+            <Icon className={`size-[18px] ${iconColorClass}`} />
+          </div>
+          <span className="text-sm font-semibold">{label}</span>
+        </div>
+        <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 transition-colors">
+          <MoreHorizontal className="size-4" />
+        </button>
+      </div>
+      <div className="bg-white dark:bg-background rounded-xl px-4 py-3 shadow-sm">
+        <p className="text-3xl font-bold">{value}</p>
+        <p className="text-xs text-muted-foreground mt-1 leading-tight">{sub}</p>
+      </div>
     </div>
   )
 }
 
-function MouvIcon({ type }: { type: TypeMouvement }) {
-  if (type === 'Entree') return <ArrowDownToLine className="size-3.5 text-emerald-600" />
-  if (type === 'Sortie') return <ArrowUpFromLine className="size-3.5 text-red-600" />
-  if (type === 'Transfert') return <ArrowLeftRight className="size-3.5 text-blue-600" />
-  return <SlidersHorizontal className="size-3.5 text-purple-600" />
-}
-
-function fmt(n: number | null, locale: string) {
-  if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return formatNumber(n, locale)
-}
-
-function fmtVal(n: number | null, locale: string) {
-  if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return <span>{formatNumber(n, locale)} <span className="text-muted-foreground text-xs">F</span></span>
-}
-
 export default function StocksPage() {
-  const t = useTranslations('stocks')
-  const tCommon = useTranslations('common')
   const locale = useLocale()
+  const [lots] = useState<LotStock[]>(MOCK_LOTS)
+  const [search, setSearch] = useState('')
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
+  const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')
+  const [qcFilter, setQcFilter] = useState<StatutQC | 'all'>('all')
 
-  const [stocks, setStocks] = useState<StockLigne[]>([])
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
-  const [lots, setLots] = useState<Lot[]>([])
-  const [articleOptions, setArticleOptions] = useState<ArticleOption[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
+  const { widths, startResize, reset, isCustomized } = useResizableColumns(
+    'bluwa:cols:stocks',
+    LOT_COLUMNS,
+  )
+  const tableMinWidth = LOT_COLUMNS.reduce(
+    (sum, c) => sum + (c.defaultWidth == null ? DESIGNATION_MIN : (widths[c.id] ?? c.defaultWidth)),
+    0,
+  )
 
-  useEffect(() => {
-    Promise.all([getStocks(), getMouvements(), getLots(), getArticles()]).then(([s, m, l, a]) => {
-      setStocks(s)
-      setMouvements(m)
-      setLots(l)
-      setArticleOptions(
-        a.map((art) => ({ code: art.code, designation: art.designation, unite: art.uniteStock })),
-      )
-      setLoading(false)
+  const stats = useMemo(() => {
+    const valeurTotale = lots.reduce((s, l) => s + l.valeur, 0)
+    const dormants = lots.filter((l) => l.etat === 'Dormant').reduce((s, l) => s + l.valeur, 0)
+    const obsoletes = lots.filter((l) => l.etat === 'Obsolete').reduce((s, l) => s + l.valeur, 0)
+    const actifs = lots.filter((l) => l.etat === 'Disponible').length
+    const rotation = Math.round((actifs / lots.length) * 100)
+    return { valeurTotale, dormants, obsoletes, rotation }
+  }, [lots])
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    return lots.filter((l) => {
+      if (quickFilter !== 'all' && l.etat !== quickFilter) return false
+      if (typeFilter !== 'all' && l.type !== typeFilter) return false
+      if (qcFilter !== 'all' && l.statutQC !== qcFilter) return false
+      if (q) {
+        return (
+          l.numero.toLowerCase().includes(q)
+          || l.sku.toLowerCase().includes(q)
+          || l.designation.toLowerCase().includes(q)
+          || l.bcBa.toLowerCase().includes(q)
+          || l.reception.toLowerCase().includes(q)
+        )
+      }
+      return true
     })
-  }, [])
+  }, [lots, search, quickFilter, typeFilter])
 
-  const [searchStock, setSearchStock] = useState('')
-  const [filterType, setFilterType] = useState('Tous')
-  const [filterEntrepot, setFilterEntrepot] = useState('Tous')
-  const [filterStatut, setFilterStatut] = useState<'Tous' | StatutStock>('Tous')
+  const hasActiveFilters = search !== '' || quickFilter !== 'all' || typeFilter !== 'all' || qcFilter !== 'all'
 
-  const [searchMouv, setSearchMouv] = useState('')
-  const [filterMouvType, setFilterMouvType] = useState<'Tous' | TypeMouvement>('Tous')
-
-  const [filterLotStatut, setFilterLotStatut] = useState<'Tous' | StatutLot>('Tous')
-
-  // KPIs
-  const ruptures = stocks.filter((s) => s.statut === 'Rupture').length
-  const alertes = stocks.filter((s) => s.statut === 'Alerte').length
-  const valeurTotale = stocks.reduce((sum, s) => sum + (s.valeurStock ?? 0), 0)
-  const lotsExpiration = lots.filter((l) => l.statut === 'ProcheExpiration' || l.statut === 'Expire').length
-
-  const filteredStocks = useMemo(() => stocks.filter((s) => {
-    if (searchStock) {
-      const q = searchStock.toLowerCase()
-      if (!s.articleCode.toLowerCase().includes(q) && !s.articleDesignation.toLowerCase().includes(q)) return false
-    }
-    if (filterType !== 'Tous' && s.articleType !== filterType) return false
-    if (filterEntrepot !== 'Tous' && s.entrepot !== filterEntrepot) return false
-    if (filterStatut !== 'Tous' && s.statut !== filterStatut) return false
-    return true
-  }), [stocks, searchStock, filterType, filterEntrepot, filterStatut])
-
-  const filteredMouvements = useMemo(() => mouvements.filter((m) => {
-    if (searchMouv) {
-      const q = searchMouv.toLowerCase()
-      if (!m.articleCode.toLowerCase().includes(q) && !m.articleDesignation.toLowerCase().includes(q) && !m.lot.toLowerCase().includes(q)) return false
-    }
-    if (filterMouvType !== 'Tous' && m.type !== filterMouvType) return false
-    return true
-  }), [mouvements, searchMouv, filterMouvType])
-
-  const filteredLots = useMemo(() => lots.filter((l) => {
-    if (filterLotStatut !== 'Tous' && l.statut !== filterLotStatut) return false
-    return true
-  }), [lots, filterLotStatut])
-
-  const alertsAll = stocks.filter((s) => s.statut === 'Rupture' || s.statut === 'Alerte')
-
-  const MOUVEMENT_TYPE_LABELS: Record<TypeMouvement, string> = {
-    Entree: t('movements.types.Entree'),
-    Sortie: t('movements.types.Sortie'),
-    Transfert: t('movements.types.Transfert'),
-    Ajustement: t('movements.types.Ajustement'),
-  }
-
-  async function handleMouvement(data: Partial<Mouvement>): Promise<boolean> {
-    const created = await createMouvement(data)
-    if (created) setMouvements((prev) => [created, ...prev])
-    return !!created
+  function fmtK(n: number) {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
+    if (n >= 1000) return `${Math.round(n / 1000)}k`
+    return String(n)
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t('subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Stocks</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Gestion par Code/SKU ou Désignation · Liaison Commande → Réception → Lot · PMP · FIFO/FEFO
+          </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
-          <Package className="size-4" />
-          {t('newMovement')}
-        </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
-        <KpiCard
-          label="Valeur totale du stock"
-          value={`${formatNumber(valeurTotale, locale)} F`}
-          sub="Valorisation au PMP"
+      {/* Stat cards */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Valeur totale"
+          value={`${fmtK(stats.valeurTotale)} FCFA`}
+          sub={`${lots.length} lot${lots.length > 1 ? 's' : ''} · Valorisation PMP`}
+          bgClass="bg-blue-50 dark:bg-blue-950/30"
+          iconBgClass="bg-blue-100 dark:bg-blue-900/50"
+          iconColorClass="text-blue-600 dark:text-blue-400"
+          icon={Wallet}
         />
-        <KpiCard
-          label="Articles en rupture"
-          value={ruptures}
-          sub="Quantité = 0"
-          color={ruptures > 0 ? 'text-red-600' : undefined}
+        <StatCard
+          label="Stocks dormants"
+          value={`${fmtK(stats.dormants)} FCFA`}
+          sub="Sans sortie ≥ 60j"
+          bgClass="bg-orange-50 dark:bg-orange-950/30"
+          iconBgClass="bg-orange-100 dark:bg-orange-900/50"
+          iconColorClass="text-orange-600 dark:text-orange-400"
+          icon={Moon}
         />
-        <KpiCard
-          label="Articles en alerte"
-          value={alertes}
-          sub="Sous le stock de sécurité"
-          color={alertes > 0 ? 'text-amber-600' : undefined}
+        <StatCard
+          label="Obsolètes"
+          value={`${fmtK(stats.obsoletes)} FCFA`}
+          sub="À détruire / destocker"
+          bgClass="bg-red-50 dark:bg-red-950/30"
+          iconBgClass="bg-red-100 dark:bg-red-900/50"
+          iconColorClass="text-red-600 dark:text-red-400"
+          icon={AlertTriangle}
         />
-        <KpiCard
-          label="Lots à surveiller"
-          value={lotsExpiration}
-          sub="Expirés ou proche expiration"
-          color={lotsExpiration > 0 ? 'text-orange-600' : undefined}
+        <StatCard
+          label="Taux de rotation"
+          value={`${stats.rotation}%`}
+          sub="Stocks actifs"
+          bgClass="bg-emerald-50 dark:bg-emerald-950/30"
+          iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
+          iconColorClass="text-emerald-600 dark:text-emerald-400"
+          icon={TrendingUp}
         />
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="stocks">
-        <TabsList className="w-full">
-          <TabsTrigger value="stocks" className="flex-1">Stocks par article</TabsTrigger>
-          <TabsTrigger value="mouvements" className="flex-1">{t('tabs.movements')}</TabsTrigger>
-          <TabsTrigger value="lots" className="flex-1">Lots & péremptions</TabsTrigger>
-          <TabsTrigger value="alertes" className="flex-1 relative">
-            Alertes
-            {(ruptures + alertes) > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold w-4 h-4">
-                {ruptures + alertes}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      {/* Quick filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {([
+          { key: 'all',      label: 'Tous',      icon: Layers      },
+          { key: 'Dormant',  label: 'Dormants',  icon: Moon        },
+          { key: 'Obsolete', label: 'Obsolètes', icon: ShieldAlert },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setQuickFilter(key)}
+            className={`h-8 px-3.5 text-sm rounded-full font-medium border transition-colors inline-flex items-center gap-1.5 ${
+              quickFilter === key
+                ? 'bg-foreground text-background border-foreground'
+                : 'bg-background text-muted-foreground border-border hover:text-foreground'
+            }`}
+          >
+            <Icon className="size-3.5 shrink-0" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-        {/* ── STOCKS PAR ARTICLE ── */}
-        <TabsContent value="stocks" className="mt-4 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-48 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Rechercher un article…" value={searchStock} onChange={(e) => setSearchStock(e.target.value)} />
-            </div>
-            <div className="flex items-center bg-muted rounded-md p-0.5 gap-0.5">
-              {TYPES_ARTICLE.map((tp) => (
-                <button key={tp} onClick={() => setFilterType(tp)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${filterType === tp ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {tp}
-                </button>
-              ))}
-            </div>
-            <Select value={filterEntrepot} onValueChange={(v) => setFilterEntrepot(v ?? 'Tous')}>
-              <SelectTrigger className="w-52 h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Tous">Tous entrepôts</SelectItem>
-                {Object.entries(ENTREPOTS).map(([code, e]) => (
-                  <SelectItem key={code} value={code}>{e.nom}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
-              <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Tous">{tCommon('all')}</SelectItem>
-                {(['OK', 'Alerte', 'Rupture', 'Exces'] as StatutStock[]).map((s) => (
-                  <SelectItem key={s} value={s}>{STATUT_STOCK_LABELS[s]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground ml-auto">{filteredStocks.length} ligne{filteredStocks.length > 1 ? 's' : ''}</span>
-          </div>
-
-          <div className="rounded-lg border overflow-x-auto">
-            <div className="min-w-[1100px]">
-              <Table className="table-fixed w-full">
-                <TableHeader>
-                  <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="w-[130px] font-semibold text-xs tracking-wide">Code</TableHead>
-                    <TableHead className="font-semibold text-xs tracking-wide">Désignation</TableHead>
-                    <TableHead className="w-[60px] font-semibold text-xs tracking-wide">Type</TableHead>
-                    <TableHead className="w-[160px] font-semibold text-xs tracking-wide">{t('stockColumns.warehouse')}</TableHead>
-                    <TableHead className="w-[100px] font-semibold text-xs tracking-wide">Lot</TableHead>
-                    <TableHead className="w-[100px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.quantity')}</TableHead>
-                    <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.pmp')}</TableHead>
-                    <TableHead className="w-[120px] font-semibold text-xs tracking-wide text-right">{t('stockColumns.value')}</TableHead>
-                    <TableHead className="w-[90px] font-semibold text-xs tracking-wide text-center">{t('stockColumns.status')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                      <div className="flex items-center justify-center gap-2"><Loader2 className="size-4 animate-spin" />{t('loading')}</div>
-                    </TableCell></TableRow>
-                  ) : filteredStocks.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Aucun résultat.</TableCell></TableRow>
-                  ) : filteredStocks.map((s) => (
-                    <TableRow key={s.id} className={s.statut === 'Rupture' ? 'bg-red-50/50' : s.statut === 'Alerte' ? 'bg-amber-50/50' : ''}>
-                      <TableCell><span className="font-mono text-xs font-medium">{s.articleCode}</span></TableCell>
-                      <TableCell><span className="text-sm truncate block" title={s.articleDesignation}>{s.articleDesignation}</span></TableCell>
-                      <TableCell>
-                        <span className="inline-flex px-1.5 py-0.5 rounded text-xs font-bold bg-muted">{s.articleType}</span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{ENTREPOTS[s.entrepot]?.nom ?? s.entrepot}</TableCell>
-                      <TableCell><span className="font-mono text-xs">{s.lot}</span></TableCell>
-                      <TableCell className="text-right font-mono text-sm font-semibold">
-                        {formatNumber(s.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{s.unite}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(s.pmp, locale)}</TableCell>
-                      <TableCell className="text-right text-sm">{fmtVal(s.valeurStock, locale)}</TableCell>
-                      <TableCell className="text-center">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_STOCK_COLORS[s.statut]}`}>
-                          {STATUT_STOCK_LABELS[s.statut]}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── MOUVEMENTS ── */}
-        <TabsContent value="mouvements" className="mt-4 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-48 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Article, lot…" value={searchMouv} onChange={(e) => setSearchMouv(e.target.value)} />
-            </div>
-            <div className="flex items-center bg-muted rounded-md p-0.5 gap-0.5">
-              {(['Tous', 'Entree', 'Sortie', 'Transfert', 'Ajustement'] as const).map((tp) => (
-                <button key={tp} onClick={() => setFilterMouvType(tp as typeof filterMouvType)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${filterMouvType === tp ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {tp === 'Tous' ? tCommon('all') : MOUVEMENT_TYPE_LABELS[tp as TypeMouvement]}
-                </button>
-              ))}
-            </div>
-            <span className="text-sm text-muted-foreground ml-auto">{filteredMouvements.length} mouvement{filteredMouvements.length > 1 ? 's' : ''}</span>
-          </div>
-
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[110px]">{t('movements.columns.date')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[120px]">{t('movements.columns.type')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('movements.columns.article')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[130px]">{t('movements.columns.lot')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide w-[100px]">{t('movements.columns.quantity')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[130px]">{t('movements.columns.reference')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('movements.columns.reason')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide w-[110px]">{t('movements.columns.operator')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">
-                    <div className="flex items-center justify-center gap-2"><Loader2 className="size-4 animate-spin" />{t('loading')}</div>
-                  </td></tr>
-                ) : filteredMouvements.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">{t('movements.empty')}</td></tr>
-                ) : filteredMouvements.map((m) => (
-                  <tr key={m.id} className="border-t hover:bg-muted/30">
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{m.date}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <MouvIcon type={m.type} />
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${MOUVEMENT_COLORS[m.type]}`}>
-                          {MOUVEMENT_TYPE_LABELS[m.type]}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-muted-foreground mr-1">{m.articleCode}</span>
-                      <span className="text-sm">{m.articleDesignation}</span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">{m.lot}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold">
-                      {m.type === 'Ajustement' && m.quantite > 0 ? '+' : ''}{formatNumber(m.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{m.unite}</span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">{m.reference || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{m.motif || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm">{m.operateur}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-
-        {/* ── LOTS & PÉREMPTIONS ── */}
-        <TabsContent value="lots" className="mt-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center bg-muted rounded-md p-0.5 gap-0.5">
-              {(['Tous', 'OK', 'Quarantaine', 'ProcheExpiration', 'Expire'] as const).map((s) => (
-                <button key={s} onClick={() => setFilterLotStatut(s as typeof filterLotStatut)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${filterLotStatut === s ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                  {s === 'Tous' ? tCommon('all') : STATUT_LOT_LABELS[s as StatutLot]}
-                </button>
-              ))}
-            </div>
-            <span className="text-sm text-muted-foreground ml-auto">{filteredLots.length} lot{filteredLots.length > 1 ? 's' : ''}</span>
-          </div>
-
-          <div className="rounded-lg border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.lot')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.article')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.location')}</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.quantity')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.reception')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.expiry')}</th>
-                  <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.daysLeft')}</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">
-                    <div className="flex items-center justify-center gap-2"><Loader2 className="size-4 animate-spin" />{t('loading')}</div>
-                  </td></tr>
-                ) : filteredLots.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">Aucun lot.</td></tr>
-                ) : filteredLots.map((l) => (
-                  <tr key={l.id} className={`border-t ${l.statut === 'Expire' ? 'bg-red-50/50' : l.statut === 'ProcheExpiration' ? 'bg-orange-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-mono text-xs font-medium">{l.lotCode}</td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <span className="font-mono text-xs text-muted-foreground">{l.articleCode}</span>
-                        <p className="text-sm">{l.articleDesignation}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{ENTREPOTS[l.entrepot]?.nom ?? l.entrepot} - {l.emplacement}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold">
-                      {formatNumber(l.quantite, locale)} <span className="text-muted-foreground font-normal text-xs">{l.unite}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-muted-foreground text-xs">{l.dateReception}</td>
-                    <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption ?? 'N/A'}</td>
-                    <td className="px-4 py-3 text-center">
-                      {l.joursRestants === null ? (
-                        <span className="text-muted-foreground">N/A</span>
-                      ) : (
-                        <span className={`font-semibold ${l.joursRestants < 0 ? 'text-red-600' : l.joursRestants < 90 ? 'text-orange-600' : 'text-emerald-600'}`}>
-                          {l.joursRestants < 0 ? `${Math.abs(l.joursRestants)}j dépassé` : `${l.joursRestants}j`}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_LOT_COLORS[l.statut]}`}>
-                        {STATUT_LOT_LABELS[l.statut]}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-
-        {/* ── ALERTES ── */}
-        <TabsContent value="alertes" className="mt-4 space-y-4">
-          {alertsAll.length === 0 && lotsExpiration === 0 ? (
-            <div className="rounded-lg border p-12 text-center text-muted-foreground">
-              Aucune alerte active.
-            </div>
-          ) : (
-            <>
-              {alertsAll.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="size-4 text-amber-500" />
-                    <h3 className="font-semibold text-sm">Alertes de stock ({alertsAll.length})</h3>
-                  </div>
-                  <div className="rounded-lg border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/40">
-                        <tr>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.article')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.warehouse')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.quantity')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('stockColumns.safetyStock')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">Pt. commande</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {alertsAll.map((s) => (
-                          <tr key={s.id} className={`border-t ${s.statut === 'Rupture' ? 'bg-red-50/60' : 'bg-amber-50/40'}`}>
-                            <td className="px-4 py-3">
-                              <span className="font-mono text-xs text-muted-foreground mr-1">{s.articleCode}</span>
-                              <span>{s.articleDesignation}</span>
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">{ENTREPOTS[s.entrepot]?.nom ?? s.entrepot}</td>
-                            <td className="px-4 py-3 text-right font-mono font-bold text-red-600">
-                              {formatNumber(s.quantite, locale)} <span className="text-xs font-normal">{s.unite}</span>
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.stockSecurite, locale)}</td>
-                            <td className="px-4 py-3 text-right font-mono text-muted-foreground">{fmt(s.pointCommande, locale)}</td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_STOCK_COLORS[s.statut]}`}>
-                                {STATUT_STOCK_LABELS[s.statut]}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {lotsExpiration > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="size-4 text-orange-500" />
-                    <h3 className="font-semibold text-sm">Lots à surveiller ({lotsExpiration})</h3>
-                  </div>
-                  <div className="rounded-lg border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/40">
-                        <tr>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.lot')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.article')}</th>
-                          <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.quantity')}</th>
-                          <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.expiry')}</th>
-                          <th className="text-center px-4 py-2.5 font-semibold text-xs tracking-wide">{t('lotsColumns.daysLeft')}</th>
-                          <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{tCommon('status')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {lots.filter((l) => l.statut === 'ProcheExpiration' || l.statut === 'Expire').map((l) => (
-                          <tr key={l.id} className={`border-t ${l.statut === 'Expire' ? 'bg-red-50/60' : 'bg-orange-50/40'}`}>
-                            <td className="px-4 py-3 font-mono text-xs">{l.lotCode}</td>
-                            <td className="px-4 py-3">{l.articleDesignation}</td>
-                            <td className="px-4 py-3 text-right font-mono">{formatNumber(l.quantite, locale)} {l.unite}</td>
-                            <td className="px-4 py-3 text-center text-xs font-medium">{l.datePeremption}</td>
-                            <td className="px-4 py-3 text-center font-semibold text-red-600">
-                              {l.joursRestants !== null && l.joursRestants < 0
-                                ? `${Math.abs(l.joursRestants)}j dépassé`
-                                : `${l.joursRestants}j`}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_LOT_COLORS[l.statut]}`}>
-                                {STATUT_LOT_LABELS[l.statut]}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
+      {/* Search + filters */}
+      <div className="rounded-lg border bg-muted/20 px-4 py-3 flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground shrink-0 flex items-center gap-1.5">
+          <Search className="size-3.5" /> Filtrer par Code/SKU ou Désignation
+        </span>
+        <div className="flex-1 min-w-52">
+          <input
+            type="text"
+            placeholder="ex : MP-FAR-001 ou Farine…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
+          />
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as TypeArticle | 'all')}
+          className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+        >
+          <option value="all">Tous types</option>
+          <option value="MP">MP · Matière première</option>
+          <option value="AC">AC · Art. conditionnement</option>
+          <option value="PF">PF · Produit fini</option>
+          <option value="PE">PE · En-cours</option>
+        </select>
+        <select
+          value={qcFilter}
+          onChange={(e) => setQcFilter(e.target.value as StatutQC | 'all')}
+          className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+        >
+          <option value="all">Tous statuts QC</option>
+          <option value="Libere">Libéré</option>
+          <option value="EnControle">En contrôle</option>
+          <option value="Bloque">Bloqué</option>
+        </select>
+        <div className="flex items-center gap-2 ml-auto">
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setSearch(''); setQuickFilter('all'); setTypeFilter('all'); setQcFilter('all') }}
+              className="h-7 px-2.5 text-xs rounded-md flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <X className="size-3" />
+              Réinitialiser
+            </button>
           )}
-        </TabsContent>
-      </Tabs>
+          <span className="text-xs text-muted-foreground">
+            {filtered.length} lot{filtered.length !== 1 ? 's' : ''}
+          </span>
+          {isCustomized && (
+            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground" onClick={reset}>
+              <RotateCcw className="size-3.5" />
+              Réinitialiser les colonnes
+            </Button>
+          )}
+        </div>
+      </div>
 
-      <MouvementModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleMouvement} articles={articleOptions} />
+      {/* Table */}
+      <div className="rounded-lg border overflow-x-auto">
+        <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
+          <colgroup>
+            {LOT_COLUMNS.map((c) => (
+              <col key={c.id} style={c.defaultWidth == null ? undefined : { width: widths[c.id] }} />
+            ))}
+          </colgroup>
+          <thead>
+            <tr className="bg-muted/40 border-b">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                N° Lot<ColumnResizer columnId="numero" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Code/SKU<ColumnResizer columnId="sku" onStart={startResize} />
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Désignation</th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Type<ColumnResizer columnId="type" onStart={startResize} />
+              </th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Qté<ColumnResizer columnId="quantite" onStart={startResize} />
+              </th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                PMP<ColumnResizer columnId="pmp" onStart={startResize} />
+              </th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Valeur<ColumnResizer columnId="valeur" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                BC / BA<ColumnResizer columnId="bcBa" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Réc.<ColumnResizer columnId="reception" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Entrée<ColumnResizer columnId="dateEntree" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                DLC<ColumnResizer columnId="dlc" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Origine<ColumnResizer columnId="origine" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                Statut QC<ColumnResizer columnId="statutQC" onStart={startResize} />
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">État</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={14} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  Aucun lot ne correspond aux filtres.
+                </td>
+              </tr>
+            ) : filtered.map((l) => (
+              <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
+
+                <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{l.numero}</td>
+
+                <td className="px-4 py-3 truncate">
+                  <span className="font-mono text-xs text-blue-600 hover:underline cursor-pointer">{l.sku}</span>
+                </td>
+
+                <td className="px-4 py-3 text-sm truncate" title={l.designation}>{l.designation}</td>
+
+                <td className="px-4 py-3 truncate">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${TYPE_COLORS[l.type]}`}
+                    title={TYPE_LABELS[l.type]}
+                  >
+                    {l.type}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 text-right font-mono text-sm truncate">
+                  {formatNumber(l.quantite, locale)}{' '}
+                  <span className="text-muted-foreground text-xs">{l.unite}</span>
+                </td>
+
+                <td className="px-4 py-3 text-right font-mono text-sm truncate">
+                  {formatNumber(l.pmp, locale)}
+                </td>
+
+                <td className="px-4 py-3 text-right font-mono text-sm truncate">
+                  {formatNumber(l.valeur, locale)}
+                </td>
+
+                <td className="px-4 py-3 font-mono text-xs truncate">{l.bcBa}</td>
+
+                <td className="px-4 py-3 font-mono text-xs truncate">{l.reception}</td>
+
+                <td className="px-4 py-3 font-mono text-xs truncate">{l.dateEntree}</td>
+
+                <td className="px-4 py-3 font-mono text-xs truncate">{l.dlc}</td>
+
+                <td className="px-4 py-3 truncate">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {l.origine === 'Formel'
+                      ? <FileText className="size-3.5 shrink-0 text-slate-500" />
+                      : <Leaf className="size-3.5 shrink-0 text-emerald-500" />}
+                    {l.origine.toLowerCase()}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 overflow-hidden">
+                  {l.statutQC ? (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_QC_COLORS[l.statutQC]}`}>
+                      {QC_ICONS[l.statutQC]}
+                      {STATUT_QC_LABELS[l.statutQC]}
+                    </span>
+                  ) : null}
+                </td>
+
+                <td className="px-4 py-3 overflow-hidden">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${ETAT_COLORS[l.etat]}`}>
+                    {ETAT_ICONS[l.etat]}
+                    {ETAT_LABELS[l.etat]}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

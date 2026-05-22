@@ -14,6 +14,7 @@ import {
   Users,
   ShoppingCart,
   ClipboardList,
+  Warehouse,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -108,6 +109,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       label: t('sourcingSupply'),
       items: [
         { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList, disabled: false },
+        { title: t('stocks'), url: '/stocks', icon: Warehouse, disabled: false },
       ],
     },
     {
@@ -120,7 +122,6 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       label: t('production'),
       items: [
         { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
-        { title: t('stocks'), url: '/stocks', icon: Boxes, disabled: false },
         { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
         { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
       ],
