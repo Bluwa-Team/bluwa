@@ -346,11 +346,13 @@ export default function StocksPage() {
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.pmp, locale)}
+                  {formatNumber(l.pmp, locale)}{' '}
+                  <span className="text-muted-foreground text-xs">FCFA</span>
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.valeur, locale)}
+                  {formatNumber(l.valeur, locale)}{' '}
+                  <span className="text-muted-foreground text-xs">FCFA</span>
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs truncate">{l.bcBa}</td>

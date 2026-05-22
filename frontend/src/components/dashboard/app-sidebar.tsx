@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   ClipboardList,
   Warehouse,
+  Calculator,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -110,6 +111,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       items: [
         { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList, disabled: false },
         { title: t('stocks'), url: '/stocks', icon: Warehouse, disabled: false },
+        { title: t('mrp'), url: '/mrp', icon: Calculator, disabled: false },
       ],
     },
     {

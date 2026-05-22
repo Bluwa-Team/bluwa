@@ -45,7 +45,8 @@
     "logistique": "Logistique",
     "reception": "Réception",
     "sourcingSupply": "Sourcing & Supply",
-    "approvisionnement": "Approvisionnement"
+    "approvisionnement": "Approvisionnement",
+    "mrp": "MRP"
   },
   "header": {
     "aiAgent": "Agent IA",
