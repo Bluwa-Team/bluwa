@@ -300,20 +300,22 @@ export default function MrpPage() {
 
                   {/* Action */}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {p.besoinNet > 0 ? (
+                        <button className="flex-1 text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap text-center">
+                          {p.nbOP} OP → OF · {formatNumber(p.nbOP * p.tailleLot, locale)} {p.unite}
+                        </button>
+                      ) : (
+                        <span className="flex-1 text-xs text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full text-center whitespace-nowrap">
+                          Pas de besoin
+                        </span>
+                      )}
                       <button
                         title="Paramètres du lot"
-                        className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
                       >
                         <Settings className="size-3.5" />
                       </button>
-                      {p.besoinNet > 0 ? (
-                        <button className="text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap">
-                          Convertir {p.nbOP} OP → OF · {formatNumber(p.nbOP * p.tailleLot, locale)} {p.unite}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Pas de besoin</span>
-                      )}
                     </div>
                   </td>
                 </tr>
