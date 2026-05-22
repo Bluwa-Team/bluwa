@@ -135,7 +135,7 @@ export default function MrpPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">MRP — Material Requirements Planning</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">MRP · Material Requirements Planning</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Stocks + Commandes + Prévisions → Ordres Planifiés (OP) sur 6 mois → conversion en OF par la production
         </p>
@@ -205,7 +205,7 @@ export default function MrpPage() {
             <div>
               <p className="font-semibold flex items-center gap-2">
                 <span className="text-muted-foreground">①</span>
-                Demande PF → Ordres Planifiés (OP) — M+0
+                Demande PF → Ordres Planifiés (OP) · M+0
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Le MRP génère des OP. La conversion OP → OF est réalisée par le responsable production dans le module Ordres de Fabrication.
@@ -394,7 +394,7 @@ export default function MrpPage() {
           <div className="px-6 py-4 border-b">
             <p className="font-semibold flex items-center gap-2">
               <CalendarDays className="size-4 text-muted-foreground shrink-0" />
-              Horizon 6 mois (glissant) — Composants à approvisionner
+              Horizon 6 mois (glissant) · Composants à approvisionner
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Projection mensuelle des besoins composants (BOM × demande PF). Tient compte du{' '}
@@ -430,7 +430,7 @@ export default function MrpPage() {
                       {h.mois.map((v, i) => (
                         <td key={i} className="px-4 py-3 text-right font-mono text-sm">
                           {v === 0
-                            ? <span className="text-muted-foreground">—</span>
+                            ? <span className="text-muted-foreground text-base leading-none">·</span>
                             : <span className="text-red-600 font-medium">{v} <span className="text-xs">{h.unite}</span></span>
                           }
                         </td>
@@ -453,7 +453,7 @@ export default function MrpPage() {
           <div className="px-6 py-4 border-b">
             <p className="font-semibold flex items-center gap-2">
               <CalendarDays className="size-4 text-muted-foreground shrink-0" />
-              Horizon 6 mois (glissant) — Ordres Planifiés (OP) par PF
+              Horizon 6 mois (glissant) · Ordres Planifiés (OP) par PF
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Projection mensuelle (demande, stock de sécurité, taille de lot). La responsable production sélectionne les OP à{' '}
