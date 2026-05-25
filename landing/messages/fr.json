@@ -1,0 +1,170 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "problem": "Notre approche",
+    "pricing": "Tarifs",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "login": "Se connecter",
+    "cta": "Demander une démo"
+  },
+  "hero": {
+    "badge": "Pensé pour l’Afrique de l’Ouest",
+    "title": "L’ERP des PME agro-alimentaires africaines",
+    "subtitle": "Bluwa unifie votre production, vos stocks et votre planification avec un copilote IA qui parle la langue de vos dirigeants. Déployé en quelques jours, pas en mois.",
+    "primaryCta": "Demander une démo",
+    "secondaryCta": "Voir une démo en 2 min",
+    "trust": "Conçu avec des transformateurs au Togo, Bénin, Côte d’Ivoire et Sénégal"
+  },
+  "problem": {
+    "eyebrow": "Le problème",
+    "title": "Tableurs partout, visibilité nulle part",
+    "subtitle": "Les ERP classiques sont chers, lents à déployer et inadaptés aux opérations terrain africaines. Les PME agro perdent de l’argent sur chaque lot.",
+    "points": [
+      {
+        "title": "Stocks invisibles",
+        "body": "Matières premières périssables, écarts inventaires, ruptures imprévues : pas de visibilité temps réel sur les entrepôts ni sur le terrain."
+      },
+      {
+        "title": "Planification au feeling",
+        "body": "Pas de MRP. Les ordres de production sont calés sur des estimations. Résultat : surproduction, manquants, et marges qui fondent."
+      },
+      {
+        "title": "Dirigeants sans données",
+        "body": "Les rapports arrivent en retard, agrégés, illisibles. Les décisions stratégiques se prennent dans le brouillard."
+      }
+    ],
+    "solutionEyebrow": "Notre réponse",
+    "solutionTitle": "Un ERP léger, un copilote IA, vos dirigeants au centre",
+    "solutionBody": "Bluwa est pensé pour les opérations agro-alimentaires d’Afrique de l’Ouest. Multi-sites, multi-langues, multi-devises, et une IA qui répond aux questions des dirigeants en langage naturel."
+  },
+  "features": {
+    "eyebrow": "Fonctionnalités",
+    "title": "Toute la chaîne, dans une seule plateforme",
+    "subtitle": "Des modules conçus pour la réalité des PME agro : du champ à la livraison.",
+    "items": [
+      {
+        "title": "MRP intelligent",
+        "body": "Calcul automatique des besoins matières sur 6 mois glissants, à partir des prévisions et des nomenclatures."
+      },
+      {
+        "title": "Stocks multi-sites",
+        "body": "Entrepôts, points de vente, dépôts intermédiaires : visibilité unifiée, traçabilité lots et péremptions."
+      },
+      {
+        "title": "Production & OF",
+        "body": "Ordres de fabrication, suivi rendement, déclaration de production simple depuis le terrain."
+      },
+      {
+        "title": "Approvisionnement",
+        "body": "Suggestions d’achat, suivi fournisseurs, intégration des prix marchés locaux."
+      },
+      {
+        "title": "Copilote IA dirigeants",
+        "body": "Posez vos questions en français ou en langue locale. Le copilote interroge vos données et répond avec des graphiques."
+      },
+      {
+        "title": "Mobile-first & offline",
+        "body": "Saisie depuis le terrain même sans réseau. Synchronisation dès que la connexion revient."
+      }
+    ]
+  },
+  "pricing": {
+    "eyebrow": "Tarifs",
+    "title": "Une tarification qui suit votre croissance",
+    "subtitle": "Pas de coûts de licence par utilisateur. Vous payez pour ce que vous produisez.",
+    "billing": "Facturation mensuelle, sans engagement",
+    "plans": [
+      {
+        "name": "Démarrage",
+        "price": "49 000",
+        "currency": "FCFA / mois",
+        "tagline": "Pour une première unité de production",
+        "features": [
+          "1 site, jusqu’à 5 utilisateurs",
+          "Stocks, production, achats",
+          "Tableaux de bord essentiels",
+          "Support email"
+        ],
+        "cta": "Commencer"
+      },
+      {
+        "name": "Croissance",
+        "price": "149 000",
+        "currency": "FCFA / mois",
+        "tagline": "Pour les PME multi-sites",
+        "features": [
+          "Jusqu’à 5 sites, utilisateurs illimités",
+          "MRP complet + prévisions",
+          "Copilote IA dirigeants",
+          "Support prioritaire WhatsApp"
+        ],
+        "highlighted": true,
+        "cta": "Demander une démo"
+      },
+      {
+        "name": "Entreprise",
+        "price": "Sur devis",
+        "currency": "",
+        "tagline": "Groupes multi-pays",
+        "features": [
+          "Sites illimités, multi-devises",
+          "Intégrations sur mesure",
+          "SSO, audit, conformité",
+          "Customer Success dédié"
+        ],
+        "cta": "Nous contacter"
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Vos questions, nos réponses",
+    "items": [
+      {
+        "q": "Combien de temps pour déployer Bluwa ?",
+        "a": "Entre 5 et 15 jours selon la taille de votre opération. Nous accompagnons l’import de vos données et la formation de vos équipes."
+      },
+      {
+        "q": "Bluwa fonctionne-t-il hors-ligne ?",
+        "a": "Oui. Les applications terrain (production, inventaire) fonctionnent sans connexion et se synchronisent automatiquement."
+      },
+      {
+        "q": "Mes données sont-elles hébergées en Afrique ?",
+        "a": "Nous proposons un hébergement régional pour les clients qui le souhaitent, en plus de l’hébergement européen par défaut."
+      },
+      {
+        "q": "Quelles intégrations existent déjà ?",
+        "a": "Mobile money (Wave, Orange Money, MTN), Sage, Excel, et des connecteurs API pour vos outils existants."
+      },
+      {
+        "q": "Puis-je essayer avant d’acheter ?",
+        "a": "Oui, nous proposons un pilote de 30 jours sur un site, à tarif réduit, sans engagement."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Parlons de votre opération",
+    "subtitle": "Décrivez-nous votre activité en quelques lignes. Nous revenons vers vous sous 24 h ouvrées.",
+    "name": "Nom complet",
+    "email": "Email professionnel",
+    "company": "Entreprise",
+    "message": "Votre message",
+    "submit": "Envoyer la demande",
+    "or": "ou écrivez-nous à",
+    "emailAddress": "hello@bluwa.app"
+  },
+  "footer": {
+    "tagline": "L’ERP agro-alimentaire pensé pour l’Afrique de l’Ouest.",
+    "product": "Produit",
+    "company": "Entreprise",
+    "legal": "Légal",
+    "about": "À propos",
+    "careers": "Carrières",
+    "blog": "Blog",
+    "terms": "Conditions",
+    "privacy": "Confidentialité",
+    "rights": "Tous droits réservés."
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "nav": {
+    "features": "Features",
+    "problem": "Our approach",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "login": "Sign in",
+    "cta": "Book a demo"
+  },
+  "hero": {
+    "badge": "Built for West Africa",
+    "title": "The ERP for African agri-food SMBs",
+    "subtitle": "Bluwa unifies production, inventory and planning with an AI copilot that speaks your leadership team’s language. Deployed in days, not months.",
+    "primaryCta": "Book a demo",
+    "secondaryCta": "Watch a 2-min demo",
+    "trust": "Designed with processors in Togo, Benin, Côte d’Ivoire and Senegal"
+  },
+  "problem": {
+    "eyebrow": "The problem",
+    "title": "Spreadsheets everywhere, visibility nowhere",
+    "subtitle": "Traditional ERPs are expensive, slow to deploy and disconnected from African field operations. Agri-food SMBs lose money on every batch.",
+    "points": [
+      {
+        "title": "Invisible stock",
+        "body": "Perishable raw materials, inventory gaps, unexpected stockouts · no real-time visibility across warehouses and the field."
+      },
+      {
+        "title": "Gut-feel planning",
+        "body": "No MRP. Production orders rely on guesswork. The result: overproduction, shortages, and shrinking margins."
+      },
+      {
+        "title": "Leaders without data",
+        "body": "Reports arrive late, aggregated, unreadable. Strategic decisions are made in the dark."
+      }
+    ],
+    "solutionEyebrow": "Our response",
+    "solutionTitle": "A lightweight ERP, an AI copilot, leaders at the center",
+    "solutionBody": "Bluwa is built for West African agri-food operations. Multi-site, multi-language, multi-currency, with an AI that answers leadership questions in natural language."
+  },
+  "features": {
+    "eyebrow": "Features",
+    "title": "Your full value chain, in one platform",
+    "subtitle": "Modules designed for the reality of agri-food SMBs: from field to delivery.",
+    "items": [
+      {
+        "title": "Smart MRP",
+        "body": "Automatic material requirements over a rolling 6 months, based on forecasts and BOMs."
+      },
+      {
+        "title": "Multi-site stock",
+        "body": "Warehouses, retail points, intermediate depots: unified view, batch and expiry tracking."
+      },
+      {
+        "title": "Production & WOs",
+        "body": "Work orders, yield tracking, simple production declarations from the floor."
+      },
+      {
+        "title": "Procurement",
+        "body": "Purchase suggestions, supplier tracking, local market price integration."
+      },
+      {
+        "title": "Leadership AI copilot",
+        "body": "Ask in French or a local language. The copilot queries your data and responds with charts."
+      },
+      {
+        "title": "Mobile-first & offline",
+        "body": "Field data entry without network. Syncs automatically when connection returns."
+      }
+    ]
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "Pricing that grows with you",
+    "subtitle": "No per-user license fees. You pay for what you produce.",
+    "billing": "Monthly billing, no commitment",
+    "plans": [
+      {
+        "name": "Starter",
+        "price": "49,000",
+        "currency": "XOF / month",
+        "tagline": "For a first production unit",
+        "features": [
+          "1 site, up to 5 users",
+          "Stock, production, purchasing",
+          "Essential dashboards",
+          "Email support"
+        ],
+        "cta": "Get started"
+      },
+      {
+        "name": "Growth",
+        "price": "149,000",
+        "currency": "XOF / month",
+        "tagline": "For multi-site SMBs",
+        "features": [
+          "Up to 5 sites, unlimited users",
+          "Full MRP + forecasting",
+          "Leadership AI copilot",
+          "WhatsApp priority support"
+        ],
+        "highlighted": true,
+        "cta": "Book a demo"
+      },
+      {
+        "name": "Enterprise",
+        "price": "Custom",
+        "currency": "",
+        "tagline": "Multi-country groups",
+        "features": [
+          "Unlimited sites, multi-currency",
+          "Custom integrations",
+          "SSO, audit, compliance",
+          "Dedicated Customer Success"
+        ],
+        "cta": "Contact us"
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Your questions, answered",
+    "items": [
+      {
+        "q": "How long does it take to deploy Bluwa?",
+        "a": "Between 5 and 15 days depending on the size of your operation. We support data import and team training."
+      },
+      {
+        "q": "Does Bluwa work offline?",
+        "a": "Yes. Field apps (production, inventory) work without connectivity and sync automatically."
+      },
+      {
+        "q": "Is my data hosted in Africa?",
+        "a": "Regional hosting is available on demand, in addition to the default European hosting."
+      },
+      {
+        "q": "Which integrations are available?",
+        "a": "Mobile money (Wave, Orange Money, MTN), Sage, Excel, plus API connectors for your existing tools."
+      },
+      {
+        "q": "Can I try before I buy?",
+        "a": "Yes, we offer a 30-day pilot on a single site, at a reduced rate, with no commitment."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Let’s talk about your operation",
+    "subtitle": "Tell us about your business in a few lines. We get back to you within 24 business hours.",
+    "name": "Full name",
+    "email": "Work email",
+    "company": "Company",
+    "message": "Your message",
+    "submit": "Send request",
+    "or": "or email us at",
+    "emailAddress": "hello@bluwa.app"
+  },
+  "footer": {
+    "tagline": "The agri-food ERP built for West Africa.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "about": "About",
+    "careers": "Careers",
+    "blog": "Blog",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "rights": "All rights reserved."
+  }
+}
