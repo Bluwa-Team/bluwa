@@ -16,6 +16,11 @@ import {
   ClipboardList,
   Warehouse,
   Calculator,
+  Factory,
+  MonitorPlay,
+  FlaskConical,
+  GitBranch,
+  FileText,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -123,9 +128,18 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('production'),
       items: [
+        { title: t('ordresFabrication'), url: '/production',     icon: Factory,     disabled: false },
+        { title: t('mes'),              url: '/production/mes', icon: MonitorPlay, disabled: false },
         { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
-        { title: t('traceability'), url: '/tracabilite', icon: ScanLine, disabled: true },
-        { title: t('nonConformities'), url: '/non-conformites', icon: AlertTriangle, disabled: true },
+      ],
+    },
+    {
+      label: t('qualite'),
+      items: [
+        { title: t('liberationLots'),    url: '/qualite',                       icon: FlaskConical,  disabled: false },
+        { title: t('nonConformitesQA'),  url: '/qualite/non-conformites',       icon: AlertTriangle, disabled: false },
+        { title: t('genealogie'),        url: '/qualite/genealogie',            icon: GitBranch,     disabled: false },
+        { title: t('gedQualite'),        url: '/qualite/ged',                   icon: FileText,      disabled: false },
       ],
     },
   ]

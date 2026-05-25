@@ -51,6 +51,7 @@ const EMPTY_FORM = {
   appro: 'Achete' as ArticleAppro,
   gestionLot: true,
   delaiControle: '',
+  seuilAlertePeremption: '',
   protocoleControle: '',
 }
 
@@ -95,6 +96,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         appro: article.appro,
         gestionLot: article.gestionLot,
         delaiControle: article.delaiControle?.toString() ?? '',
+        seuilAlertePeremption: article.seuilAlertePeremption?.toString() ?? '',
         protocoleControle: article.protocoleControle ?? '',
       })
     } else {
@@ -148,6 +150,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
           stockSecurite: form.stockSecurite ? parseFloat(form.stockSecurite) : null,
           pointCommande: form.pointCommande ? parseFloat(form.pointCommande) : null,
           delaiControle: form.delaiControle ? parseInt(form.delaiControle) : null,
+          seuilAlertePeremption: form.seuilAlertePeremption ? parseInt(form.seuilAlertePeremption) : null,
         })
         if (ok) {
           onClose()
@@ -345,9 +348,6 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                     <Field label={t('modal.fields.volume')}>
                       <Input type="number" value={form.volumeUnitaire} onChange={(e) => set('volumeUnitaire', e.target.value)} placeholder="0.00" />
                     </Field>
-                    <Field label={t('modal.fields.shelfLife')}>
-                      <Input type="number" value={form.dureeVie} onChange={(e) => set('dureeVie', e.target.value)} placeholder="" />
-                    </Field>
                   </div>
                 </div>
 
@@ -387,21 +387,47 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         Gestion par lot
                       </Label>
                     </div>
-                    <Field label="Délai de contrôle (jours)">
-                      <Input
-                        type="number"
-                        value={form.delaiControle}
-                        onChange={(e) => set('delaiControle', e.target.value)}
-                        placeholder="0"
-                        disabled={!form.gestionLot}
-                      />
-                    </Field>
                     <Field label="Protocole de contrôle">
                       <Input
                         value={form.protocoleControle}
                         onChange={(e) => set('protocoleControle', e.target.value)}
                         placeholder="Ex: PC-MP-001"
                         disabled={!form.gestionLot}
+                      />
+                    </Field>
+                    <div /> {/* spacer */}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Paramètres industriels & qualité</h3>
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                    <Field label="Délai de libération qualité (j)">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={form.delaiControle}
+                        onChange={(e) => set('delaiControle', e.target.value)}
+                        placeholder="Ex : 3"
+                        disabled={!form.gestionLot}
+                      />
+                    </Field>
+                    <Field label="Durée de vie théorique (j)">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={form.dureeVie}
+                        onChange={(e) => set('dureeVie', e.target.value)}
+                        placeholder="Ex : 365"
+                      />
+                    </Field>
+                    <Field label="Seuil d'alerte péremption (j)">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={form.seuilAlertePeremption}
+                        onChange={(e) => set('seuilAlertePeremption', e.target.value)}
+                        placeholder="Ex : 30"
                       />
                     </Field>
                   </div>

@@ -36,7 +36,7 @@ const QC_ICONS: Record<StatutQC, React.ReactNode> = {
 const LOT_COLUMNS: ResizableColumn[] = [
   { id: 'numero',     defaultWidth: 130, minWidth: 100 },
   { id: 'sku',        defaultWidth: 130, minWidth: 100 },
-  { id: 'designation',defaultWidth: null               },
+  { id: 'designation',defaultWidth: 200, minWidth: 160  },
   { id: 'type',       defaultWidth: 80,  minWidth: 64  },
   { id: 'quantite',   defaultWidth: 110, minWidth: 85  },
   { id: 'pmp',        defaultWidth: 90,  minWidth: 70  },
@@ -49,7 +49,6 @@ const LOT_COLUMNS: ResizableColumn[] = [
   { id: 'statutQC',   defaultWidth: 120, minWidth: 90  },
   { id: 'etat',       defaultWidth: 140, minWidth: 110 },
 ]
-const DESIGNATION_MIN = 180
 
 function StatCard({
   label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon,
@@ -91,7 +90,7 @@ export default function StocksPage() {
     LOT_COLUMNS,
   )
   const tableMinWidth = LOT_COLUMNS.reduce(
-    (sum, c) => sum + (c.defaultWidth == null ? DESIGNATION_MIN : (widths[c.id] ?? c.defaultWidth)),
+    (sum, c) => sum + (widths[c.id] ?? c.defaultWidth ?? 0),
     0,
   )
 
@@ -268,49 +267,53 @@ export default function StocksPage() {
         <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
           <colgroup>
             {LOT_COLUMNS.map((c) => (
-              <col key={c.id} style={c.defaultWidth == null ? undefined : { width: widths[c.id] }} />
+              <col key={c.id} style={{ width: widths[c.id] }} />
             ))}
           </colgroup>
           <thead>
             <tr className="bg-muted/40 border-b">
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 N° Lot<ColumnResizer columnId="numero" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Code/SKU<ColumnResizer columnId="sku" onStart={startResize} />
               </th>
-              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Désignation</th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                Désignation<ColumnResizer columnId="designation" onStart={startResize} />
+              </th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Type<ColumnResizer columnId="type" onStart={startResize} />
               </th>
-              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                 Qté<ColumnResizer columnId="quantite" onStart={startResize} />
               </th>
-              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                 PMP<ColumnResizer columnId="pmp" onStart={startResize} />
               </th>
-              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                 Valeur<ColumnResizer columnId="valeur" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 BC / BA<ColumnResizer columnId="bcBa" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Réc.<ColumnResizer columnId="reception" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Entrée<ColumnResizer columnId="dateEntree" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 DLC<ColumnResizer columnId="dlc" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Origine<ColumnResizer columnId="origine" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Statut QC<ColumnResizer columnId="statutQC" onStart={startResize} />
               </th>
-              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">État</th>
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                État<ColumnResizer columnId="etat" onStart={startResize} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -361,7 +364,28 @@ export default function StocksPage() {
 
                 <td className="px-4 py-3 font-mono text-xs truncate">{l.dateEntree}</td>
 
-                <td className="px-4 py-3 font-mono text-xs truncate">{l.dlc}</td>
+                <td className="px-4 py-3 truncate">
+                  {(() => {
+                    const daysLeft = Math.floor(
+                      (new Date(l.dlc).getTime() - Date.now()) / 86_400_000,
+                    )
+                    const expired  = daysLeft < 0
+                    const alert    = !expired && daysLeft <= l.seuilAlertePeremption
+                    if (expired) return (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200 whitespace-nowrap">
+                        <AlertTriangle className="size-3 shrink-0" />
+                        Expiré · {l.dlc}
+                      </span>
+                    )
+                    if (alert) return (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap">
+                        <Clock className="size-3 shrink-0" />
+                        {daysLeft} j · {l.dlc}
+                      </span>
+                    )
+                    return <span className="font-mono text-xs">{l.dlc}</span>
+                  })()}
+                </td>
 
                 <td className="px-4 py-3 truncate">
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -27,6 +27,7 @@ function toArticle(row: Record<string, unknown>): Article {
     appro: (row.appro as ArticleAppro) ?? 'Achete',
     gestionLot: (row.gestion_lot as boolean) ?? true,
     delaiControle: (row.delai_controle as number) ?? null,
+    seuilAlertePeremption: (row.seuil_alerte_peremption as number) ?? null,
     protocoleControle: (row.protocole_controle as string) ?? '',
     codeBarres: (row.code_barres as string) ?? '',
     qrCode: (row.qr_code as string) ?? '',
@@ -94,6 +95,7 @@ export async function createArticle(article: Partial<Article> & { code: string }
         appro: article.appro,
         gestion_lot: article.gestionLot ?? true,
         delai_controle: article.delaiControle,
+        seuil_alerte_peremption: article.seuilAlertePeremption,
         protocole_controle: article.protocoleControle,
       })
       .select()
@@ -131,6 +133,7 @@ export async function updateArticle(id: string, article: Partial<Article>): Prom
         appro: article.appro,
         gestion_lot: article.gestionLot,
         delai_controle: article.delaiControle,
+        seuil_alerte_peremption: article.seuilAlertePeremption,
         protocole_controle: article.protocoleControle,
       })
       .eq('id', id)

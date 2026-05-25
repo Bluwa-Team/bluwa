@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Pencil, Archive, Printer, Package,
-  TrendingUp, Clock, ShoppingCart, Factory,
+  TrendingUp, Clock, BookOpen, Settings2, CheckCircle2, XCircle, ListChecks, ShieldCheck,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -13,10 +13,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { ArticleModal } from '../_components/article-modal'
 import {
   Article, TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from '../_components/types'
+import {
+  BillOfMaterial, BOMIngredient, getBOMByArticleCode, updateBOM, createBOM,
+} from '../_components/bom'
+import { BomEditModal } from '../_components/bom-edit-modal'
+import {
+  GammeFabrication, GammeEtape, getGammeByArticleCode, updateGamme, createGamme,
+} from '../_components/gamme'
+import { GammeEditModal } from '../_components/gamme-edit-modal'
 import {
   Mouvement, Lot, MOUVEMENT_COLORS, MOUVEMENT_LABELS,
   STATUT_LOT_COLORS, STATUT_LOT_LABELS,
@@ -63,6 +74,12 @@ export default function ArticleDetailPage() {
   const [mouvements, setMouvements] = useState<Mouvement[]>([])
   const [lots, setLots] = useState<Lot[]>([])
   const [modalOpen, setModalOpen] = useState(false)
+  const [bom, setBom] = useState<BillOfMaterial | null>(null)
+  const [bomIngredients, setBomIngredients] = useState<BOMIngredient[]>([])
+  const [bomEditOpen, setBomEditOpen] = useState(false)
+  const [gamme, setGamme] = useState<GammeFabrication | null>(null)
+  const [gammeEtapes, setGammeEtapes] = useState<GammeEtape[]>([])
+  const [gammeEditOpen, setGammeEditOpen] = useState(false)
 
   useEffect(() => {
     getArticleById(id).then((art) => {
@@ -70,6 +87,14 @@ export default function ArticleDetailPage() {
       if (art) {
         getMouvementsByArticle(art.code).then(setMouvements)
         getLotsByArticle(art.code).then(setLots)
+        // BOM mock lookup
+        const { bom: b, ingredients } = getBOMByArticleCode(art.code)
+        setBom(b)
+        setBomIngredients(ingredients)
+        // Gamme mock lookup
+        const { gamme: g, etapes } = getGammeByArticleCode(art.code)
+        setGamme(g)
+        setGammeEtapes(etapes)
       }
     })
   }, [id])
@@ -142,6 +167,7 @@ export default function ArticleDetailPage() {
           <TabsTrigger value="prix" className="flex-1">Historique des prix</TabsTrigger>
           <TabsTrigger value="lots" className="flex-1">Lots</TabsTrigger>
           <TabsTrigger value="nomenclatures" className="flex-1">Nomenclatures</TabsTrigger>
+          <TabsTrigger value="gamme" className="flex-1">Gamme de fabrication</TabsTrigger>
         </TabsList>
 
         {/* Fiche article */}
@@ -191,7 +217,31 @@ export default function ArticleDetailPage() {
             <Section title="Caractéristiques physiques" icon={Package}>
               <InfoRow label={t('modal.fields.weight')} value={article.poidsUnitaire ? `${article.poidsUnitaire} kg` : null} />
               <InfoRow label={t('modal.fields.volume')} value={article.volumeUnitaire ? `${article.volumeUnitaire} L` : null} />
-              <InfoRow label={t('modal.fields.shelfLife')} value={article.dureeVie ? `${article.dureeVie} jours` : null} />
+            </Section>
+
+            <Section title="Paramètres Industriels & Qualité" icon={ShieldCheck}>
+              <InfoRow
+                label="Délai de libération qualité"
+                value={article.delaiControle != null
+                  ? <span className="font-semibold">{article.delaiControle} jour{article.delaiControle !== 1 ? 's' : ''}</span>
+                  : null}
+              />
+              <InfoRow
+                label="Durée de vie théorique"
+                value={article.dureeVie != null
+                  ? <span className="font-semibold">{article.dureeVie} jour{article.dureeVie !== 1 ? 's' : ''}</span>
+                  : null}
+              />
+              <InfoRow
+                label="Seuil d'alerte péremption"
+                value={article.seuilAlertePeremption != null
+                  ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                      {article.seuilAlertePeremption} j avant DLC
+                    </span>
+                  )
+                  : null}
+              />
             </Section>
 
             <Section title="Gestion des stocks" icon={Clock}>
@@ -284,7 +334,267 @@ export default function ArticleDetailPage() {
 
         {/* Nomenclatures */}
         <TabsContent value="nomenclatures" className="mt-4">
-          <EmptyTab label={tCommon('noData')} />
+          {bom === null ? (
+            <div className="rounded-lg border border-dashed flex flex-col items-center justify-center py-16 gap-3">
+              <BookOpen className="size-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                Aucune nomenclature définie pour cet article.
+              </p>
+              {article.type === 'PF' || article.type === 'PSF' ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 mt-1"
+                  onClick={() => setBomEditOpen(true)}
+                >
+                  <Settings2 className="size-3.5" />
+                  Créer la nomenclature
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground/60">
+                  Les nomenclatures s&apos;appliquent aux articles de type PF et PSF.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+
+              {/* BOM summary header */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <BookOpen className="size-[18px] text-foreground" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">Nomenclature de référence</p>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground font-mono">
+                        {bom.version}
+                      </span>
+                      {bom.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                          <CheckCircle2 className="size-2.5" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">
+                          <XCircle className="size-2.5" />
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Lot de référence :&nbsp;
+                      <strong className="text-foreground">{bom.batchSize} {bom.batchUnit}</strong>
+                      <span className="mx-1.5">·</span>
+                      {bomIngredients.length} composant{bomIngredients.length !== 1 ? 's' : ''}
+                      <span className="mx-1.5">·</span>
+                      Créée le {bom.createdAt}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  onClick={() => setBomEditOpen(true)}
+                >
+                  <Settings2 className="size-3.5" />
+                  Configurer la Nomenclature
+                </Button>
+              </div>
+
+              {/* Ingredients table */}
+              <div className="rounded-lg border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="text-xs font-semibold text-muted-foreground">
+                        Composant
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[160px]">
+                        Qté standard ({bom.batchSize} {bom.batchUnit})
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground w-[80px]">
+                        Unité
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[120px]">
+                        Tolérance (%)
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bomIngredients.map((ing) => {
+                      const qtyStd = ing.qtyPerUnit * bom.batchSize
+                      const qtyFmt = Number.isInteger(qtyStd)
+                        ? String(qtyStd)
+                        : parseFloat(qtyStd.toPrecision(4)).toString()
+                      return (
+                        <TableRow key={ing.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono bg-muted text-muted-foreground shrink-0">
+                                {ing.ingredientCode}
+                              </span>
+                              <span className="text-sm font-medium">{ing.designation}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono tabular-nums text-sm font-semibold">
+                            {qtyFmt}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {ing.unite}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {ing.tolerance > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                ±{ing.tolerance}%
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">exact</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <p className="text-xs text-muted-foreground/60 italic">
+                Ces valeurs alimentent le modal &quot;Nouvel OF&quot; dans le module Production.
+                Toute modification ici est immédiatement prise en compte.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Gamme de fabrication */}
+        <TabsContent value="gamme" className="mt-4">
+          {gamme === null ? (
+            <div className="rounded-lg border border-dashed flex flex-col items-center justify-center py-16 gap-3">
+              <ListChecks className="size-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                Aucune gamme de fabrication définie pour cet article.
+              </p>
+              {article.type === 'PF' || article.type === 'PSF' ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 mt-1"
+                  onClick={() => setGammeEditOpen(true)}
+                >
+                  <ListChecks className="size-3.5" />
+                  Créer la gamme
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground/60">
+                  Les gammes s&apos;appliquent aux articles de type PF et PSF.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+
+              {/* Gamme summary header */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                    <ListChecks className="size-[18px] text-foreground" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">Gamme de fabrication</p>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground font-mono">
+                        {gamme.version}
+                      </span>
+                      {gamme.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                          <CheckCircle2 className="size-2.5" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">
+                          <XCircle className="size-2.5" />
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {gammeEtapes.length} étape{gammeEtapes.length !== 1 ? 's' : ''}
+                      <span className="mx-1.5">·</span>
+                      Durée totale :&nbsp;
+                      <strong className="text-foreground">
+                        {gammeEtapes.reduce((s, e) => s + e.duree, 0)} min
+                      </strong>
+                      <span className="mx-1.5">·</span>
+                      Créée le {gamme.createdAt}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  onClick={() => setGammeEditOpen(true)}
+                >
+                  <Settings2 className="size-3.5" />
+                  Configurer la Gamme
+                </Button>
+              </div>
+
+              {/* Étapes table */}
+              <div className="rounded-lg border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="text-xs font-semibold text-muted-foreground w-12 text-center">#</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground">Opération</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[90px]">Durée (min)</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[90px]">Temp. (°C)</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground w-[160px]">Équipement</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground">Point de contrôle</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {gammeEtapes.map((etape) => (
+                      <TableRow key={etape.id}>
+                        <TableCell className="text-center">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-[10px] font-bold tabular-nums text-muted-foreground">
+                            {etape.ordre}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-medium text-sm">{etape.operation}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums text-sm">
+                          {etape.duree}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {etape.temperature != null ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                              {etape.temperature}°C
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{etape.equipement}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {etape.pointControle ?? (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <p className="text-xs text-muted-foreground/60 italic">
+                La gamme définit la séquence d&apos;opérations pour produire cet article.
+                Elle est consultée lors de la création d&apos;un ordre de fabrication.
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -293,6 +603,42 @@ export default function ArticleDetailPage() {
         onClose={() => setModalOpen(false)}
         article={article}
         onSave={async (data) => { const updated = await updateArticle(id, data); if (updated) setArticle(updated); return !!updated }}
+      />
+
+      <BomEditModal
+        open={bomEditOpen}
+        onClose={() => setBomEditOpen(false)}
+        bom={bom}
+        ingredients={bomIngredients}
+        onSave={(header, ingredients) => {
+          if (bom) {
+            setBom({ ...bom, ...header })
+            setBomIngredients(ingredients)
+            updateBOM(bom.id, header, ingredients)
+          } else {
+            const newBom = createBOM(article.code, article.designation, header, ingredients)
+            setBom(newBom)
+            setBomIngredients(ingredients)
+          }
+        }}
+      />
+
+      <GammeEditModal
+        open={gammeEditOpen}
+        onClose={() => setGammeEditOpen(false)}
+        gamme={gamme}
+        etapes={gammeEtapes}
+        onSave={(header, etapes) => {
+          if (gamme) {
+            setGamme({ ...gamme, ...header })
+            setGammeEtapes(etapes)
+            updateGamme(gamme.id, header, etapes)
+          } else {
+            const newGamme = createGamme(article.code, article.designation, header, etapes)
+            setGamme(newGamme)
+            setGammeEtapes(etapes)
+          }
+        }}
       />
     </div>
   )

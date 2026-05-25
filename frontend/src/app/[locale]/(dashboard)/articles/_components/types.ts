@@ -25,6 +25,7 @@ export interface Article {
   statut: ArticleStatut
   gestionLot: boolean
   delaiControle: number | null
+  seuilAlertePeremption: number | null
   protocoleControle: string
   codeBarres: string
   qrCode: string

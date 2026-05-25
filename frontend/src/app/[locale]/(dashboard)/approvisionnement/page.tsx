@@ -13,17 +13,19 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  CommandeFournisseur, STATUT_COMMANDE_COLORS, STATUT_COMMANDE_LABELS,
-  StatutCommande, MOCK_COMMANDES,
+  BCHeader, BCItem, BCFlat, CommandeFournisseur,
+  STATUT_COMMANDE_COLORS, STATUT_COMMANDE_LABELS,
+  StatutCommande, flattenBC, MOCK_BC_HEADERS, MOCK_BC_ITEMS,
   ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd, MOCK_STRATEGIE,
 } from './_components/types'
+import { CommandeModal } from './_components/commande-modal'
 
 type Tab = 'commandes' | 'strategie'
 
 
 const STRATEGIE_COLUMNS: ResizableColumn[] = [
   { id: 'sku',          defaultWidth: 130, minWidth: 100 },
-  { id: 'article',      defaultWidth: null               },
+  { id: 'article',      defaultWidth: 200, minWidth: 160  },
   { id: 'consoMoy',     defaultWidth: 150, minWidth: 120 },
   { id: 'sigma',        defaultWidth: 90,  minWidth: 70  },
   { id: 'delaiMoy',     defaultWidth: 140, minWidth: 110 },
@@ -34,14 +36,13 @@ const STRATEGIE_COLUMNS: ResizableColumn[] = [
   { id: 'pointCmd',     defaultWidth: 110, minWidth: 85  },
   { id: 'statut',       defaultWidth: 160, minWidth: 130 },
 ]
-const STRATEGIE_ARTICLE_MIN = 180
 
 const COMMANDE_COLUMNS: ResizableColumn[] = [
   { id: 'numero',          defaultWidth: 130, minWidth: 100 },
   { id: 'type',            defaultWidth: 90,  minWidth: 70  },
   { id: 'date',            defaultWidth: 120, minWidth: 95  },
   { id: 'fournisseur',     defaultWidth: 170, minWidth: 120 },
-  { id: 'article',         defaultWidth: null               },
+  { id: 'article',         defaultWidth: 200, minWidth: 150  },
   { id: 'quantite',        defaultWidth: 110, minWidth: 90  },
   { id: 'recue',           defaultWidth: 100, minWidth: 80  },
   { id: 'livraisonPrevue', defaultWidth: 160, minWidth: 120 },
@@ -50,7 +51,6 @@ const COMMANDE_COLUMNS: ResizableColumn[] = [
   { id: 'statut',          defaultWidth: 140, minWidth: 110 },
   { id: 'doc',             defaultWidth: 72,  minWidth: 60  },
 ]
-const ARTICLE_MIN = 180
 
 function StatCard({
   label, value, sub, trendVariant = 'neutral', bgClass, iconBgClass, iconColorClass, icon: Icon,
@@ -102,7 +102,11 @@ function TypeBadge({ type }: { type: 'BC' | 'BA' }) {
 export default function ApprovisionnementPage() {
   const locale = useLocale()
   const [tab, setTab] = useState<Tab>('commandes')
-  const [commandes] = useState<CommandeFournisseur[]>(MOCK_COMMANDES)
+  // State Header/Item — la vue aplatie est dérivée par useMemo
+  const [bcHeaders, setBcHeaders] = useState<BCHeader[]>(MOCK_BC_HEADERS)
+  const [bcItems,   setBcItems]   = useState<BCItem[]>(MOCK_BC_ITEMS)
+  const commandes = useMemo<BCFlat[]>(() => flattenBC(bcHeaders, bcItems), [bcHeaders, bcItems])
+  const [modalOpen, setModalOpen] = useState(false)
   const [strategie, setStrategie] = useState<ArticleStrategie[]>(MOCK_STRATEGIE)
   const [sSearch, setSSearch] = useState('')
   const [sStatutFilter, setSStatutFilter] = useState<'all' | 'aCommander' | 'ok'>('all')
@@ -115,7 +119,7 @@ export default function ApprovisionnementPage() {
     STRATEGIE_COLUMNS,
   )
   const strategieMinWidth = STRATEGIE_COLUMNS.reduce(
-    (sum, c) => sum + (c.defaultWidth == null ? STRATEGIE_ARTICLE_MIN : (sWidths[c.id] ?? c.defaultWidth)),
+    (sum, c) => sum + (sWidths[c.id] ?? c.defaultWidth ?? 0),
     0,
   )
 
@@ -124,7 +128,7 @@ export default function ApprovisionnementPage() {
     COMMANDE_COLUMNS,
   )
   const tableMinWidth = COMMANDE_COLUMNS.reduce(
-    (sum, c) => sum + (c.defaultWidth == null ? ARTICLE_MIN : (widths[c.id] ?? c.defaultWidth)),
+    (sum, c) => sum + (widths[c.id] ?? c.defaultWidth ?? 0),
     0,
   )
 
@@ -140,6 +144,40 @@ export default function ApprovisionnementPage() {
       return true
     })
   }, [strategie, sSearch, sStatutFilter])
+
+  async function handleSaveCommande(
+    data: Omit<CommandeFournisseur, 'id' | 'itemId' | 'numero' | 'quantiteRecue' | 'reception' | 'statut'>,
+  ): Promise<boolean> {
+    const year = new Date().getFullYear()
+    const prefix = data.type
+    const next  = bcHeaders.filter((h) => h.type === prefix).length + 1
+    const hId   = Date.now().toString()
+
+    const newHeader: BCHeader = {
+      id:          hId,
+      numero:      `${prefix}-${year}-${String(next).padStart(3, '0')}`,
+      type:        data.type,
+      date:        data.date,
+      fournisseur: data.fournisseur,
+      contrat:     data.contrat,
+      reception:   null,
+      statut:      'EnCours',
+    }
+    const newItem: BCItem = {
+      id:              `${hId}-i1`,
+      headerId:        hId,
+      article:         data.article,
+      quantite:        data.quantite,
+      quantiteRecue:   0,
+      unite:           data.unite,
+      puHT:            data.puHT,
+      livraisonPrevue: data.livraisonPrevue,
+      dureeVie:        data.dureeVie,
+    }
+    setBcHeaders((prev) => [newHeader, ...prev])
+    setBcItems((prev)   => [newItem,   ...prev])
+    return true
+  }
 
   const stats = useMemo(() => ({
     enCours:   commandes.filter((c) => c.statut === 'EnCours').length,
@@ -180,7 +218,7 @@ export default function ApprovisionnementPage() {
           </p>
         </div>
         {tab === 'commandes' && (
-          <Button size="sm" className="gap-1.5">
+          <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
             <Plus className="size-4" />
             Nouvelle commande
           </Button>
@@ -277,40 +315,44 @@ export default function ApprovisionnementPage() {
             <table className="w-full text-sm table-fixed" style={{ minWidth: strategieMinWidth }}>
               <colgroup>
                 {STRATEGIE_COLUMNS.map((c) => (
-                  <col key={c.id} style={c.defaultWidth == null ? undefined : { width: sWidths[c.id] }} />
+                  <col key={c.id} style={{ width: sWidths[c.id] }} />
                 ))}
               </colgroup>
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     SKU<ColumnResizer columnId="sku" onStart={sSR} />
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Désignation</th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                    Désignation<ColumnResizer columnId="article" onStart={sSR} />
+                  </th>
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Conso moy. (30j)<ColumnResizer columnId="consoMoy" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     σ Conso<ColumnResizer columnId="sigma" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Délai moy.<ColumnResizer columnId="delaiMoy" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Délai max<ColumnResizer columnId="delaiMax" onStart={sSR} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Service<ColumnResizer columnId="service" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Stock actuel<ColumnResizer columnId="stockActuel" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     SS calculé<ColumnResizer columnId="ssCalcule" onStart={sSR} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Point cmd.<ColumnResizer columnId="pointCmd" onStart={sSR} />
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Statut</th>
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                    Statut<ColumnResizer columnId="statut" onStart={sSR} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -492,43 +534,47 @@ export default function ApprovisionnementPage() {
             <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
               <colgroup>
                 {COMMANDE_COLUMNS.map((c) => (
-                  <col key={c.id} style={c.defaultWidth == null ? undefined : { width: widths[c.id] }} />
+                  <col key={c.id} style={{ width: widths[c.id] }} />
                 ))}
               </colgroup>
               <thead>
                 <tr className="bg-muted/40 border-b">
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     N° Doc<ColumnResizer columnId="numero" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Type<ColumnResizer columnId="type" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Date<ColumnResizer columnId="date" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Fournisseur<ColumnResizer columnId="fournisseur" onStart={startResize} />
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Article</th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                    Article<ColumnResizer columnId="article" onStart={startResize} />
+                  </th>
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Quantité<ColumnResizer columnId="quantite" onStart={startResize} />
                   </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                     Reçue<ColumnResizer columnId="recue" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Livraison prévue<ColumnResizer columnId="livraisonPrevue" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Contrat<ColumnResizer columnId="contrat" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Réception<ColumnResizer columnId="reception" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Statut<ColumnResizer columnId="statut" onStart={startResize} />
                   </th>
-                  <th className="text-center px-4 py-3 font-semibold text-xs tracking-wide uppercase">Doc</th>
+                  <th className="relative text-center px-4 py-3 font-semibold text-xs tracking-wide">
+                    Doc<ColumnResizer columnId="doc" onStart={startResize} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -539,7 +585,7 @@ export default function ApprovisionnementPage() {
                     </td>
                   </tr>
                 ) : filtered.map((c) => (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/20">
+                  <tr key={`${c.id}-${c.itemId}`} className="border-b last:border-0 hover:bg-muted/20">
 
                     <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{c.numero}</td>
 
@@ -598,6 +644,12 @@ export default function ApprovisionnementPage() {
           </div>
         </>
       )}
+
+      <CommandeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveCommande}
+      />
     </div>
   )
 }

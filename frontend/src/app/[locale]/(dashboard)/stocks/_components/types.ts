@@ -22,6 +22,7 @@ export interface LotStock {
   origine: OrigineType
   statutQC: StatutQC | null
   etat: EtatLot
+  seuilAlertePeremption: number   // jours avant DLC pour déclencher l'alerte
 }
 
 export const TYPE_COLORS: Record<TypeArticle, string> = {
@@ -68,30 +69,35 @@ export const MOCK_LOTS: LotStock[] = [
     type: 'MP', quantite: 480, unite: 'Kg', pmp: 438, valeur: 210240,
     bcBa: 'BC-2026-040', reception: 'REC-2026-040', dateEntree: '2026-05-10',
     dlc: '2026-08-20', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
+    seuilAlertePeremption: 30,   // 87 jours restants → OK
   },
   {
     id: '2', numero: 'LOT-2026-002', sku: 'MP-ARA-002', designation: 'Arachides brutes',
     type: 'MP', quantite: 180, unite: 'Kg', pmp: 720, valeur: 129600,
     bcBa: 'BA-2026-015', reception: 'REC-2026-015', dateEntree: '2026-02-16',
     dlc: '2026-06-21', origine: 'Informel', statutQC: 'Libere', etat: 'Dormant',
+    seuilAlertePeremption: 30,   // 27 jours restants → ALERTE
   },
   {
     id: '3', numero: 'LOT-2026-003', sku: 'AC-ETI-003', designation: 'Étiquettes anciennes',
     type: 'AC', quantite: 3500, unite: 'Unité', pmp: 12, valeur: 42000,
     bcBa: 'BC-2026-005', reception: 'REC-2026-005', dateEntree: '2025-11-23',
     dlc: '2026-05-17', origine: 'Formel', statutQC: 'Bloque', etat: 'Obsolete',
+    seuilAlertePeremption: 14,   // expiré → CRITIQUE
   },
   {
     id: '4', numero: 'LOT-2026-004', sku: 'PF-PAI-004', designation: 'Pain de mie',
     type: 'PF', quantite: 120, unite: 'Kg', pmp: 700, valeur: 84000,
     bcBa: 'BC-2026-038', reception: 'REC-2026-038', dateEntree: '2026-05-05',
     dlc: '2026-05-28', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
+    seuilAlertePeremption: 7,    // 3 jours restants → ALERTE
   },
   {
     id: '5', numero: 'LOT-2026-005', sku: 'PF-JUS-005', designation: 'Jus de bissap bouteille 1L',
     type: 'PF', quantite: 250, unite: 'Unité', pmp: 292, valeur: 73000,
     bcBa: 'BC-2026-033', reception: 'REC-2026-033', dateEntree: '2026-04-18',
     dlc: '2026-10-18', origine: 'Formel', statutQC: 'EnControle', etat: 'Disponible',
+    seuilAlertePeremption: 30,   // 146 jours restants → OK
   },
 ]
 
@@ -150,11 +156,8 @@ export interface Lot {
   statut: StatutLot
 }
 
-export const ENTREPOTS: Record<string, { nom: string; emplacements: string[] }> = {
-  'ENT-MP-01': { nom: 'Entrepôt MP - Dakar', emplacements: ['Zone A', 'Zone B', 'Zone C', 'Zone D'] },
-  'ENT-PF-01': { nom: 'Entrepôt PF - Dakar', emplacements: ['Allée 1', 'Allée 2', 'Allée 3'] },
-  'ENT-EMB-01': { nom: 'Entrepôt Emballages', emplacements: ['Étagère 1', 'Étagère 2', 'Étagère 3'] },
-}
+// Configuration usine — importée depuis la couche partagée
+export { ENTREPOTS } from '@/config'
 
 export const STATUT_STOCK_COLORS: Record<StatutStock, string> = {
   OK: 'bg-emerald-100 text-emerald-800',

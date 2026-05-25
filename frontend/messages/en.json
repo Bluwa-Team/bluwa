@@ -46,7 +46,14 @@
     "reception": "Receiving",
     "sourcingSupply": "Sourcing & Supply",
     "approvisionnement": "Procurement",
-    "mrp": "MRP"
+    "mrp": "MRP",
+    "ordresFabrication": "Production Orders",
+    "mes": "Production Monitoring",
+    "qualite": "Quality Assurance",
+    "liberationLots": "Release Center",
+    "nonConformitesQA": "Non-Conformities",
+    "genealogie": "Genealogy",
+    "gedQualite": "Quality DMS"
   },
   "header": {
     "aiAgent": "AI Agent",

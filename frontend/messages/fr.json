@@ -46,7 +46,14 @@
     "reception": "Réception",
     "sourcingSupply": "Sourcing & Supply",
     "approvisionnement": "Approvisionnement",
-    "mrp": "MRP"
+    "mrp": "MRP",
+    "ordresFabrication": "Ordres de fabrication",
+    "mes": "Suivi de fabrication",
+    "qualite": "Assurance Qualité",
+    "liberationLots": "Centre de Libération",
+    "nonConformitesQA": "Non-Conformités",
+    "genealogie": "Généalogie",
+    "gedQualite": "GED Qualité"
   },
   "header": {
     "aiAgent": "Agent IA",

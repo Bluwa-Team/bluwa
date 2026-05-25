@@ -13,9 +13,13 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  Reception, STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
-  StatutReception, MOCK_RECEPTIONS,
+  ReceptionHeader, ReceptionItem, ReceptionFlat, Reception,
+  STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
+  StatutReception, flattenReception,
+  MOCK_RECEPTION_HEADERS, MOCK_RECEPTION_ITEMS,
 } from './_components/types'
+import { ReceptionModal } from './_components/reception-modal'
+import { MOCK_COMMANDES } from '../approvisionnement/_components/types'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
   Conforme: <Check className="size-3" />,
@@ -41,7 +45,7 @@ const RECEPTION_COLUMNS: ResizableColumn[] = [
   { id: 'commande', defaultWidth: 150, minWidth: 110 },
   { id: 'bon', defaultWidth: 110, minWidth: 90 },
   { id: 'fournisseur', defaultWidth: 170, minWidth: 120 },
-  { id: 'article', defaultWidth: null },
+  { id: 'article', defaultWidth: 200, minWidth: 160 },
   { id: 'quantite', defaultWidth: 130, minWidth: 100 },
   { id: 'lotStock', defaultWidth: 130, minWidth: 100 },
   { id: 'lotFourn', defaultWidth: 120, minWidth: 90 },
@@ -50,7 +54,6 @@ const RECEPTION_COLUMNS: ResizableColumn[] = [
   { id: 'statut', defaultWidth: 140, minWidth: 110 },
   { id: 'action', defaultWidth: 80, minWidth: 64 },
 ]
-const ARTICLE_MIN = 180
 
 function StatCard({
   label, value, sub, trend, trendVariant = 'neutral', bgClass, iconBgClass, iconColorClass, icon: Icon,
@@ -98,7 +101,11 @@ function StatCard({
 
 export default function ReceptionPage() {
   const locale = useLocale()
-  const [receptions] = useState<Reception[]>(MOCK_RECEPTIONS)
+  // State Header/Item — la vue aplatie est dérivée par useMemo
+  const [recHeaders, setRecHeaders] = useState<ReceptionHeader[]>(MOCK_RECEPTION_HEADERS)
+  const [recItems,   setRecItems]   = useState<ReceptionItem[]>(MOCK_RECEPTION_ITEMS)
+  const receptions = useMemo<ReceptionFlat[]>(() => flattenReception(recHeaders, recItems), [recHeaders, recItems])
+  const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutReception | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'Formel' | 'Informel'>('all')
@@ -108,7 +115,7 @@ export default function ReceptionPage() {
     RECEPTION_COLUMNS,
   )
   const tableMinWidth = RECEPTION_COLUMNS.reduce(
-    (sum, c) => sum + (c.defaultWidth == null ? ARTICLE_MIN : (widths[c.id] ?? c.defaultWidth)),
+    (sum, c) => sum + (widths[c.id] ?? c.defaultWidth ?? 0),
     0,
   )
 
@@ -141,6 +148,40 @@ export default function ReceptionPage() {
 
   const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
+  async function handleSave(data: Omit<Reception, 'id' | 'itemId' | 'numero' | 'lot'>): Promise<boolean> {
+    const year = new Date().getFullYear()
+    const next = recHeaders.length + 1
+    const abbr = data.article.substring(0, 3).toUpperCase().replace(/\s+/g, '')
+    const hId  = Date.now().toString()
+
+    const newHeader: ReceptionHeader = {
+      id:             hId,
+      numero:         `REC-${year}-${String(next).padStart(3, '0')}`,
+      date:           data.date,
+      numeroBon:      data.numeroBon,
+      fournisseur:    data.fournisseur,
+      typeFournisseur:data.typeFournisseur,
+      statut:         data.statut,
+      cloturee:       data.cloturee,
+    }
+    const newItem: ReceptionItem = {
+      id:         `${hId}-ri1`,
+      headerId:   hId,
+      article:    data.article,
+      quantite:   data.quantite,
+      unite:      data.unite,
+      lot:        `LOT-${abbr}-${String(next).padStart(3, '0')}`,
+      lotFourn:   data.lotFourn,
+      dlc:        data.dlc,
+      humidite:   data.humidite,
+      codeBarres: data.codeBarres,
+      statutLot:  data.statutLot,
+    }
+    setRecHeaders((prev) => [newHeader, ...prev])
+    setRecItems((prev)   => [newItem,   ...prev])
+    return true
+  }
+
   function clearFilters() {
     setSearch('')
     setStatutFilter('all')
@@ -158,7 +199,7 @@ export default function ReceptionPage() {
             BA formels &amp; informels · Photos marchandises · Scan code-barres / DataMatrix
           </p>
         </div>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
           <Plus className="size-4" />
           Nouvelle réception
         </Button>
@@ -282,53 +323,57 @@ export default function ReceptionPage() {
         <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
           <colgroup>
             {RECEPTION_COLUMNS.map((c) => (
-              <col key={c.id} style={c.defaultWidth == null ? undefined : { width: widths[c.id] }} />
+              <col key={c.id} style={{ width: widths[c.id] }} />
             ))}
           </colgroup>
           <thead>
             <tr className="bg-muted/40 border-b">
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 N° Rec
                 <ColumnResizer columnId="numero" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Commande
                 <ColumnResizer columnId="commande" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Bon
                 <ColumnResizer columnId="bon" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Fournisseur
                 <ColumnResizer columnId="fournisseur" onStart={startResize} />
               </th>
-              <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">Article</th>
-              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
+                Article<ColumnResizer columnId="article" onStart={startResize} />
+              </th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                 Qté reçue
                 <ColumnResizer columnId="quantite" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Lot stock
                 <ColumnResizer columnId="lotStock" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Lot fourn.
                 <ColumnResizer columnId="lotFourn" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 DLC
                 <ColumnResizer columnId="dlc" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Date
                 <ColumnResizer columnId="date" onStart={startResize} />
               </th>
-              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide uppercase">
+              <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 Statut
                 <ColumnResizer columnId="statut" onStart={startResize} />
               </th>
-              <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide uppercase">Action</th>
+              <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
+                Action<ColumnResizer columnId="action" onStart={startResize} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -339,7 +384,7 @@ export default function ReceptionPage() {
                 </td>
               </tr>
             ) : filtered.map((r) => (
-              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20">
+              <tr key={`${r.id}-${r.itemId}`} className="border-b last:border-0 hover:bg-muted/20">
 
                 {/* N° Rec */}
                 <td className="px-4 py-3 font-mono text-xs font-semibold truncate">
@@ -432,6 +477,13 @@ export default function ReceptionPage() {
           </tbody>
         </table>
       </div>
+
+      <ReceptionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        commandes={MOCK_COMMANDES}
+        onSave={handleSave}
+      />
     </div>
   )
 }
