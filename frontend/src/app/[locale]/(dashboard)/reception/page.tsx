@@ -19,7 +19,9 @@ import {
   MOCK_RECEPTION_HEADERS, MOCK_RECEPTION_ITEMS,
 } from './_components/types'
 import { ReceptionModal } from './_components/reception-modal'
-import { MOCK_COMMANDES } from '../approvisionnement/_components/types'
+import {
+  MOCK_BC_HEADERS, MOCK_BC_ITEMS,
+} from '../approvisionnement/_components/types'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
   Conforme: <Check className="size-3" />,
@@ -119,13 +121,14 @@ export default function ReceptionPage() {
     0,
   )
 
+  // Stats sur les headers (1 réception = 1 header, pas 1 ligne article)
   const stats = useMemo(() => ({
-    enCours: receptions.filter((r) => !r.cloturee).length,
-    archivees: receptions.filter((r) => r.cloturee).length,
-    conformes: receptions.filter((r) => r.statut === 'Conforme').length,
-    avecReserve: receptions.filter((r) => r.statut === 'Reserve').length,
-    codesScannes: receptions.filter((r) => r.codeBarres !== null).length,
-  }), [receptions])
+    enCours:      recHeaders.filter((h) => !h.cloturee).length,
+    archivees:    recHeaders.filter((h) => h.cloturee).length,
+    conformes:    recHeaders.filter((h) => h.statut === 'Conforme').length,
+    avecReserve:  recHeaders.filter((h) => h.statut === 'Reserve').length,
+    codesScannes: recItems.filter((i) => i.codeBarres !== null).length,
+  }), [recHeaders, recItems])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -148,37 +151,31 @@ export default function ReceptionPage() {
 
   const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
-  async function handleSave(data: Omit<Reception, 'id' | 'itemId' | 'numero' | 'lot'>): Promise<boolean> {
+  async function handleSave(
+    headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
+    newItems: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
+  ): Promise<boolean> {
     const year = new Date().getFullYear()
     const next = recHeaders.length + 1
-    const abbr = data.article.substring(0, 3).toUpperCase().replace(/\s+/g, '')
     const hId  = Date.now().toString()
 
     const newHeader: ReceptionHeader = {
-      id:             hId,
-      numero:         `REC-${year}-${String(next).padStart(3, '0')}`,
-      date:           data.date,
-      numeroBon:      data.numeroBon,
-      fournisseur:    data.fournisseur,
-      typeFournisseur:data.typeFournisseur,
-      statut:         data.statut,
-      cloturee:       data.cloturee,
+      id:     hId,
+      numero: `REC-${year}-${String(next).padStart(3, '0')}`,
+      ...headerData,
     }
-    const newItem: ReceptionItem = {
-      id:         `${hId}-ri1`,
-      headerId:   hId,
-      article:    data.article,
-      quantite:   data.quantite,
-      unite:      data.unite,
-      lot:        `LOT-${abbr}-${String(next).padStart(3, '0')}`,
-      lotFourn:   data.lotFourn,
-      dlc:        data.dlc,
-      humidite:   data.humidite,
-      codeBarres: data.codeBarres,
-      statutLot:  data.statutLot,
-    }
+    const createdItems: ReceptionItem[] = newItems.map((item, idx) => {
+      const abbr = item.article.substring(0, 3).toUpperCase().replace(/\s+/g, '')
+      return {
+        ...item,
+        id:       `${hId}-ri${idx + 1}`,
+        headerId: hId,
+        lot:      `LOT-${abbr}-${String(next).padStart(3, '0')}${idx > 0 ? `-${idx + 1}` : ''}`,
+      }
+    })
+
     setRecHeaders((prev) => [newHeader, ...prev])
-    setRecItems((prev)   => [newItem,   ...prev])
+    setRecItems((prev)   => [...createdItems, ...prev])
     return true
   }
 
@@ -481,7 +478,8 @@ export default function ReceptionPage() {
       <ReceptionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        commandes={MOCK_COMMANDES}
+        bcHeaders={MOCK_BC_HEADERS.filter((h) => h.statut === 'EnCours' || h.statut === 'Partielle')}
+        bcItems={MOCK_BC_ITEMS}
         onSave={handleSave}
       />
     </div>

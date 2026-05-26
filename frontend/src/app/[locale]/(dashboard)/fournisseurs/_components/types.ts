@@ -62,6 +62,7 @@ export type ContratStatut = 'Actif' | 'Expire' | 'EnNegociation'
 
 export interface ContratAchat {
   id: string
+  fournisseurId: string   // FK → Fournisseur.id
   reference: string
   article: string
   dateDebut: string

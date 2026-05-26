@@ -146,36 +146,32 @@ export default function ApprovisionnementPage() {
   }, [strategie, sSearch, sStatutFilter])
 
   async function handleSaveCommande(
-    data: Omit<CommandeFournisseur, 'id' | 'itemId' | 'numero' | 'quantiteRecue' | 'reception' | 'statut'>,
+    headerData: Omit<BCHeader, 'id' | 'numero' | 'reception' | 'statut'>,
+    newItems: Omit<BCItem, 'id' | 'headerId'>[],
   ): Promise<boolean> {
-    const year = new Date().getFullYear()
-    const prefix = data.type
-    const next  = bcHeaders.filter((h) => h.type === prefix).length + 1
-    const hId   = Date.now().toString()
+    const year   = new Date().getFullYear()
+    const prefix = headerData.type
+    const next   = bcHeaders.filter((h) => h.type === prefix).length + 1
+    const hId    = Date.now().toString()
 
     const newHeader: BCHeader = {
       id:          hId,
       numero:      `${prefix}-${year}-${String(next).padStart(3, '0')}`,
-      type:        data.type,
-      date:        data.date,
-      fournisseur: data.fournisseur,
-      contrat:     data.contrat,
+      type:        headerData.type,
+      date:        headerData.date,
+      fournisseur: headerData.fournisseur,
+      contrat:     headerData.contrat,
       reception:   null,
       statut:      'EnCours',
     }
-    const newItem: BCItem = {
-      id:              `${hId}-i1`,
-      headerId:        hId,
-      article:         data.article,
-      quantite:        data.quantite,
-      quantiteRecue:   0,
-      unite:           data.unite,
-      puHT:            data.puHT,
-      livraisonPrevue: data.livraisonPrevue,
-      dureeVie:        data.dureeVie,
-    }
+    const createdItems: BCItem[] = newItems.map((item, idx) => ({
+      ...item,
+      id:       `${hId}-i${idx + 1}`,
+      headerId: hId,
+    }))
+
     setBcHeaders((prev) => [newHeader, ...prev])
-    setBcItems((prev)   => [newItem,   ...prev])
+    setBcItems((prev)   => [...createdItems, ...prev])
     return true
   }
 

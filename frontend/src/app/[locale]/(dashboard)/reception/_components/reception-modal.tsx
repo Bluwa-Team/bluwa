@@ -1,22 +1,45 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { X, Loader2, Barcode, Clock, CheckCircle2, AlertTriangle, Camera, ShieldCheck } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Reception, StatutReception } from './types'
-import { CommandeFournisseur } from '../../approvisionnement/_components/types'
+import { X, Loader2, Barcode, Camera, ShieldCheck, CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
+import { BCHeader, BCItem } from '../../approvisionnement/_components/types'
+import { ReceptionHeader, ReceptionItem, StatutLot } from './types'
+
+// ── Types locaux du formulaire ────────────────────────────────────────────────
+
+type ItemForm = {
+  bcItemId: string
+  article: string       // lecture seule — vient du BC
+  quantiteCmd: number   // info — quantité commandée dans le BC
+  reste: number         // info — quantité restant à recevoir
+  uniteCmd: string
+  qteRecue: string
+  lotFourn: string
+  dlc: string
+  humidite: string
+  codeBarres: string
+  statutLot: StatutLot
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   open: boolean
   onClose: () => void
-  commandes: CommandeFournisseur[]
-  onSave: (r: Omit<Reception, 'id' | 'itemId' | 'numero' | 'lot'>) => Promise<boolean>
+  bcHeaders: BCHeader[]           // commandes ouvertes (EnCours | Partielle)
+  bcItems: BCItem[]               // toutes les lignes articles des BC ouverts
+  onSave: (
+    header: Omit<ReceptionHeader, 'id' | 'numero'>,
+    items: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
+  ) => Promise<boolean>
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function Field({ label, required, children }: {
   label: string
@@ -34,87 +57,136 @@ function Field({ label, required, children }: {
   )
 }
 
-const STATUT_OPTIONS: { value: StatutReception; label: string; icon: React.ElementType; iconClass: string }[] = [
-  { value: 'Attente',  label: 'En attente', icon: Clock,         iconClass: 'text-amber-500'   },
-  { value: 'Conforme', label: 'Conforme',   icon: CheckCircle2,  iconClass: 'text-emerald-600' },
-  { value: 'Reserve',  label: 'Réserve',    icon: AlertTriangle, iconClass: 'text-orange-500'  },
-]
-
-const EMPTY = {
-  commandeId: '',
-  qteRecue: '',
-  humidite: '0',
-  lotFourn: '',
-  dlc: '',
-  codeBarres: '',
-  statut: 'Attente' as StatutReception,
+function SectionTitle({ num, label, badge }: { num: string; label: string; badge?: number }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-foreground text-[10px] font-bold shrink-0">
+        {num}
+      </span>
+      {label}
+      {badge !== undefined && (
+        <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-muted text-foreground text-[10px] font-bold">
+          {badge}
+        </span>
+      )}
+    </h3>
+  )
 }
 
-export function ReceptionModal({ open, onClose, commandes, onSave }: Props) {
-  const [form, setForm] = useState(EMPTY)
-  const [saving, setSaving] = useState(false)
+const STATUT_LOT_OPTIONS: {
+  value: StatutLot
+  label: string
+  Icon: React.ElementType
+  iconClass: string
+  activeClass: string
+}[] = [
+  { value: 'EnControle', label: 'En contrôle', Icon: Clock,         iconClass: 'text-amber-500',   activeClass: 'text-amber-600'   },
+  { value: 'Libere',     label: 'Libéré',       Icon: CheckCircle2,  iconClass: 'text-emerald-600', activeClass: 'text-emerald-700' },
+  { value: 'Bloque',     label: 'Bloqué',        Icon: AlertTriangle, iconClass: 'text-red-500',     activeClass: 'text-red-600'     },
+]
+
+// ── Composant ─────────────────────────────────────────────────────────────────
+
+export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Props) {
+  const [selectedHeaderId, setSelectedHeaderId] = useState('')
+  const [itemForms, setItemForms]               = useState<ItemForm[]>([])
+  const [saving, setSaving]                     = useState(false)
 
   useEffect(() => {
-    if (open) setForm(EMPTY)
+    if (open) {
+      setSelectedHeaderId('')
+      setItemForms([])
+    }
   }, [open])
 
-  function set(key: string, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+  const selectedHeader = useMemo(
+    () => bcHeaders.find((h) => h.id === selectedHeaderId) ?? null,
+    [bcHeaders, selectedHeaderId],
+  )
+
+  function selectHeader(id: string) {
+    setSelectedHeaderId(id)
+    const hItems = bcItems.filter((i) => i.headerId === id)
+    setItemForms(
+      hItems.map((bcItem) => {
+        // DLC auto = aujourd'hui + dureeVie si disponible
+        let dlcAuto = ''
+        if (bcItem.dureeVie) {
+          const d = new Date()
+          d.setDate(d.getDate() + bcItem.dureeVie)
+          dlcAuto = d.toISOString().split('T')[0]
+        }
+        const reste = Math.max(0, bcItem.quantite - bcItem.quantiteRecue)
+        return {
+          bcItemId:     bcItem.id,
+          article:      bcItem.article,
+          quantiteCmd:  bcItem.quantite,
+          reste,
+          uniteCmd:     bcItem.unite,
+          qteRecue:     String(reste > 0 ? reste : bcItem.quantite),
+          lotFourn:     '',
+          dlc:          dlcAuto,
+          humidite:     '',
+          codeBarres:   '',
+          statutLot:    'EnControle',
+        }
+      }),
+    )
   }
 
-  function selectCommande(id: string) {
-    const c = commandes.find((cmd) => cmd.id === id) ?? null
-    const reste = c ? c.quantite - c.quantiteRecue : 0
-
-    // Auto-calcul DLC = aujourd'hui + dureeVie si le fournisseur n'impose pas de DLC sur le lot
-    let dlcAuto = form.dlc
-    if (!dlcAuto && c?.dureeVie) {
-      const d = new Date()
-      d.setDate(d.getDate() + c.dureeVie)
-      dlcAuto = d.toISOString().split('T')[0]
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      commandeId: id,
-      qteRecue: c ? String(reste > 0 ? reste : c.quantite) : '',
-      dlc: dlcAuto,
-    }))
+  function setIF(bcItemId: string, field: keyof ItemForm, value: string) {
+    setItemForms((prev) =>
+      prev.map((f) => (f.bcItemId === bcItemId ? { ...f, [field]: value } : f)),
+    )
   }
 
-  const commande = commandes.find((c) => c.id === form.commandeId) ?? null
+  // Statut global dérivé automatiquement des statuts de lots
+  const globalStatut = useMemo((): 'Conforme' | 'Reserve' | 'Attente' => {
+    if (itemForms.length === 0) return 'Attente'
+    if (itemForms.some((f) => f.statutLot === 'Bloque')) return 'Reserve'
+    if (itemForms.every((f) => f.lotFourn.trim() !== '')) return 'Conforme'
+    return 'Attente'
+  }, [itemForms])
 
   function isValid() {
-    return !!form.commandeId && !!form.qteRecue && !!form.lotFourn.trim()
+    return (
+      selectedHeader !== null &&
+      itemForms.length > 0 &&
+      itemForms.every(
+        (f) =>
+          f.qteRecue !== '' &&
+          !isNaN(parseFloat(f.qteRecue)) &&
+          f.lotFourn.trim() !== '',
+      )
+    )
   }
 
   async function handleSave() {
-    if (!commande) return
+    if (!selectedHeader) return
     setSaving(true)
-    const statutLotMap = { Attente: 'EnControle', Conforme: 'Libere', Reserve: 'Bloque' } as const
-    const ok = await onSave({
-      date:            new Date().toISOString().split('T')[0],
-      numeroBon:       commande.numero,
-      fournisseur:     commande.fournisseur,
-      typeFournisseur: commande.type === 'BC' ? 'Formel' : 'Informel',
-      article:         commande.article,
-      quantite:        parseFloat(form.qteRecue),
-      unite:           commande.unite,
-      lotFourn:        form.lotFourn.trim() || null,
-      dlc:             form.dlc || null,
-      humidite:        form.humidite !== '' ? parseFloat(form.humidite) : null,
-      codeBarres:      form.codeBarres.trim() || null,
-      statut:          form.statut,
-      statutLot:       statutLotMap[form.statut],
-      cloturee:        false,
-    })
+    const ok = await onSave(
+      {
+        date:            new Date().toISOString().split('T')[0],
+        numeroBon:       selectedHeader.numero,
+        fournisseur:     selectedHeader.fournisseur,
+        typeFournisseur: selectedHeader.type === 'BC' ? 'Formel' : 'Informel',
+        statut:          globalStatut,
+        cloturee:        false,
+      },
+      itemForms.map((f) => ({
+        article:    f.article,
+        quantite:   parseFloat(f.qteRecue),
+        unite:      f.uniteCmd,
+        lotFourn:   f.lotFourn.trim() || null,
+        dlc:        f.dlc || null,
+        humidite:   f.humidite !== '' ? parseFloat(f.humidite) : null,
+        codeBarres: f.codeBarres.trim() || null,
+        statutLot:  f.statutLot,
+      })),
+    )
     setSaving(false)
     if (ok) onClose()
   }
-
-  const commandesOuvertes = commandes.filter(
-    (c) => c.statut === 'EnCours' || c.statut === 'Partielle',
-  )
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -124,14 +196,14 @@ export function ReceptionModal({ open, onClose, commandes, onSave }: Props) {
           data-slot="dialog-content"
           className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          <div className="w-[min(640px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
+          <div className="w-[min(800px,96vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
-            {/* Header */}
+            {/* ── Header modal ──────────────────────────────────────────── */}
             <div className="flex items-start justify-between p-5 border-b shrink-0">
               <div>
                 <p className="font-semibold">Nouvelle réception</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Réception d'une commande fournisseur
+                  Sélectionner une commande · Saisir les quantités reçues par ligne
                 </p>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={onClose}>
@@ -139,180 +211,236 @@ export function ReceptionModal({ open, onClose, commandes, onSave }: Props) {
               </Button>
             </div>
 
-            {/* Body */}
-            <div className="p-5 space-y-5 overflow-y-auto">
+            {/* ── Body ─────────────────────────────────────────────────── */}
+            <div className="p-5 space-y-6 overflow-y-auto">
 
-              {/* Commande select */}
-              <Field label="Commande à réceptionner" required>
-                <select
-                  value={form.commandeId}
-                  onChange={(e) => selectCommande(e.target.value)}
-                  className="w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="">Sélectionner une commande…</option>
-                  {commandesOuvertes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.numero} · {c.fournisseur} · {c.article} · {c.quantite - c.quantiteRecue} {c.unite} restant(s)
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {/* ① COMMANDE */}
+              <section className="space-y-3">
+                <SectionTitle num="①" label="Commande à réceptionner" />
 
-              {/* Info card */}
-              {commande && (
-                <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm space-y-1">
-                  <p>
-                    <span className="font-semibold text-blue-700">Fournisseur : </span>
-                    <span className="text-blue-600">
-                      {commande.fournisseur} ({commande.type === 'BC' ? 'formel' : 'informel'})
-                    </span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-blue-700">Article : </span>
-                    <span className="text-blue-600">{commande.article}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-blue-700">Commande : </span>
-                    <span className="text-blue-600">
-                      {commande.quantite} {commande.unite} · déjà reçu {commande.quantiteRecue}
-                    </span>
-                  </p>
+                <Field label="Bon de commande / Bon d'achat" required>
+                  <select
+                    value={selectedHeaderId}
+                    onChange={(e) => selectHeader(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="">Sélectionner une commande ouverte…</option>
+                    {bcHeaders.map((h) => {
+                      const hItems = bcItems.filter((i) => i.headerId === h.id)
+                      const totalReste = hItems.reduce(
+                        (s, i) => s + Math.max(0, i.quantite - i.quantiteRecue),
+                        0,
+                      )
+                      return (
+                        <option key={h.id} value={h.id}>
+                          {h.numero} · {h.fournisseur} · {hItems.length} article{hItems.length > 1 ? 's' : ''} · {totalReste} à réceptionner
+                        </option>
+                      )
+                    })}
+                  </select>
+                </Field>
+
+                {selectedHeader && (
+                  <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm grid grid-cols-3 gap-2">
+                    <p>
+                      <span className="font-semibold text-blue-700">Document : </span>
+                      <span className="text-blue-600">
+                        {selectedHeader.numero}{' '}
+                        <span className="opacity-70">({selectedHeader.type === 'BC' ? 'Formel' : 'Informel'})</span>
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-semibold text-blue-700">Fournisseur : </span>
+                      <span className="text-blue-600">{selectedHeader.fournisseur}</span>
+                    </p>
+                    {selectedHeader.contrat && (
+                      <p>
+                        <span className="font-semibold text-blue-700">Contrat : </span>
+                        <span className="text-blue-600">{selectedHeader.contrat}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* ② LIGNES ARTICLES */}
+              {itemForms.length > 0 && (
+                <section className="space-y-3">
+                  <SectionTitle
+                    num="②"
+                    label="Lignes articles — saisie de réception"
+                    badge={itemForms.length}
+                  />
+
+                  <div className="rounded-lg border overflow-hidden divide-y">
+                    {itemForms.map((f, idx) => {
+                      const bcItem = bcItems.find((i) => i.id === f.bcItemId)
+                      return (
+                        <div key={f.bcItemId} className="p-4 space-y-3">
+
+                          {/* Ligne info */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-semibold text-muted-foreground px-2 py-0.5 rounded bg-muted">
+                                Ligne {idx + 1}
+                              </span>
+                              <span className="text-sm font-semibold">{f.article}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              Commandé : <strong>{f.quantiteCmd}</strong>{' '}
+                              {f.uniteCmd}
+                              {f.reste > 0 && (
+                                <> · Restant : <strong className="text-orange-600">{f.reste}</strong></>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Champs de saisie */}
+                          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
+
+                            <Field label="Qté reçue" required>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={f.qteRecue}
+                                onChange={(e) => setIF(f.bcItemId, 'qteRecue', e.target.value)}
+                                placeholder="0"
+                              />
+                            </Field>
+
+                            <Field label="N° lot fournisseur" required>
+                              <Input
+                                value={f.lotFourn}
+                                onChange={(e) => setIF(f.bcItemId, 'lotFourn', e.target.value)}
+                                placeholder="ex: BATCH-A23-08"
+                              />
+                            </Field>
+
+                            <Field label="DLC fournisseur">
+                              <Input
+                                type="date"
+                                value={f.dlc}
+                                onChange={(e) => setIF(f.bcItemId, 'dlc', e.target.value)}
+                              />
+                              {bcItem?.dureeVie && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Calculée auto. : J+{bcItem.dureeVie} j — modifiable si DLC imposée
+                                </p>
+                              )}
+                            </Field>
+
+                            <Field label="Humidité (%)">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={f.humidite}
+                                onChange={(e) => setIF(f.bcItemId, 'humidite', e.target.value)}
+                                placeholder="0"
+                              />
+                            </Field>
+
+                            <Field label="Scan code-barres / DataMatrix">
+                              <div className="flex gap-2">
+                                <Input
+                                  value={f.codeBarres}
+                                  onChange={(e) => setIF(f.bcItemId, 'codeBarres', e.target.value)}
+                                  placeholder="EAN-13 / GS1 DataMatrix"
+                                  className="flex-1"
+                                />
+                                <Button type="button" variant="outline" className="gap-2 shrink-0">
+                                  <Barcode className="size-4" />
+                                  Scanner
+                                </Button>
+                              </div>
+                            </Field>
+
+                            <Field label="Statut du lot">
+                              <div className="flex gap-2">
+                                {STATUT_LOT_OPTIONS.map((opt) => {
+                                  const active = f.statutLot === opt.value
+                                  return (
+                                    <button
+                                      key={opt.value}
+                                      onClick={() => setIF(f.bcItemId, 'statutLot', opt.value)}
+                                      className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-md border text-xs font-medium transition-colors ${
+                                        active
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                          : 'border-input bg-background text-muted-foreground hover:border-muted-foreground/40'
+                                      }`}
+                                    >
+                                      <opt.Icon className={`size-3.5 ${active ? opt.activeClass : opt.iconClass}`} />
+                                      {opt.label}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </Field>
+
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Photos (si commande sélectionnée) */}
+              {selectedHeader && (
+                <div className="rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 cursor-pointer px-6 py-8 text-center transition-colors">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Camera className="size-5" />
+                    <p className="text-sm">Photos de la marchandise (preuve qualité)</p>
+                  </div>
                 </div>
               )}
 
-              {/* Qté + Humidité */}
-              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                <Field label="Qté reçue" required>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={form.qteRecue}
-                    onChange={(e) => set('qteRecue', e.target.value)}
-                    placeholder="0"
-                    disabled={!commande}
-                  />
-                </Field>
-
-                <Field label="Humidité (%)">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={form.humidite}
-                    onChange={(e) => set('humidite', e.target.value)}
-                    placeholder="0"
-                    disabled={!commande}
-                  />
-                </Field>
-
-                {/* N° lot + DLC */}
-                <Field label="N° lot fournisseur" required>
-                  <Input
-                    value={form.lotFourn}
-                    onChange={(e) => set('lotFourn', e.target.value)}
-                    placeholder="ex: BATCH-A23-08"
-                    disabled={!commande}
-                  />
-                </Field>
-
-                <Field label="DLC fournisseur">
-                  <Input
-                    type="date"
-                    value={form.dlc}
-                    onChange={(e) => set('dlc', e.target.value)}
-                    disabled={!commande}
-                  />
-                  {commande?.dureeVie && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Calculée auto. : J+{commande.dureeVie} j · Modifiable si DLC imposée par le fournisseur
-                    </p>
-                  )}
-                </Field>
-              </div>
-
-              {/* Scan code-barres */}
-              <Field label="Scan code-barres / DataMatrix">
-                <div className="flex gap-2">
-                  <Input
-                    value={form.codeBarres}
-                    onChange={(e) => set('codeBarres', e.target.value)}
-                    placeholder="EAN-13 / GS1 DataMatrix"
-                    disabled={!commande}
-                    className="flex-1"
-                  />
-                  <Button type="button" disabled={!commande} className="gap-2 shrink-0">
-                    <Barcode className="size-4" />
-                    Scanner
-                  </Button>
-                </div>
-              </Field>
-
-              {/* Statut visuel */}
-              <Field label="Statut visuel">
-                <Select
-                  value={form.statut}
-                  onValueChange={(v) => { if (v !== null) set('statut', v) }}
-                  disabled={!commande}
-                >
-                  <SelectTrigger className="w-full">
-                    {(() => {
-                      const opt = STATUT_OPTIONS.find((s) => s.value === form.statut)
-                      return opt
-                        ? <span className="flex items-center gap-2">
-                            <opt.icon className={`size-4 ${opt.iconClass}`} />
-                            {opt.label}
-                          </span>
-                        : <SelectValue placeholder="Sélectionner…" />
-                    })()}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUT_OPTIONS.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        <span className="flex items-center gap-2">
-                          <s.icon className={`size-4 ${s.iconClass}`} />
-                          {s.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {/* Photos */}
-              <div className={`rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
-                commande
-                  ? 'border-muted-foreground/30 hover:border-muted-foreground/50 cursor-pointer'
-                  : 'border-muted/30 opacity-40 pointer-events-none'
-              }`}>
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Camera className="size-5" />
-                  <p className="text-sm">Photos de la marchandise (preuve qualité)</p>
-                </div>
-              </div>
-
-              {/* Footer info */}
+              {/* Note */}
               <div className="flex items-start gap-2.5 rounded-lg border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
                 <ShieldCheck className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
                 <span>
-                  À la validation, le lot entre en stock avec statut{' '}
-                  <strong className="text-foreground">"En contrôle"</strong> (bloqué MRP/OF). Libération
-                  dans <strong className="text-foreground">Assurance Qualité</strong>.
+                  Chaque ligne entre en stock avec statut{' '}
+                  <strong className="text-foreground">"En contrôle"</strong> (bloqué MRP/OF).
+                  Le statut global de la réception est calculé automatiquement depuis les statuts de lots.
+                  Libération dans{' '}
+                  <strong className="text-foreground">Assurance Qualité</strong>.
                 </span>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 p-4 border-t shrink-0">
-              <Button variant="outline" onClick={onClose} disabled={saving}>
-                Annuler
-              </Button>
-              <Button onClick={handleSave} disabled={!isValid() || saving}>
-                {saving
-                  ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
-                  : 'Enregistrer la réception'
-                }
-              </Button>
+            {/* ── Footer ───────────────────────────────────────────────── */}
+            <div className="flex items-center justify-between gap-2 p-4 border-t shrink-0">
+
+              {/* Statut global calculé */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {selectedHeader && (
+                  <>
+                    <span>Statut global :</span>
+                    <span className={`px-2 py-0.5 rounded-full font-medium border ${
+                      globalStatut === 'Conforme'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                        : globalStatut === 'Reserve'
+                          ? 'bg-orange-100 text-orange-700 border-orange-200'
+                          : 'bg-amber-100 text-amber-700 border-amber-200'
+                    }`}>
+                      {globalStatut === 'Conforme' ? 'Conforme' : globalStatut === 'Reserve' ? 'Réserve' : 'Attente'}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={onClose} disabled={saving}>
+                  Annuler
+                </Button>
+                <Button onClick={handleSave} disabled={!isValid() || saving}>
+                  {saving
+                    ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
+                    : 'Enregistrer la réception'}
+                </Button>
+              </div>
             </div>
+
           </div>
         </DialogPrimitive.Popup>
       </DialogPortal>
