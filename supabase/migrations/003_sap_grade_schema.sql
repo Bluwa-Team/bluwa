@@ -6,7 +6,7 @@
 --   organizations      → MANDT  (mandant / tenant)
 --   factories          → T001W  (sites de production)
 --   profiles           → USR21  (utilisateurs liés à un site)
---   vendors            → LFA1   (fournisseurs Master Data)
+--   suppliers            → LFA1   (fournisseurs Master Data)
 --   articles           → MARA   (catalogue article — sans stock global)
 --   articles_stocks    → MARC   (stock par site)
 --   purchase_orders    → EKKO   (en-tête commande fournisseur)
@@ -159,7 +159,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- commandes. Chaque commande lie désormais un UUID réel.
 -- Les données sont migrées depuis la table fournisseurs existante.
 
-CREATE TABLE IF NOT EXISTS vendors (
+CREATE TABLE IF NOT EXISTS suppliers (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name            TEXT        NOT NULL,
@@ -172,33 +172,33 @@ CREATE TABLE IF NOT EXISTS vendors (
   UNIQUE (organization_id, name)
 );
 
-ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "vendors_org_select" ON vendors;
-DROP POLICY IF EXISTS "vendors_org_insert" ON vendors;
-DROP POLICY IF EXISTS "vendors_org_update" ON vendors;
-DROP POLICY IF EXISTS "vendors_org_delete" ON vendors;
+DROP POLICY IF EXISTS "suppliers_org_select" ON suppliers;
+DROP POLICY IF EXISTS "suppliers_org_insert" ON suppliers;
+DROP POLICY IF EXISTS "suppliers_org_update" ON suppliers;
+DROP POLICY IF EXISTS "suppliers_org_delete" ON suppliers;
 
-CREATE POLICY "vendors_org_select" ON vendors FOR SELECT
+CREATE POLICY "suppliers_org_select" ON suppliers FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-CREATE POLICY "vendors_org_insert" ON vendors FOR INSERT
+CREATE POLICY "suppliers_org_insert" ON suppliers FOR INSERT
   WITH CHECK (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-CREATE POLICY "vendors_org_update" ON vendors FOR UPDATE
+CREATE POLICY "suppliers_org_update" ON suppliers FOR UPDATE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-CREATE POLICY "vendors_org_delete" ON vendors FOR DELETE
+CREATE POLICY "suppliers_org_delete" ON suppliers FOR DELETE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX IF NOT EXISTS vendors_org_idx ON vendors(organization_id);
+CREATE INDEX IF NOT EXISTS suppliers_org_idx ON suppliers(organization_id);
 
 DO $$ BEGIN
-  CREATE TRIGGER vendors_updated_at BEFORE UPDATE ON vendors
+  CREATE TRIGGER suppliers_updated_at BEFORE UPDATE ON suppliers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- ── Migration fournisseurs → vendors ──────────────────────────
+-- ── Migration fournisseurs → suppliers ──────────────────────────
 -- Copie les fournisseurs existants dans la nouvelle table propre.
 -- ON CONFLICT DO NOTHING = idempotent (peut être rejoué).
-INSERT INTO vendors (id, organization_id, name, code, vendor_type, created_at, updated_at)
+INSERT INTO suppliers (id, organization_id, name, code, vendor_type, created_at, updated_at)
 SELECT
   id,
   organization_id,
@@ -304,23 +304,29 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- ================================================================
 -- Remplace BCHeader (TypeScript mock).
 -- factory_id = site destinataire de la livraison.
--- vendor_id  = FK réelle vers vendors (fini le string texte).
+-- supplier_id = FK réelle vers suppliers (fini le string texte).
 -- created_by = FK vers profiles (traçabilité auteur).
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
   id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID         NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  factory_id      UUID         NOT NULL REFERENCES factories(id),
-  vendor_id       UUID         NOT NULL REFERENCES vendors(id),
-  order_number    TEXT         NOT NULL,
-  order_type      VARCHAR(10)  NOT NULL CHECK (order_type IN ('BC', 'BA')),
-  contract_number VARCHAR(100),               -- N° contrat-cadre, nullable
-  status          TEXT         NOT NULL DEFAULT 'EnCours'
-                                 CHECK (status IN ('EnCours', 'Partielle', 'Recue', 'Annulee')),
+  factory_id      UUID         NOT NULL REFERENCES factories(id)   ON DELETE RESTRICT,
+  supplier_id     UUID         NOT NULL REFERENCES suppliers(id)   ON DELETE RESTRICT,
+  order_number    VARCHAR(50)  NOT NULL,
+  order_type      VARCHAR(10)  NOT NULL DEFAULT 'BC'
+                                 CHECK (order_type IN ('BC', 'BA')),
+  contract_number VARCHAR(50),
+  status          VARCHAR(30)  NOT NULL DEFAULT 'DRAFT'
+                                 CHECK (status IN ('DRAFT', 'PENDING', 'APPROVED', 'RECEIVED')),
+  currency        VARCHAR(3)   NOT NULL DEFAULT 'XOF',
+  -- Multi-devises : XOF (UEMOA), XAF (CEMAC), EUR, USD, GHS…
+  -- Le code ISO 4217 est libre — pas de CHECK pour ne pas bloquer les nouvelles devises.
   created_by      UUID         REFERENCES profiles(id) ON DELETE SET NULL,
-  created_at      TIMESTAMPTZ  DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ  DEFAULT NOW(),
-  UNIQUE (organization_id, order_number)
+  -- profiles.id = auth.users.id (extension publique de Supabase Auth)
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at      TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+
+  CONSTRAINT unique_order_number_per_tenant UNIQUE (organization_id, order_number)
 );
 
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
@@ -339,12 +345,12 @@ CREATE POLICY "po_org_update" ON purchase_orders FOR UPDATE
 CREATE POLICY "po_org_delete" ON purchase_orders FOR DELETE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX IF NOT EXISTS po_org_idx     ON purchase_orders(organization_id);
-CREATE INDEX IF NOT EXISTS po_factory_idx ON purchase_orders(factory_id);
-CREATE INDEX IF NOT EXISTS po_vendor_idx  ON purchase_orders(vendor_id);
-CREATE INDEX IF NOT EXISTS po_status_idx  ON purchase_orders(status);
--- Index pour la numérotation automatique (max numero par org+type)
-CREATE INDEX IF NOT EXISTS po_type_idx    ON purchase_orders(organization_id, order_type);
+CREATE INDEX IF NOT EXISTS po_org_idx      ON purchase_orders(organization_id);
+CREATE INDEX IF NOT EXISTS po_factory_idx  ON purchase_orders(factory_id);
+CREATE INDEX IF NOT EXISTS po_supplier_idx ON purchase_orders(supplier_id);
+CREATE INDEX IF NOT EXISTS po_status_idx   ON purchase_orders(status);
+-- Index pour la numérotation automatique (max order_number par org+type)
+CREATE INDEX IF NOT EXISTS po_type_idx     ON purchase_orders(organization_id, order_type);
 
 DO $$ BEGIN
   CREATE TRIGGER po_updated_at BEFORE UPDATE ON purchase_orders
@@ -356,24 +362,28 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- 8. PURCHASE_ORDER_ITEMS (Lignes commandes — EKPO)
 -- ================================================================
 -- Remplace BCItem (TypeScript mock).
--- article_id  = FK vers articles (nullable pour les BA informels
---               où l'article n'est pas dans le catalogue).
--- article_label = désignation dénormalisée — toujours renseignée,
---                 permet de lire une ligne même si l'article est
---                 supprimé du catalogue.
+-- item_position = numéro de ligne dans la commande (1, 2, 3…)
+--                 équivalent de EKPO.EBELP chez SAP.
+-- article_id    = FK stricte vers articles.
+--                 Pour les BA informels sans article en catalogue :
+--                 article_id NULL accepté, article_label obligatoire.
+-- quantity_received est retiré d'ici — il appartient à la table
+-- de réception (goods_receipts_items) pour garder EKPO immuable.
 
 CREATE TABLE IF NOT EXISTS purchase_order_items (
   id                     UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
   purchase_order_id      UUID           NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
   article_id             UUID           REFERENCES articles(id) ON DELETE RESTRICT,
   article_label          TEXT           NOT NULL,
+  -- Dénormalisé : permet de lire la ligne même si l'article est archivé
+  item_position          INT            NOT NULL CHECK (item_position > 0),
   quantity               DECIMAL(15, 4) NOT NULL CHECK (quantity > 0),
-  quantity_received      DECIMAL(15, 4) NOT NULL DEFAULT 0
-                           CHECK (quantity_received >= 0),
-  unit_price_ht          DECIMAL(15, 4) CHECK (unit_price_ht >= 0),
-  shelf_life_days        INTEGER        CHECK (shelf_life_days > 0),
+  unit_price_ht          DECIMAL(15, 2) NOT NULL CHECK (unit_price_ht >= 0),
+  shelf_life_days        INT,
   expected_delivery_date DATE           NOT NULL,
-  created_at             TIMESTAMPTZ    DEFAULT NOW()
+  created_at             TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+
+  CONSTRAINT unique_position_per_order UNIQUE (purchase_order_id, item_position)
 );
 
 ALTER TABLE purchase_order_items ENABLE ROW LEVEL SECURITY;
@@ -413,12 +423,12 @@ CREATE INDEX IF NOT EXISTS poi_article_idx ON purchase_order_items(article_id);
 -- BONUS — CONTRATS_ACHAT (Contrats-cadres fournisseurs)
 -- ================================================================
 -- Requis par getContratActifByFournisseur() (lib/actions/approvisionnement.ts).
--- Un contrat lie un vendor à des conditions négociées sur une période.
+-- Un contrat lie un supplier à des conditions négociées sur une période.
 
 CREATE TABLE IF NOT EXISTS contrats_achat (
   id              UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID           NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  vendor_id       UUID           NOT NULL REFERENCES vendors(id),
+  supplier_id     UUID           NOT NULL REFERENCES suppliers(id),
   reference       TEXT           NOT NULL,       -- CT-2026-XXX
   article         TEXT           NOT NULL,
   date_debut      DATE           NOT NULL,
@@ -449,7 +459,7 @@ CREATE POLICY "ca_org_update" ON contrats_achat FOR UPDATE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
 -- Index optimisé pour la requête getContratActifByFournisseur()
-CREATE INDEX IF NOT EXISTS ca_vendor_statut_dates ON contrats_achat(organization_id, vendor_id, statut, date_debut, date_fin);
+CREATE INDEX IF NOT EXISTS ca_supplier_statut_dates ON contrats_achat(organization_id, supplier_id, statut, date_debut, date_fin);
 
 DO $$ BEGIN
   CREATE TRIGGER ca_updated_at BEFORE UPDATE ON contrats_achat
