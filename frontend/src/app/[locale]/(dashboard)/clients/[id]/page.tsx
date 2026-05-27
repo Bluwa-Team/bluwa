@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Smartphone } from 'lucide-react'
+import { ArrowLeft, Pencil, Smartphone, Plus, Trash2 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ClientModal } from '../_components/client-modal'
+import { GrilleTarifaireModal } from '../_components/grille-tarifaire-modal'
 import {
   Client, CLIENT_TYPE_COLORS,
   STATUT_COLORS, INCOTERMS_CLIENT,
+  GrilleTarifaire,
 } from '../_components/types'
-import { getClientById, updateClient } from '@/lib/actions/clients'
+import { getClientById, updateClient, deleteGrilleTarifaire } from '@/lib/actions/clients'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -38,11 +40,21 @@ export default function ClientDetailPage() {
   const t = useTranslations('clients')
   const tCommon = useTranslations('common')
   const locale = useLocale()
-  const [client, setClient] = useState<Client | null | undefined>(undefined)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [client, setClient]                       = useState<Client | null | undefined>(undefined)
+  const [grille, setGrille]                       = useState<GrilleTarifaire[]>([])
+  const [modalOpen, setModalOpen]                 = useState(false)
+  const [grilleModalOpen, setGrilleModalOpen]     = useState(false)
+  const [deletingCode, setDeletingCode]           = useState<string | null>(null)
 
   useEffect(() => {
-    getClientById(id as string).then(setClient)
+    getClientById(id as string).then((data) => {
+      if (data) {
+        setClient(data)
+        setGrille(data.grilleTarifaire)  // initialise le state local grille
+      } else {
+        setClient(null)
+      }
+    })
   }, [id])
 
   if (client === undefined) {
@@ -64,6 +76,13 @@ export default function ClientDetailPage() {
     const updated = await updateClient(c.id, data)
     if (updated) setClient(updated)
     return !!updated
+  }
+
+  async function handleDeleteTarif(articleCode: string) {
+    setDeletingCode(articleCode)
+    const ok = await deleteGrilleTarifaire(c.id, articleCode)
+    setDeletingCode(null)
+    if (ok) setGrille((prev) => prev.filter((g) => g.articleCode !== articleCode))
   }
 
   const incotermLabel = (INCOTERMS_CLIENT.find((i) => i.code === c.incoterm)?.label) ?? (c.incoterm || 'N/A')
@@ -170,8 +189,17 @@ export default function ClientDetailPage() {
 
         {/* Grille tarifaire */}
         <TabsContent value="tarifs" className="mt-4">
-          {c.grilleTarifaire.length === 0 ? (
-            <div className="rounded-lg border p-10 text-center text-muted-foreground text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground">
+              {grille.length} tarif{grille.length !== 1 ? 's' : ''} négocié{grille.length !== 1 ? 's' : ''}
+            </p>
+            <Button size="sm" className="gap-1.5" onClick={() => setGrilleModalOpen(true)}>
+              <Plus className="size-3.5" />
+              Ajouter un tarif
+            </Button>
+          </div>
+          {grille.length === 0 ? (
+            <div className="rounded-lg border border-dashed flex items-center justify-center py-16 text-sm text-muted-foreground">
               {t('detail.tariffs.empty')}
             </div>
           ) : (
@@ -183,17 +211,28 @@ export default function ClientDetailPage() {
                     <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.designation')}</th>
                     <th className="text-right px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.negotiatedPrice')}</th>
                     <th className="text-left px-4 py-2.5 font-semibold text-xs tracking-wide">{t('detail.tariffs.columns.currency')}</th>
+                    <th className="w-10 shrink-0" />
                   </tr>
                 </thead>
                 <tbody>
-                  {c.grilleTarifaire.map((g) => (
-                    <tr key={g.articleCode} className="border-t">
+                  {grille.map((g) => (
+                    <tr key={g.articleCode} className="border-t hover:bg-muted/20">
                       <td className="px-4 py-3 font-mono text-xs font-medium">{g.articleCode}</td>
                       <td className="px-4 py-3">{g.designation}</td>
                       <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-700">
                         {formatNumber(g.prixNegecie, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-muted-foreground">{g.devise}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleDeleteTarif(g.articleCode)}
+                          disabled={deletingCode === g.articleCode}
+                          className="flex items-center justify-center size-7 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+                          title="Supprimer ce tarif"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -218,6 +257,23 @@ export default function ClientDetailPage() {
         onClose={() => setModalOpen(false)}
         client={client}
         onSave={handleSave}
+      />
+
+      <GrilleTarifaireModal
+        open={grilleModalOpen}
+        onClose={() => setGrilleModalOpen(false)}
+        clientId={c.id}
+        existing={grille}
+        onSave={(entry) => setGrille((prev) => {
+          // upsert local : remplace si existe, ajoute sinon
+          const idx = prev.findIndex((g) => g.articleCode === entry.articleCode)
+          if (idx >= 0) {
+            const next = [...prev]
+            next[idx] = entry
+            return next
+          }
+          return [...prev, entry]
+        })}
       />
     </div>
   )

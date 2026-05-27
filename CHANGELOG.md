@@ -222,7 +222,116 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-05-27] — Session 7
+
+### Architecture DB — Schema Maître v1.0 (modèle gelé & validé)
+
+#### Migration 009 — `009_master_schema_v1.sql`
+- **Nouveau** : script de migration global (850 lignes) définissant l'architecture relationnelle définitive
+- **Philosophie** : Fat Database, Thin Backend — contraintes, intégrité et automatisations portées en PostgreSQL
+- **16 tables** créées, organisées en 4 sections :
+  - `§1 SaaS & Identity` : `organizations`, `factories`, `profiles`, `user_site_access`
+    - `UNIQUE(user_id, factory_id)` sur `user_site_access` — accès multi-sites (ex. gérante Dakar + Lomé)
+    - Trigger `fn_handle_new_user()` — création automatique du profil à l'inscription Supabase Auth
+  - `§2 Master Data` : `vendors`, `articles`, `article_stocks`
+    - `CONSTRAINT unique_sku_par_tenant UNIQUE(organization_id, sku)` sur `articles`
+    - `article_stocks` : paramètres MRP intégrés (`safety_stock`, `reorder_point`, `lead_time_days`, `mrp_type IN ('PD','VB','ND')`)
+  - `§3 Flux Achats` : `purchase_orders`, `purchase_order_items`
+    - Trigger `fn_update_po_total()` : recalcule `total_amount_ht` à chaque INSERT/UPDATE/DELETE sur les lignes
+    - `shelf_life_days` sur les lignes BC (durée de vie minimale attendue à livraison)
+  - `§4 Boucle Transactionnelle` : `production_orders`, `purchase_requisitions`, `goods_receipts`, `goods_receipt_items`, `quality_inspection_lots`, `vendor_invoices`, `vendor_invoice_items`
+    - `vendor_invoices.amount_ttc GENERATED ALWAYS AS (amount_ht + amount_tax) STORED` — intégrité comptable garantie en DB
+    - BR POSTED immuable : RLS UPDATE bloqué si `status = 'POSTED'`
+    - Décision QC irréversible : RLS UPDATE bloqué si `status != 'EN_CONTROLE'`
+    - Triple Concordance : `vendor_invoice_items` porte `quantity_ordered`, `quantity_received`, `quantity_invoiced` + `concordance_status`
+  - `§5 Traçabilité MRP` : FK `purchase_order_items → purchase_requisitions` (lien BC ↔ DA MRP), ajoutée via `ALTER TABLE` après la création de `purchase_requisitions` pour respecter l'ordre des dépendances
+- **53 index** couvrant toutes les colonnes de filtrage fréquent (`organization_id`, `factory_id`, `status`, `mrp_type`, `due_date`...)
+- **62 RLS policies** — isolation multi-tenant complète via `fn_current_org_id()` (évite les sous-requêtes répétées)
+- Helpers globaux : `fn_set_updated_at()` (trigger générique `updated_at`), `fn_current_org_id()` (résolution JWT)
+
+#### Migration 010 — `010_contrats_achat.sql`
+- **Nouveau** : table `contrats_achat` avec FK sur `fournisseurs(id)` (table active en production depuis migration 002)
+- Colonnes : `reference`, `article`, `date_debut`, `date_fin`, `prix_unitaire DECIMAL(15,4)`, `quantite_min`, `unite`, `statut CHECK('Actif','Expire','EnNegociation')`
+- Contraintes : `UNIQUE(organization_id, reference)` + `CHECK(date_fin > date_debut)`
+- Index : `(organization_id, fournisseur_id)` + `(organization_id, statut, date_debut, date_fin)`
+- RLS complète (select/insert/update/delete)
+
+### Module Fournisseurs — Contrats câblés sur Supabase
+
+#### Diagnostic préalable
+- Audit via API REST Supabase : seules `fournisseurs`, `clients`, `organizations`, `profiles`, `factories` sont en base — migrations 003–008 jamais appliquées
+- `contrats_achat` de migration 003 référençait `suppliers(id)` (inexistante) — FK corrigée vers `fournisseurs(id)` dans migration 010
+
+#### `lib/actions/contrats.ts` (nouveau)
+- `getContratsByFournisseur(fournisseurId)` — lecture filtrée par org + fournisseur, tri par `date_debut DESC`
+- `createContrat(contrat)` — insert + retourne l'objet persisté avec son UUID réel
+- `updateContrat(id, patch)` — patch partiel (prévu pour édition future)
+- `deleteContrat(id)` — suppression sécurisée avec vérification `organization_id`
+
+#### `fournisseurs/_components/contrat-modal.tsx` (nouveau)
+- 3 sections : Identification (référence + statut), Période de validité (dates avec validation cohérence), Conditions tarifaires (prix + devise + qté min + unité)
+- Validation front-end sur tous les champs obligatoires avant soumission
+- Appelle `createContrat()` — reste ouvert si erreur serveur (pas de fermeture silencieuse)
+
+#### `fournisseurs/[id]/page.tsx` — mise à jour
+- **Fix** : bouton "Nouveau contrat" n'avait aucun `onClick` et `const [contrats]` était en lecture seule
+- `useEffect` au montage → `getContratsByFournisseur(id)` avec état `contratsLoading`
+- Skeleton "Chargement des contrats…" pendant la requête initiale
+- `onSave` reçoit le contrat persisté (UUID Supabase) et l'ajoute au state local
+
+### Module Clients — Grille tarifaire câblée sur Supabase
+
+#### Diagnostic préalable
+- `clients`, `grilles_tarifaires` déjà en Supabase (migration 002) ✅
+- Actions `getClients`, `getClientById`, `createClient`, `updateClient` déjà complètes ✅
+- `getClientById` chargeait déjà `grilles_tarifaires` mais l'onglet était **read-only** (aucun bouton d'ajout/suppression)
+
+#### `lib/actions/clients.ts` — 3 nouvelles fonctions
+- `upsertGrilleTarifaire(clientId, entry)` — exploite `UNIQUE(client_id, article_code)` via `.upsert()` : crée ou met à jour
+- `deleteGrilleTarifaire(clientId, articleCode)` — suppression par clé composite
+- `getArticlesLite()` — retourne les articles `Actif` de type `PF/PSF` pour l'autocomplete (code, désignation, `prix_vente`, unité)
+
+#### `clients/_components/grille-tarifaire-modal.tsx` (nouveau)
+- Charge les articles depuis Supabase au montage → `<datalist>` pour l'autocomplétion du code article
+- Pré-remplit désignation + prix catalogue quand l'utilisateur sélectionne un article connu
+- Avertissement ambre (non bloquant) si l'article a déjà un tarif — upsert expliqué à l'utilisateur
+- Champs : article (code), désignation, prix négocié, devise
+
+#### `clients/[id]/page.tsx` — mise à jour
+- `grille` extrait dans un state local indépendant (mutable sans refetch)
+- Bouton **"Ajouter un tarif"** + compteur dynamique dans l'onglet
+- Colonne **Supprimer** (icône Trash2) sur chaque ligne — `disabled` avec opacité pendant la suppression en cours
+- `onSave` fait un upsert local : remplace si l'article existait, ajoute sinon — cohérent avec le comportement DB
+
+### Gamme de fabrication — Migration 008 surfacée dans l'UI
+
+#### `articles/_components/gamme-edit-modal.tsx`
+- **Ajout** : colonne **"Réglage (min)"** (`setupTimeMinutes`) entre "Lot (min)" et "Temp. (°C)"
+- Input numérique par ligne câblé sur `updateRow(id, 'setupTimeMinutes', ...)`
+- Largeurs uniformisées `w-[72px]` sur les 3 colonnes numériques
+- Note de bas de tableau mise à jour : "Réglage = temps de réglage machine avant démarrage (Rüstzeit)"
+
+#### `articles/_components/bom-edit-modal.tsx`
+- **Ajout** : champ **"Nom de version"** (`versionName`) à côté de "Version BOM" — grille passée de 3 à 2×2 colonnes
+- **Ajout** : colonne **"Rebut (%)"** (`scrapFactorPercentage`) dans le tableau des composants — distinct de la tolérance de pesée
+- `addRow()` initialise `scrapFactorPercentage: 0`
+- `handleSave` passe `versionName` + `baseQuantity` (= `batchSize`) dans le header
+- Note mise à jour : "Tol. = variance pesée | Rebut = pertes process planifiées (≡ AUSSS SAP)"
+
+### MRP — Paramètres migration 008
+
+#### `mrp/_components/types.ts`
+- **Ajout** : `MrpType = 'PD' | 'VB' | 'ND'` + `MRP_TYPE_LABELS`
+- **Ajout** : champs `mrpType`, `safetyStock`, `reorderPoint` sur `ComposantBOM`
+- `MOCK_BOM` mis à jour : 10 composants avec valeurs MRP réalistes (hibiscus=PD, sucre=VB, eau=ND, emballages=VB...)
+
+---
+
 ## À venir
+
+### Migrations à appliquer en Supabase (priorité)
+- [ ] **Migration 010** — `010_contrats_achat.sql` à exécuter dans le SQL Editor Supabase (bloque les contrats fournisseurs)
+- [ ] **Migration 009** — `009_master_schema_v1.sql` (schema maître complet — à planifier avec migration des données existantes)
 
 ### Phase 1 — Écrans restants à construire ou compléter
 - [ ] Dashboard — brancher les KPI cards sur les vraies données (mock d'abord)
@@ -232,15 +341,17 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 - [ ] Analyse de marge — stub à implémenter
 - [ ] Paramètres — page non implémentée
 - [x] Production OF — modal "Nouvel OF" (formulaire complet + câblage page)
+- [x] Contrats fournisseurs — modal + server action + câblage Supabase (Session 7)
+- [x] Grille tarifaire clients — modal + server actions upsert/delete + câblage Supabase (Session 7)
 
 ### Dette technique identifiée
 - [ ] Colonne `Article` (onglet Stratégie, page Approvisionnement) : même bug `defaultWidth: null` que corrigé sur Commandes
-- [ ] Pas de système de notifications (toast) — les erreurs d'actions sont silencieuses
+- [ ] Pas de système de notifications (toast) — les erreurs d'actions sont silencieuses (ex. `createContrat` échoue silencieusement)
 - [ ] Pas de pagination sur les requêtes liste (`getArticles`, `getClients`…)
 - [ ] Bouton de déconnexion absent du sidebar
 - [ ] Aucun test (unitaire ou E2E)
 - [ ] Import/export CSV : boutons présents mais sans handlers
 - [ ] `profiles.factory_id` hardcodé à `null` à l'onboarding (`auth.ts` l.101) — fix trivial, voir Session 6
-- [ ] Migration 003 à appliquer en Supabase (tables EKKO/EKPO, `factory_id` sur stocks/entrepots, `contrats_achat`)
-- [ ] `BCHeader.fournisseur` est un string texte — migrer vers `fournisseur_id UUID` une fois migration 003 appliquée
-- [ ] Table `factories` à versionner dans une migration (actuellement créée à la main dans Supabase Studio)
+- [ ] `BCHeader.fournisseur` est un string texte — migrer vers `fournisseur_id UUID` une fois migration 009 appliquée
+- [ ] `getArticlesLite()` filtre `type IN ('PF','PSF')` — à adapter si la grille tarifaire doit couvrir d'autres types d'articles
+- [ ] Onglets "Commandes" et "Livraisons" des pages Fournisseur et Client restent vides (`EmptyTab`) — nécessitent `sales_orders` et `purchase_orders` en base

@@ -1,3 +1,67 @@
+// ── Types DB-alignés (migration 004) ─────────────────────────────────────────
+//
+// Correspondance SAP : production_orders → AUFK + AFKO
+//
+// Ces types reflètent exactement le schéma Supabase.
+// Les types mock (OrdreFabrication, StatutOF…) restent en place
+// pour la compatibilité des composants existants.
+
+export type StatutOFDB =
+  | 'PLANNED'      // Planifié  — créé par le planificateur ou le MRP
+  | 'RELEASED'     // Lancé     — matières vérifiées, OF remis à l'atelier
+  | 'IN_PROGRESS'  // En cours  — quantité_produite > 0
+  | 'COMPLETED'    // Terminé   — quantité cible atteinte, OF clôturé
+  | 'CANCELLED'    // Annulé    — OF abandonné
+
+export interface ProductionOrder {
+  id:               string
+  organizationId:   string
+  factoryId:        string
+  articleId:        string
+  orderNumber:      string          // ex. 'OF-2026-0099'
+  quantityTarget:   number
+  quantityProduced: number          // mis à jour à chaque déclaration
+  status:           StatutOFDB
+  startDate:        string          // ISO date — début planifié
+  endDate:          string          // ISO date — fin planifiée
+  createdBy:        string | null   // profiles.id
+  createdAt:        string
+  updatedAt:        string
+}
+
+export const STATUT_OF_DB_LABELS: Record<StatutOFDB, string> = {
+  PLANNED:     'Planifié',
+  RELEASED:    'Lancé',
+  IN_PROGRESS: 'En cours',
+  COMPLETED:   'Terminé',
+  CANCELLED:   'Annulé',
+}
+
+export const STATUT_OF_DB_COLORS: Record<StatutOFDB, string> = {
+  PLANNED:     'bg-blue-100 text-blue-700 border border-blue-200',
+  RELEASED:    'bg-violet-100 text-violet-700 border border-violet-200',
+  IN_PROGRESS: 'bg-rose-100 text-rose-700 border border-rose-200',
+  COMPLETED:   'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  CANCELLED:   'bg-gray-100 text-gray-500 border border-gray-200',
+}
+
+// Cycle de vie autorisé : seules certaines transitions sont valides
+//   PLANNED     → RELEASED | CANCELLED
+//   RELEASED    → IN_PROGRESS | CANCELLED
+//   IN_PROGRESS → COMPLETED | CANCELLED
+export const STATUT_OF_DB_NEXT: Partial<Record<StatutOFDB, StatutOFDB>> = {
+  PLANNED:     'RELEASED',
+  RELEASED:    'IN_PROGRESS',
+  IN_PROGRESS: 'COMPLETED',
+}
+
+export const STATUT_OF_DB_TRANSITION: Partial<Record<StatutOFDB, string>> = {
+  PLANNED:     'Lancer',
+  RELEASED:    'Démarrer',
+  IN_PROGRESS: 'Terminer',
+}
+
+
 // ── Référentiel produits / opérateurs ────────────────────────────────────────
 // Les recettes (BOM) sont désormais dans articles/_components/bom.ts
 

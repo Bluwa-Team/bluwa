@@ -16,7 +16,7 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type BomHeader = Pick<BillOfMaterial, 'version' | 'batchSize' | 'batchUnit'>
+type BomHeader = Pick<BillOfMaterial, 'version' | 'versionName' | 'batchSize' | 'baseQuantity' | 'batchUnit'>
 
 interface Props {
   open: boolean
@@ -47,15 +47,17 @@ function Field({ label, required, children }: {
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props) {
-  const [version, setVersion]       = useState('v1.0')
-  const [batchSize, setBatchSize]   = useState('100')
-  const [batchUnit, setBatchUnit]   = useState('btl')
-  const [rows, setRows]             = useState<BOMIngredient[]>([])
-  const [saving, setSaving]         = useState(false)
+  const [version, setVersion]         = useState('v1.0')
+  const [versionName, setVersionName] = useState('')
+  const [batchSize, setBatchSize]     = useState('100')
+  const [batchUnit, setBatchUnit]     = useState('btl')
+  const [rows, setRows]               = useState<BOMIngredient[]>([])
+  const [saving, setSaving]           = useState(false)
 
   useEffect(() => {
     if (open) {
       setVersion(bom?.version ?? 'v1.0')
+      setVersionName(bom?.versionName ?? '')
       setBatchSize(String(bom?.batchSize ?? 100))
       setBatchUnit(bom?.batchUnit ?? 'btl')
       setRows(ingredients.map((i) => ({ ...i })))
@@ -90,13 +92,14 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
 
   function addRow() {
     const newRow: BOMIngredient = {
-      id:              `new-${Date.now()}`,
-      bomId:           bom?.id ?? '',
-      ingredientCode:  '',
-      designation:     '',
-      unite:           'kg',
-      qtyPerUnit:      0,
-      tolerance:       5,
+      id:                    `new-${Date.now()}`,
+      bomId:                 bom?.id ?? '',
+      ingredientCode:        '',
+      designation:           '',
+      unite:                 'kg',
+      qtyPerUnit:            0,
+      tolerance:             5,
+      scrapFactorPercentage: 0,
     }
     setRows((prev) => [...prev, newRow])
   }
@@ -104,11 +107,14 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
   function handleSave() {
     setSaving(true)
     const valid = rows.filter((r) => r.ingredientCode.trim() || r.designation.trim())
+    const qty   = parseFloat(batchSize) || 100
     onSave(
       {
-        version:   version.trim() || 'v1.0',
-        batchSize: parseFloat(batchSize) || 100,
-        batchUnit: batchUnit.trim() || 'btl',
+        version:      version.trim() || 'v1.0',
+        versionName:  versionName.trim(),
+        batchSize:    qty,
+        baseQuantity: qty,
+        batchUnit:    batchUnit.trim() || 'btl',
       },
       valid,
     )
@@ -170,12 +176,19 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
                   Paramètres généraux
                 </p>
-                <div className="grid grid-cols-3 gap-x-5 gap-y-3">
+                <div className="grid grid-cols-2 gap-x-5 gap-y-3">
                   <Field label="Version BOM" required>
                     <Input
                       value={version}
                       onChange={(e) => setVersion(e.target.value)}
                       placeholder="v1.0"
+                    />
+                  </Field>
+                  <Field label="Nom de version">
+                    <Input
+                      value={versionName}
+                      onChange={(e) => setVersionName(e.target.value)}
+                      placeholder="Recette Standard"
                     />
                   </Field>
                   <Field label="Quantité de référence" required>
@@ -220,6 +233,9 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
                   </span>
                   <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">
                     Tol. (%)
+                  </span>
+                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">
+                    Rebut (%)
                   </span>
                   <span className="w-9 shrink-0" />
                 </div>
@@ -285,6 +301,20 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
                           className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
+                        {/* Rebut (scrap) % */}
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={row.scrapFactorPercentage === 0 ? '' : row.scrapFactorPercentage}
+                          onChange={(e) =>
+                            updateRow(row.id, 'scrapFactorPercentage', parseFloat(e.target.value) || 0)
+                          }
+                          placeholder="0"
+                          className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                        />
+
                         {/* Supprimer */}
                         <button
                           onClick={() => deleteRow(row.id)}
@@ -311,7 +341,9 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
                   <strong>Qté / unité PF</strong> : quantité de ce composant pour produire
                   1 unité de produit fini.
                   <span className="mx-1.5">·</span>
-                  <strong>Tol. (%)</strong> : marge de variance autorisée en production.
+                  <strong>Tol. (%)</strong> : marge de variance autorisée lors de la pesée.
+                  <span className="mx-1.5">·</span>
+                  <strong>Rebut (%)</strong> : pertes matière planifiées en cours de process (≡ AUSSS SAP).
                 </p>
               </div>
             </div>

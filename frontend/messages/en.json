@@ -53,7 +53,8 @@
     "liberationLots": "Release Center",
     "nonConformitesQA": "Non-Conformities",
     "genealogie": "Genealogy",
-    "gedQualite": "Quality DMS"
+    "gedQualite": "Quality DMS",
+    "inventaire": "Stock Takes"
   },
   "header": {
     "aiAgent": "AI Agent",

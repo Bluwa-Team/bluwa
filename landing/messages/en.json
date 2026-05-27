@@ -10,92 +10,112 @@
   },
   "hero": {
     "badge": "Built for West Africa",
-    "title": "The ERP for African agri-food SMBs",
-    "subtitle": "Bluwa unifies production, inventory and planning with an AI copilot that speaks your leadership team’s language. Deployed in days, not months.",
+    "title": "Pilot your margin. Master your supply chain.",
+    "subtitle": "The growth copilot for African agri-food companies — world-class industrial standards, ultra-simple interface, deployed hand in hand with your teams.",
     "primaryCta": "Book a demo",
     "secondaryCta": "Watch a 2-min demo",
     "trust": "Designed with processors in Togo, Benin, Côte d’Ivoire and Senegal"
   },
+  "heroVisual": {
+    "browserBar": "app.bluwa.io · MRP",
+    "kpis": [
+      { "label": "Daily Output", "value": "12,480 kg", "trend": "+8%", "tone": "good" },
+      { "label": "Coverage", "value": "42 d", "trend": "-3 d", "tone": "warn" },
+      { "label": "Active WOs", "value": "17", "trend": "+2", "tone": "good" },
+      { "label": "Gross Margin", "value": "34.2%", "trend": "+1.4 pt", "tone": "good" }
+    ],
+    "copilotLabel": "AI Copilot",
+    "copilotLive": "live",
+    "copilotMessage": "Corn: stock out in 4 weeks at current pace. Suggested purchase: 18 t from Sahel Agri.",
+    "chartLabel": "Work orders · 6 months",
+    "chartPeriod": "M+0 → M+5"
+  },
+  "solutionRows": [
+    { "label": "Unified", "value": "Production · Stock · Purchasing · Finance" },
+    { "label": "Multi-site", "value": "1 to 50 sites · multi-currency" },
+    { "label": "AI Copilot", "value": "Natural language answers for your leadership" },
+    { "label": "Deployment", "value": "Pilot in 5 to 15 days" }
+  ],
   "problem": {
     "eyebrow": "The problem",
     "title": "Spreadsheets everywhere, visibility nowhere",
-    "subtitle": "Traditional ERPs are expensive, slow to deploy and disconnected from African field operations. Agri-food SMBs lose money on every batch.",
+    "subtitle": "Legacy ERPs are expensive and ignore African field reality. Every lost batch is margin gone.",
     "points": [
       {
         "title": "Invisible stock",
-        "body": "Perishable raw materials, inventory gaps, unexpected stockouts · no real-time visibility across warehouses and the field."
+        "body": "Perishable materials, inventory gaps, unexpected stockouts. No real-time visibility."
       },
       {
         "title": "Gut-feel planning",
-        "body": "No MRP. Production orders rely on guesswork. The result: overproduction, shortages, and shrinking margins."
+        "body": "No MRP. Orders based on guesswork. Result: overproduction, shortages, shrinking margins."
       },
       {
         "title": "Leaders without data",
-        "body": "Reports arrive late, aggregated, unreadable. Strategic decisions are made in the dark."
+        "body": "Reports arrive late and unreadable. Strategic calls made in the dark."
       }
     ],
     "solutionEyebrow": "Our response",
-    "solutionTitle": "A lightweight ERP, an AI copilot, leaders at the center",
-    "solutionBody": "Bluwa is built for West African agri-food operations. Multi-site, multi-language, multi-currency, with an AI that answers leadership questions in natural language."
+    "solutionTitle": "Industrial rigor. Absolute simplicity.",
+    "solutionBody": "Bluwa guarantees your margin and operational rigor — multi-site, multi-currency, with an AI copilot that answers your leadership in real time."
   },
   "features": {
-    "eyebrow": "Features",
-    "title": "Your full value chain, in one platform",
-    "subtitle": "Modules designed for the reality of agri-food SMBs: from field to delivery.",
+    "eyebrow": "The 5 pillars",
+    "title": "The factory core, complete from day one.",
+    "subtitle": "5 critical industrial pillars. 1 platform. 0 compromises.",
     "items": [
       {
-        "title": "Smart MRP",
-        "body": "Automatic material requirements over a rolling 6 months, based on forecasts and BOMs."
+        "title": "Master Data (MDM)",
+        "body": "Items, BOMs, customers, suppliers. Clean reference data — the foundation every Bluwa insight rests on."
       },
       {
-        "title": "Multi-site stock",
-        "body": "Warehouses, retail points, intermediate depots: unified view, batch and expiry tracking."
+        "title": "Production & MES",
+        "body": "Scheduling, work orders, shop floor tracking. From production plan to field declaration, uninterrupted."
       },
       {
-        "title": "Production & WOs",
-        "body": "Work orders, yield tracking, simple production declarations from the floor."
+        "title": "Quality & HACCP",
+        "body": "Batch-level control, real-time release, full upstream/downstream traceability. HACCP compliance built in."
       },
       {
-        "title": "Procurement",
-        "body": "Purchase suggestions, supplier tracking, local market price integration."
+        "title": "Purchasing & MRP",
+        "body": "Needs calculated automatically, orders generated, stock valued in FEFO. Shortages anticipated, never suffered."
       },
       {
-        "title": "Leadership AI copilot",
-        "body": "Ask in French or a local language. The copilot queries your data and responds with charts."
+        "title": "Dashboards & Gross Margin",
+        "body": "Gross margin per batch and work order in real time. The AI copilot answers your leadership in natural language."
       },
       {
-        "title": "Mobile-first & offline",
-        "body": "Field data entry without network. Syncs automatically when connection returns."
+        "title": "Offline-first & Mobile Money",
+        "body": "No network outage stops your plant. Wave, Orange Money and MTN integrated natively."
       }
     ]
   },
   "pricing": {
     "eyebrow": "Pricing",
-    "title": "Pricing that grows with you",
-    "subtitle": "No per-user license fees. You pay for what you produce.",
-    "billing": "Monthly billing, no commitment",
+    "title": "Simple. Predictable. Built to scale.",
+    "subtitle": "First SaaS month free. One-time installation fee at signing.",
+    "billing": "No commitment · Annual plan = 2 months free",
     "plans": [
       {
         "name": "Starter",
-        "price": "49,000",
+        "price": "from 30,000",
         "currency": "XOF / month",
-        "tagline": "For a first production unit",
+        "tagline": "Early-stage SMBs · 1 to 3 users",
         "features": [
-          "1 site, up to 5 users",
+          "1 site",
           "Stock, production, purchasing",
           "Essential dashboards",
-          "Email support"
+          "3-month support included"
         ],
         "cta": "Get started"
       },
       {
         "name": "Growth",
-        "price": "149,000",
+        "price": "150,000",
         "currency": "XOF / month",
-        "tagline": "For multi-site SMBs",
+        "tagline": "Multi-site SMBs · up to 15 users",
         "features": [
-          "Up to 5 sites, unlimited users",
-          "Full MRP + forecasting",
+          "Up to 5 sites",
+          "Full MRP + Quality DMS",
           "Leadership AI copilot",
           "WhatsApp priority support"
         ],
@@ -104,12 +124,12 @@
       },
       {
         "name": "Enterprise",
-        "price": "Custom",
-        "currency": "",
-        "tagline": "Multi-country groups",
+        "price": "350,000",
+        "currency": "XOF / month",
+        "tagline": "Large structures · unlimited users",
         "features": [
-          "Unlimited sites, multi-currency",
-          "Custom integrations",
+          "Unlimited sites and users",
+          "Priority access Phase 2: ADV & Logistics WM",
           "SSO, audit, compliance",
           "Dedicated Customer Success"
         ],
@@ -122,24 +142,28 @@
     "title": "Your questions, answered",
     "items": [
       {
-        "q": "How long does it take to deploy Bluwa?",
-        "a": "Between 5 and 15 days depending on the size of your operation. We support data import and team training."
+        "q": "How does the guaranteed paid trial work?",
+        "a": "You pay the one-time installation fee at signing (covers setup, configuration and 3 months of support). The first SaaS month is on us. Not the right fit after 30 days? Walk away — no further billing."
+      },
+      {
+        "q": "What do the installation fees cover?",
+        "a": "Technical setup, configuration, initial settings, team training, and 3 months of post-install support. It's a one-time payment at signing."
+      },
+      {
+        "q": "Is there a discount for annual commitment?",
+        "a": "Yes. A 12-month commitment gives you 2 free months (≈ 15% off). Option A: pay 10 months upfront. Option B: pay monthly with a 12-month contract."
+      },
+      {
+        "q": "Can Bluwa scale with my group's growth?",
+        "a": "Yes. Bluwa is built to grow with you — from a single production unit to a multi-site, multi-country group. The factory core (V1) extends to ADV and Logistics WM (Phase 2), then Engineering &amp; Methods (Phase 3). Enterprise clients get priority access to every extension."
       },
       {
         "q": "Does Bluwa work offline?",
         "a": "Yes. Field apps (production, inventory) work without connectivity and sync automatically."
       },
       {
-        "q": "Is my data hosted in Africa?",
-        "a": "Regional hosting is available on demand, in addition to the default European hosting."
-      },
-      {
         "q": "Which integrations are available?",
         "a": "Mobile money (Wave, Orange Money, MTN), Sage, Excel, plus API connectors for your existing tools."
-      },
-      {
-        "q": "Can I try before I buy?",
-        "a": "Yes, we offer a 30-day pilot on a single site, at a reduced rate, with no commitment."
       }
     ]
   },
@@ -152,11 +176,15 @@
     "company": "Company",
     "message": "Your message",
     "submit": "Send request",
+    "sending": "Sending…",
+    "successTitle": "Message received!",
+    "successBody": "We'll get back to you within 24 business hours.",
     "or": "or email us at",
-    "emailAddress": "hello@bluwa.app"
+    "emailAddress": "john@bluwa.io"
   },
   "footer": {
-    "tagline": "The agri-food ERP built for West Africa.",
+    "tagline": "The nervous system of West Africa's agri-food industry.",
+    "vision": "Built to last — from your first plant to your multi-country group.",
     "product": "Product",
     "company": "Company",
     "legal": "Legal",

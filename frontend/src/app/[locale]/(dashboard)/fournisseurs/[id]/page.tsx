@@ -12,11 +12,13 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { FournisseurModal } from '../_components/fournisseur-modal'
+import { ContratModal } from '../_components/contrat-modal'
 import {
   Fournisseur, QUALIFICATION_COLORS, STATUT_COLORS, MODES_LOGISTIQUE, scoreColor,
   ContratAchat, CONTRAT_STATUT_COLORS, CONTRAT_STATUT_LABELS,
 } from '../_components/types'
 import { getFournisseurById, updateFournisseur } from '@/lib/actions/fournisseurs'
+import { getContratsByFournisseur } from '@/lib/actions/contrats'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -48,9 +50,6 @@ function EmptyTab({ label }: { label: string }) {
   )
 }
 
-// Contrats mock — à brancher sur Supabase quand la table sera créée
-const MOCK_CONTRATS: ContratAchat[] = []
-
 export default function FournisseurDetailPage() {
   const { id } = useParams()
   const router = useRouter()
@@ -58,11 +57,20 @@ export default function FournisseurDetailPage() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const [fournisseur, setFournisseur] = useState<Fournisseur | null | undefined>(undefined)
-  const [contrats] = useState<ContratAchat[]>(MOCK_CONTRATS)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [contrats, setContrats]       = useState<ContratAchat[]>([])
+  const [contratsLoading, setContratsLoading] = useState(true)
+  const [modalOpen, setModalOpen]             = useState(false)
+  const [contratModalOpen, setContratModalOpen] = useState(false)
 
   useEffect(() => {
     getFournisseurById(id as string).then(setFournisseur)
+  }, [id])
+
+  useEffect(() => {
+    setContratsLoading(true)
+    getContratsByFournisseur(id as string)
+      .then(setContrats)
+      .finally(() => setContratsLoading(false))
   }, [id])
 
   if (fournisseur === undefined) {
@@ -192,14 +200,21 @@ export default function FournisseurDetailPage() {
         <TabsContent value="contrats" className="mt-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-muted-foreground">
-              {contrats.length} contrat{contrats.length !== 1 ? 's' : ''} cadre{contrats.length !== 1 ? 's' : ''}
+              {contratsLoading
+                ? 'Chargement…'
+                : `${contrats.length} contrat${contrats.length !== 1 ? 's' : ''} cadre${contrats.length !== 1 ? 's' : ''}`
+              }
             </p>
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5" onClick={() => setContratModalOpen(true)}>
               <Plus className="size-3.5" />
               Nouveau contrat
             </Button>
           </div>
-          {contrats.length === 0 ? (
+          {contratsLoading ? (
+            <div className="rounded-lg border border-dashed flex items-center justify-center py-16 text-sm text-muted-foreground">
+              Chargement des contrats…
+            </div>
+          ) : contrats.length === 0 ? (
             <EmptyTab label="Aucun contrat cadre pour ce fournisseur" />
           ) : (
             <div className="rounded-lg border overflow-hidden">
@@ -257,6 +272,13 @@ export default function FournisseurDetailPage() {
         onClose={() => setModalOpen(false)}
         fournisseur={fournisseur}
         onSave={handleSave}
+      />
+
+      <ContratModal
+        open={contratModalOpen}
+        onClose={() => setContratModalOpen(false)}
+        fournisseurId={fournisseur.id}
+        onSave={(newContrat) => setContrats((prev) => [...prev, newContrat])}
       />
     </div>
   )

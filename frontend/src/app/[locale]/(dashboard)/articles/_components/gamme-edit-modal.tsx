@@ -60,13 +60,15 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
 
   function addRow() {
     const newRow: GammeEtape = {
-      id:          `new-${Date.now()}`,
-      gammeId:     gamme?.id ?? '',
-      ordre:       rows.length + 1,
-      operation:   '',
-      duree:       0,
-      temperature: undefined,
-      equipement:  '',
+      id:                    `new-${Date.now()}`,
+      gammeId:               gamme?.id ?? '',
+      ordre:                 rows.length + 1,
+      operation:             '',
+      duree:                 0,
+      setupTimeMinutes:      0,
+      runTimeMinutesPerUnit: 0,
+      temperature:           undefined,
+      equipement:            '',
     }
     setRows((prev) => [...prev, newRow])
   }
@@ -162,8 +164,9 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                 <div className="flex items-center gap-x-2 mb-2 px-1">
                   <span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground text-center">#</span>
                   <span className="flex-1 min-w-0 text-xs font-semibold text-muted-foreground">Opération</span>
-                  <span className="w-[80px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Durée (min)</span>
-                  <span className="w-[80px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Temp. (°C)</span>
+                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Lot (min)</span>
+                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Réglage (min)</span>
+                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Temp. (°C)</span>
                   <span className="w-[150px] shrink-0 text-xs font-semibold text-muted-foreground">Équipement</span>
                   <span className="w-9 shrink-0" />
                 </div>
@@ -189,7 +192,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                           className="flex-1 min-w-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         />
 
-                        {/* Durée */}
+                        {/* Lot (min) = duree */}
                         <Input
                           type="number"
                           min="0"
@@ -198,9 +201,21 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                             updateRow(row.id, 'duree', parseInt(e.target.value) || 0)
                           }
                           placeholder="0"
-                          className={`w-[80px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
+                          className={`w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
                             invalid ? 'border-red-400 focus-visible:ring-red-300' : ''
                           }`}
+                        />
+
+                        {/* Réglage (min) = setupTimeMinutes */}
+                        <Input
+                          type="number"
+                          min="0"
+                          value={row.setupTimeMinutes === 0 ? '' : row.setupTimeMinutes}
+                          onChange={(e) =>
+                            updateRow(row.id, 'setupTimeMinutes', parseInt(e.target.value) || 0)
+                          }
+                          placeholder="0"
+                          className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
                         {/* Température */}
@@ -217,7 +232,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                             )
                           }
                           placeholder="—"
-                          className="w-[80px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                          className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
                         {/* Équipement */}
@@ -260,7 +275,9 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                 </button>
 
                 <p className="mt-3 text-xs text-muted-foreground">
-                  <strong>Durée</strong> : temps opérationnel en minutes.
+                  <strong>Lot</strong> : durée standard pour le lot (minutes).
+                  <span className="mx-1.5">·</span>
+                  <strong>Réglage</strong> : temps de réglage machine avant démarrage (Rüstzeit).
                   <span className="mx-1.5">·</span>
                   <strong>Temp.</strong> : température cible — laisser vide si pas de contrainte thermique.
                 </p>

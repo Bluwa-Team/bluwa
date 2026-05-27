@@ -9,7 +9,7 @@ import {
   Smartphone,
 } from './Icons'
 
-const ICONS = [LineChart, Boxes, Factory, ShoppingCart, Cpu, Smartphone]
+const ICONS = [Boxes, Factory, Cpu, ShoppingCart, LineChart, Smartphone]
 
 export function Features() {
   const t = useTranslations('features')

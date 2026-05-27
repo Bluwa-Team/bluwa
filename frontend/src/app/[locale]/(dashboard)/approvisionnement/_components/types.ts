@@ -45,32 +45,36 @@ export const MOCK_STRATEGIE: ArticleStrategie[] = [
 // BCFlat    : vue aplatie (Header + Item) générée par flattenBC() — utilisée pour
 //             l'affichage tabulaire et la rétrocompatibilité
 
-export type StatutCommande = 'EnCours' | 'Recue' | 'Partielle' | 'Annulee'
+// Valeurs alignées sur la colonne `status` de purchase_orders (migration 003)
+export type StatutCommande = 'DRAFT' | 'PENDING' | 'APPROVED' | 'RECEIVED'
 export type TypeCommande   = 'BC' | 'BA'
 
-// ── En-tête du bon de commande / bon d'achat ─────────────────────────────────
+// ── En-tête du bon de commande / bon d'achat (→ purchase_orders) ─────────────
 export interface BCHeader {
   id: string
-  numero: string           // BC-2026-058
-  type: TypeCommande       // 'BC' | 'BA'
+  numero: string           // BC-2026-058 / BA-2026-019
+  type: TypeCommande
   date: string             // ISO date
   fournisseur: string
   contrat: string | null   // N° contrat-cadre (BC uniquement)
+  currency: string         // ISO 4217 — 'XOF' par défaut
   reception: string | null // N° réception associée (REC-YYYY-NNN)
   statut: StatutCommande
 }
 
-// ── Ligne article du bon de commande ─────────────────────────────────────────
+// ── Ligne article (→ purchase_order_items) ────────────────────────────────────
 export interface BCItem {
   id: string
-  headerId: string         // → BCHeader.id
+  headerId: string              // → BCHeader.id
+  itemPosition: number          // Numéro de ligne 1, 2, 3… (EKPO.EBELP)
   article: string
-  quantite: number         // quantité commandée
-  quantiteRecue: number
+  quantite: number
+  quantiteRecue: number         // Calculé depuis les réceptions — mock uniquement
   unite: string
-  puHT: number | null
-  livraisonPrevue: string  // ISO date — peut varier par ligne
-  dureeVie: number | null  // jours — DLC auto à la réception
+  puHT: number                  // NOT NULL — obligatoire à la commande
+  livraisonPrevue: string       // ISO date — peut varier par ligne
+  dureeVie: number | null
+  purchaseRequisitionId: string | null  // → purchase_requisitions.id (traçabilité MRP)
 }
 
 // ── Vue aplatie : une ligne = un Header × un Item ────────────────────────────
@@ -82,18 +86,21 @@ export interface BCFlat {
   date: string
   fournisseur: string
   contrat: string | null
+  currency: string
   reception: string | null
   statut: StatutCommande
   // Identifiant de la ligne Item
   itemId: string
   // Champs Item
+  itemPosition: number
   article: string
   quantite: number
   quantiteRecue: number
   unite: string
-  puHT: number | null
+  puHT: number
   livraisonPrevue: string
   dureeVie: number | null
+  purchaseRequisitionId: string | null  // traçabilité MRP
 }
 
 /** Alias de rétrocompatibilité — remplace l'ancienne interface plate */
@@ -104,58 +111,61 @@ export function flattenBC(headers: BCHeader[], items: BCItem[]): BCFlat[] {
   return headers.flatMap((h) => {
     const hItems = items.filter((i) => i.headerId === h.id)
     return hItems.map((i) => ({
-      id:             h.id,
-      numero:         h.numero,
-      type:           h.type,
-      date:           h.date,
-      fournisseur:    h.fournisseur,
-      contrat:        h.contrat,
-      reception:      h.reception,
-      statut:         h.statut,
-      itemId:         i.id,
-      article:        i.article,
-      quantite:       i.quantite,
-      quantiteRecue:  i.quantiteRecue,
-      unite:          i.unite,
-      puHT:           i.puHT,
-      livraisonPrevue:i.livraisonPrevue,
-      dureeVie:       i.dureeVie,
+      id:                      h.id,
+      numero:                  h.numero,
+      type:                    h.type,
+      date:                    h.date,
+      fournisseur:             h.fournisseur,
+      contrat:                 h.contrat,
+      currency:                h.currency,
+      reception:               h.reception,
+      statut:                  h.statut,
+      itemId:                  i.id,
+      itemPosition:            i.itemPosition,
+      article:                 i.article,
+      quantite:                i.quantite,
+      quantiteRecue:           i.quantiteRecue,
+      unite:                   i.unite,
+      puHT:                    i.puHT,
+      livraisonPrevue:         i.livraisonPrevue,
+      dureeVie:                i.dureeVie,
+      purchaseRequisitionId:   i.purchaseRequisitionId,
     }))
   })
 }
 
 export const STATUT_COMMANDE_COLORS: Record<StatutCommande, string> = {
-  EnCours:   'bg-orange-100 text-orange-700 border border-orange-200',
-  Recue:     'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  Partielle: 'bg-amber-100 text-amber-700 border border-amber-200',
-  Annulee:   'bg-red-100 text-red-700 border border-red-200',
+  DRAFT:    'bg-gray-100 text-gray-600 border border-gray-200',
+  PENDING:  'bg-orange-100 text-orange-700 border border-orange-200',
+  APPROVED: 'bg-blue-100 text-blue-700 border border-blue-200',
+  RECEIVED: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
 }
 
 export const STATUT_COMMANDE_LABELS: Record<StatutCommande, string> = {
-  EnCours:   'En cours',
-  Recue:     'Reçue',
-  Partielle: 'Partielle',
-  Annulee:   'Annulée',
+  DRAFT:    'Brouillon',
+  PENDING:  'En attente',
+  APPROVED: 'Approuvée',
+  RECEIVED: 'Reçue',
 }
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 export const MOCK_BC_HEADERS: BCHeader[] = [
-  { id: 'h1', numero: 'BC-2026-058', type: 'BC', date: '2026-05-05', fournisseur: 'Coop. Bissap Kaolack', contrat: 'CT-2026-007', reception: null,           statut: 'EnCours' },
-  { id: 'h2', numero: 'BC-2026-057', type: 'BC', date: '2026-05-04', fournisseur: 'Sucrerie Niari',        contrat: 'CT-2026-005', reception: 'REC-2026-002', statut: 'Recue'   },
-  { id: 'h3', numero: 'BC-2026-056', type: 'BC', date: '2026-05-03', fournisseur: 'Verrerie Dakar',        contrat: 'CT-2026-003', reception: null,           statut: 'EnCours' },
-  { id: 'h4', numero: 'BC-2026-055', type: 'BC', date: '2026-05-02', fournisseur: 'Vanille Madagascar',    contrat: 'CT-2025-012', reception: null,           statut: 'EnCours' },
-  { id: 'h5', numero: 'BA-2026-019', type: 'BA', date: '2026-04-28', fournisseur: 'Maraîcher Pikine',      contrat: null,          reception: 'REC-2026-001', statut: 'Recue'   },
-  { id: 'h6', numero: 'BC-2026-053', type: 'BC', date: '2026-04-26', fournisseur: 'Imprimerie Plateau',    contrat: 'CT-2026-001', reception: null,           statut: 'EnCours' },
+  { id: 'h1', numero: 'BC-2026-058', type: 'BC', date: '2026-05-05', fournisseur: 'Coop. Bissap Kaolack', contrat: 'CT-2026-007', currency: 'XOF', reception: null,           statut: 'PENDING'  },
+  { id: 'h2', numero: 'BC-2026-057', type: 'BC', date: '2026-05-04', fournisseur: 'Sucrerie Niari',        contrat: 'CT-2026-005', currency: 'XOF', reception: 'REC-2026-002', statut: 'RECEIVED' },
+  { id: 'h3', numero: 'BC-2026-056', type: 'BC', date: '2026-05-03', fournisseur: 'Verrerie Dakar',        contrat: 'CT-2026-003', currency: 'XOF', reception: null,           statut: 'APPROVED' },
+  { id: 'h4', numero: 'BC-2026-055', type: 'BC', date: '2026-05-02', fournisseur: 'Vanille Madagascar',    contrat: 'CT-2025-012', currency: 'EUR', reception: null,           statut: 'PENDING'  },
+  { id: 'h5', numero: 'BA-2026-019', type: 'BA', date: '2026-04-28', fournisseur: 'Maraîcher Pikine',      contrat: null,          currency: 'XOF', reception: 'REC-2026-001', statut: 'RECEIVED' },
+  { id: 'h6', numero: 'BC-2026-053', type: 'BC', date: '2026-04-26', fournisseur: 'Imprimerie Plateau',    contrat: 'CT-2026-001', currency: 'XOF', reception: null,           statut: 'DRAFT'    },
 ]
 
 export const MOCK_BC_ITEMS: BCItem[] = [
-  { id: 'i1', headerId: 'h1', article: "Fleurs d'hibiscus séchées", quantite: 300,   quantiteRecue: 0,   unite: 'kg', puHT: null, livraisonPrevue: '2026-05-17', dureeVie: 365  },
-  { id: 'i2', headerId: 'h2', article: 'Sucre cristallisé',          quantite: 500,   quantiteRecue: 500, unite: 'kg', puHT: null, livraisonPrevue: '2026-05-09', dureeVie: 730  },
-  { id: 'i3', headerId: 'h3', article: 'Bouteille verre 1L',          quantite: 5000,  quantiteRecue: 0,   unite: 'u',  puHT: null, livraisonPrevue: '2026-05-19', dureeVie: null },
-  { id: 'i4', headerId: 'h4', article: 'Gousses de vanille',          quantite: 5,     quantiteRecue: 0,   unite: 'kg', puHT: null, livraisonPrevue: '2026-05-30', dureeVie: 180  },
-  { id: 'i5', headerId: 'h5', article: 'Gingembre frais',             quantite: 30,    quantiteRecue: 30,  unite: 'kg', puHT: null, livraisonPrevue: '2026-05-02', dureeVie: 30   },
-  { id: 'i6', headerId: 'h6', article: 'Étiquettes Pourpre 1L',       quantite: 10000, quantiteRecue: 0,   unite: 'u',  puHT: null, livraisonPrevue: '2026-05-12', dureeVie: null },
+  { id: 'i1', headerId: 'h1', itemPosition: 1, article: "Fleurs d'hibiscus séchées", quantite: 300,   quantiteRecue: 0,   unite: 'kg', puHT: 2500,  livraisonPrevue: '2026-05-17', dureeVie: 365,  purchaseRequisitionId: 'da-001' },
+  { id: 'i2', headerId: 'h2', itemPosition: 1, article: 'Sucre cristallisé',          quantite: 500,   quantiteRecue: 500, unite: 'kg', puHT: 800,   livraisonPrevue: '2026-05-09', dureeVie: 730,  purchaseRequisitionId: 'da-002' },
+  { id: 'i3', headerId: 'h3', itemPosition: 1, article: 'Bouteille verre 1L',          quantite: 5000,  quantiteRecue: 0,   unite: 'u',  puHT: 250,   livraisonPrevue: '2026-05-19', dureeVie: null, purchaseRequisitionId: null     },
+  { id: 'i4', headerId: 'h4', itemPosition: 1, article: 'Gousses de vanille',          quantite: 5,     quantiteRecue: 0,   unite: 'kg', puHT: 45000, livraisonPrevue: '2026-05-30', dureeVie: 180,  purchaseRequisitionId: null     },
+  { id: 'i5', headerId: 'h5', itemPosition: 1, article: 'Gingembre frais',             quantite: 30,    quantiteRecue: 30,  unite: 'kg', puHT: 1200,  livraisonPrevue: '2026-05-02', dureeVie: 30,   purchaseRequisitionId: 'da-003' },
+  { id: 'i6', headerId: 'h6', itemPosition: 1, article: 'Étiquettes Pourpre 1L',       quantite: 10000, quantiteRecue: 0,   unite: 'u',  puHT: 15,    livraisonPrevue: '2026-05-12', dureeVie: null, purchaseRequisitionId: null     },
 ]
 
 /** Vue aplatie — rétrocompatibilité avec les composants existants */

@@ -5,7 +5,7 @@ import {
   Search, X, RotateCcw, MoreHorizontal,
   Check, Moon, AlertTriangle, Clock, Lock,
   FileText, Leaf, Wallet, TrendingUp,
-  ShoppingBasket, ShieldAlert, Layers,
+  ShoppingBasket, ShieldAlert, Layers, Plus,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -14,10 +14,11 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  LotStock, EtatLot, TypeArticle, StatutQC,
+  LotStock, EtatLot, TypeArticle, StatutQC, Mouvement,
   ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
   STATUT_QC_COLORS, STATUT_QC_LABELS, MOCK_LOTS,
 } from './_components/types'
+import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
 
@@ -28,9 +29,10 @@ const ETAT_ICONS: Record<EtatLot, React.ReactNode> = {
 }
 
 const QC_ICONS: Record<StatutQC, React.ReactNode> = {
-  EnControle: <Clock className="size-3 shrink-0" />,
-  Libere:     <Check className="size-3 shrink-0" />,
-  Bloque:     <Lock className="size-3 shrink-0" />,
+  EnControle:  <Clock className="size-3 shrink-0" />,
+  Libere:      <Check className="size-3 shrink-0" />,
+  Bloque:      <Lock className="size-3 shrink-0" />,
+  NonConforme: <X className="size-3 shrink-0" />,
 }
 
 const LOT_COLUMNS: ResizableColumn[] = [
@@ -79,11 +81,47 @@ function StatCard({
 
 export default function StocksPage() {
   const locale = useLocale()
-  const [lots] = useState<LotStock[]>(MOCK_LOTS)
+  const [lots, setLots] = useState<LotStock[]>(MOCK_LOTS)
   const [search, setSearch] = useState('')
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
   const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')
   const [qcFilter, setQcFilter] = useState<StatutQC | 'all'>('all')
+  const [mouvementOpen, setMouvementOpen] = useState(false)
+  const [mouvements, setMouvements] = useState<Mouvement[]>([])
+
+  // Derive article options for the modal from current lot list
+  const articleOptions = useMemo<ArticleOption[]>(() => {
+    const seen = new Set<string>()
+    return lots.flatMap((l): ArticleOption[] => {
+      if (seen.has(l.sku)) return []
+      seen.add(l.sku)
+      return [{ code: l.sku, designation: l.designation, unite: l.unite }]
+    })
+  }, [lots])
+
+  async function handleSaveMouvement(m: Partial<Mouvement>): Promise<boolean> {
+    const id = Date.now().toString()
+    const next = mouvements.length + 1
+    setMouvements((prev) => [
+      {
+        id,
+        date:              m.date ?? new Date().toISOString().split('T')[0],
+        type:              m.type ?? 'Entree',
+        articleCode:       m.articleCode ?? '',
+        articleDesignation: m.articleDesignation ?? '',
+        lot:               m.lot ?? '',
+        quantite:          m.quantite ?? 0,
+        unite:             m.unite ?? '',
+        entrepotSource:    m.entrepotSource ?? '',
+        entrepotDest:      m.entrepotDest ?? '',
+        reference:         m.reference ?? '',
+        motif:             m.motif ?? '',
+        operateur:         m.operateur ?? 'Utilisateur',
+      },
+      ...prev,
+    ])
+    return true
+  }
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:stocks',
@@ -141,6 +179,10 @@ export default function StocksPage() {
             Gestion par Code/SKU ou Désignation · Liaison Commande → Réception → Lot · PMP · FIFO/FEFO
           </p>
         </div>
+        <Button size="sm" className="gap-1.5" onClick={() => setMouvementOpen(true)}>
+          <Plus className="size-4" />
+          Mouvement de stock
+        </Button>
       </div>
 
       {/* Stat cards */}
@@ -416,6 +458,13 @@ export default function StocksPage() {
           </tbody>
         </table>
       </div>
+
+      <MouvementModal
+        open={mouvementOpen}
+        onClose={() => setMouvementOpen(false)}
+        onSave={handleSaveMouvement}
+        articles={articleOptions}
+      />
     </div>
   )
 }

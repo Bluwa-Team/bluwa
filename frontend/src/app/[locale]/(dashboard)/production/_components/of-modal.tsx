@@ -15,6 +15,8 @@ import {
   OPERATEUR_OPTIONS,
   LEAD_TIME_H,
   LEAD_TIME_DAYS,
+  STATUT_OF_LABELS,
+  STATUT_OF_COLORS,
 } from './types'
 import {
   MOCK_BOMS,
@@ -24,9 +26,10 @@ import {
 // ── Types locaux ──────────────────────────────────────────────────────────────
 
 interface Props {
-  open: boolean
+  open:    boolean
   onClose: () => void
-  onSave: (of: Omit<OrdreFabrication, 'id' | 'numero'>) => Promise<boolean>
+  of?:     OrdreFabrication | null   // présent = mode édition
+  onSave:  (of: Omit<OrdreFabrication, 'id' | 'numero'>) => Promise<boolean>
 }
 
 type BomRow = {
@@ -107,15 +110,27 @@ const EMPTY = {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
-export function OFModal({ open, onClose, onSave }: Props) {
+export function OFModal({ open, onClose, of, onSave }: Props) {
   const [form, setForm] = useState(EMPTY)
   const [bomRows, setBomRows] = useState<BomRow[]>([])
   const [saving, setSaving] = useState(false)
 
-  // Reset à chaque ouverture
+  // Reset ou pré-remplir à chaque ouverture
   useEffect(() => {
-    if (open) setForm(EMPTY)
-  }, [open])
+    if (!open) return
+    if (of) {
+      setForm({
+        sku:        of.sku,
+        qty:        String(of.qty),
+        ligne:      of.ligne,
+        operateur:  of.operateurPrep ?? OPERATEUR_OPTIONS[0],
+        dateBesoin: of.dateBesoin,
+        coutEstime: '0',
+      })
+    } else {
+      setForm(EMPTY)
+    }
+  }, [open, of])
 
   // Recharge BOM depuis la source canonique (bom.ts) à chaque changement de SKU ou de quantité.
   // Cette connexion garantit que le modal OF et l'onglet Nomenclatures partagent la même source.
@@ -173,16 +188,17 @@ export function OFModal({ open, onClose, onSave }: Props) {
       produitFini:   produit.articleDesignation,
       sku:           form.sku,
       qty,
-      realise:       0,
-      unite:         'btl',
-      lotPF:         null,
+      // En mode édition, on préserve l'avancement et le statut courants
+      realise:       of?.realise       ?? 0,
+      unite:         of?.unite         ?? 'btl',
+      lotPF:         of?.lotPF         ?? null,
       ligne:         form.ligne,
       operateurPrep: form.operateur,
       dateBesoin:    form.dateBesoin,
       debutPlanif:   debutPlanif || form.dateBesoin,
-      picking:       'AValider',
-      statut:        'EnAttenteComposants',
-      archive:       false,
+      picking:       of?.picking       ?? 'AValider',
+      statut:        of?.statut        ?? 'EnAttenteComposants',
+      archive:       of?.archive       ?? false,
     })
     setSaving(false)
     if (ok) onClose()
@@ -204,7 +220,9 @@ export function OFModal({ open, onClose, onSave }: Props) {
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
                   <Settings2 className="size-[18px] text-foreground" />
                 </div>
-                <p className="font-semibold text-base">Nouvel Ordre de Fabrication</p>
+                <p className="font-semibold text-base">
+                  {of ? `Modifier l'OF — ${of.numero}` : 'Nouvel Ordre de Fabrication'}
+                </p>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={onClose}>
                 <X className="size-4" />
@@ -404,9 +422,16 @@ export function OFModal({ open, onClose, onSave }: Props) {
 
               {/* ── Statut OF (workflow) ────────────────────────────────── */}
               <div className="rounded-xl bg-muted/50 border border-border px-4 py-3.5 space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Statut OF
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Statut OF
+                  </p>
+                  {of && (
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUT_OF_COLORS[of.statut]}`}>
+                      {STATUT_OF_LABELS[of.statut]}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
                   {[
                     'En attente approche composants',
@@ -417,7 +442,7 @@ export function OFModal({ open, onClose, onSave }: Props) {
                     'Dispo',
                   ].map((s, i, arr) => (
                     <span key={s} className="flex items-center gap-1">
-                      <span className={i === 0 ? 'font-medium text-orange-600' : ''}>
+                      <span className={i === 0 && !of ? 'font-medium text-orange-600' : ''}>
                         {s}
                       </span>
                       {i < arr.length - 1 && (
@@ -426,6 +451,11 @@ export function OFModal({ open, onClose, onSave }: Props) {
                     </span>
                   ))}
                 </div>
+                {of && (
+                  <p className="text-[11px] text-amber-600 font-medium">
+                    ⚠ La modification ne change pas le statut. Utilisez les boutons de transition dans le tableau.
+                  </p>
+                )}
               </div>
 
             </div>
@@ -441,7 +471,9 @@ export function OFModal({ open, onClose, onSave }: Props) {
                 className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
               >
                 {saving ? (
-                  <><Loader2 className="size-4 animate-spin" />Création…</>
+                  <><Loader2 className="size-4 animate-spin" />{of ? 'Enregistrement…' : 'Création…'}</>
+                ) : of ? (
+                  <><CheckCircle2 className="size-4" />Enregistrer les modifications</>
                 ) : (
                   <><CheckCircle2 className="size-4" />Créer OF &amp; envoyer à l&apos;opérateur</>
                 )}

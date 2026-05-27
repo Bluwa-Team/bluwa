@@ -13,6 +13,7 @@ import { BCHeader, BCItem, TypeCommande } from './types'
 import type { Fournisseur } from '@/app/[locale]/(dashboard)/fournisseurs/_components/types'
 import type { Article, ArticleType } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { TYPE_LABELS } from '@/app/[locale]/(dashboard)/articles/_components/types'
+import { DEVISES } from '@/config'
 import { getFournisseurs } from '@/lib/actions/fournisseurs'
 import { getArticles }     from '@/lib/actions/articles'
 import { getContratActifByFournisseur } from '@/lib/actions/approvisionnement'
@@ -24,6 +25,7 @@ type HeaderForm = {
   fournisseurId:   string   // ID pour la requête contrat — non transmis à BCHeader
   fournisseur:     string   // Raison sociale → stockée dans BCHeader
   contrat:         string
+  currency:        string   // ISO 4217 — 'XOF' par défaut
   livraisonDefaut: string
 }
 
@@ -56,6 +58,7 @@ const EMPTY_HEADER: HeaderForm = {
   fournisseurId:   '',
   fournisseur:     '',
   contrat:         '',
+  currency:        'XOF',
   livraisonDefaut: '',
 }
 
@@ -260,6 +263,8 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
         i.article.trim() !== '' &&
         i.quantite !== '' &&
         !isNaN(parseFloat(i.quantite)) &&
+        i.puHT !== '' &&
+        !isNaN(parseFloat(i.puHT)) &&
         i.livraisonPrevue !== '',
     )
   }
@@ -274,15 +279,18 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
         date:        new Date().toISOString().split('T')[0],
         fournisseur: header.fournisseur.trim(),
         contrat:     isBC && header.contrat.trim() ? header.contrat.trim() : null,
+        currency:    header.currency,
       },
-      items.map((i) => ({
-        article:         i.article.trim(),
-        quantite:        parseFloat(i.quantite),
-        quantiteRecue:   0,
-        unite:           i.unite.trim() || 'kg',
-        puHT:            i.puHT !== '' ? parseFloat(i.puHT) : null,
-        livraisonPrevue: i.livraisonPrevue,
-        dureeVie:        i.dureeVie !== '' ? parseInt(i.dureeVie, 10) : null,
+      items.map((i, idx) => ({
+        itemPosition:          idx + 1,
+        article:               i.article.trim(),
+        quantite:              parseFloat(i.quantite),
+        quantiteRecue:         0,
+        unite:                 i.unite.trim() || 'kg',
+        puHT:                  parseFloat(i.puHT),
+        livraisonPrevue:       i.livraisonPrevue,
+        dureeVie:              i.dureeVie !== '' ? parseInt(i.dureeVie, 10) : null,
+        purchaseRequisitionId: null,  // null à la création manuelle — rempli par le MRP
       })),
     )
     setSaving(false)
@@ -452,14 +460,29 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
                   </Field>
                 </div>
 
-                {/* Date de livraison défaut */}
-                <Field label="Date de livraison prévue (défaut pour toutes les lignes)">
-                  <Input
-                    type="date"
-                    value={header.livraisonDefaut}
-                    onChange={(e) => setH('livraisonDefaut', e.target.value)}
-                  />
-                </Field>
+                {/* Devise + Date de livraison défaut */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Field label="Devise" required>
+                    <select
+                      value={header.currency}
+                      onChange={(e) => setH('currency', e.target.value)}
+                      className={SELECT_CLS}
+                    >
+                      {DEVISES.map((d) => (
+                        <option key={d.code} value={d.code}>{d.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Date de livraison prévue (défaut pour toutes les lignes)">
+                      <Input
+                        type="date"
+                        value={header.livraisonDefaut}
+                        onChange={(e) => setH('livraisonDefaut', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </div>
               </section>
 
               {/* ② LIGNES ARTICLES */}
@@ -486,7 +509,7 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
                     <span>Article *</span>
                     <span className="text-right">Quantité *</span>
                     <span className="pl-1">Unité</span>
-                    <span className="text-right">PU HT (XOF)</span>
+                    <span className="text-right">PU HT ({header.currency})</span>
                     <span className="pl-1">Livraison prévue *</span>
                     <span className="text-right">Durée vie (j)</span>
                     <span />

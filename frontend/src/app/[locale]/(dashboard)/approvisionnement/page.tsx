@@ -5,6 +5,7 @@ import {
   Plus, FileDown, FileText, Leaf,
   Clock, CheckCheck, RotateCcw, Search, X,
   ShoppingBag, PackageCheck, MoreHorizontal, Info, ShoppingCart,
+  Link2, AlertCircle, ArrowRight, Factory,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -18,9 +19,15 @@ import {
   StatutCommande, flattenBC, MOCK_BC_HEADERS, MOCK_BC_ITEMS,
   ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd, MOCK_STRATEGIE,
 } from './_components/types'
-import { CommandeModal } from './_components/commande-modal'
+import { CommandeModal }       from './_components/commande-modal'
+import { CommandeDetailModal } from './_components/commande-detail-modal'
+import {
+  type PurchaseRequisitionRow, type StatutDA,
+  STATUT_DA_LABELS, STATUT_DA_COLORS,
+  MOCK_PURCHASE_REQUISITION_ROWS,
+} from '../mrp/_components/types'
 
-type Tab = 'commandes' | 'strategie'
+type Tab = 'da' | 'commandes' | 'strategie'
 
 
 const STRATEGIE_COLUMNS: ResizableColumn[] = [
@@ -106,13 +113,19 @@ export default function ApprovisionnementPage() {
   const [bcHeaders, setBcHeaders] = useState<BCHeader[]>(MOCK_BC_HEADERS)
   const [bcItems,   setBcItems]   = useState<BCItem[]>(MOCK_BC_ITEMS)
   const commandes = useMemo<BCFlat[]>(() => flattenBC(bcHeaders, bcItems), [bcHeaders, bcItems])
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen,       setModalOpen]       = useState(false)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [strategie, setStrategie] = useState<ArticleStrategie[]>(MOCK_STRATEGIE)
   const [sSearch, setSSearch] = useState('')
   const [sStatutFilter, setSStatutFilter] = useState<'all' | 'aCommander' | 'ok'>('all')
   const [search, setSearch] = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutCommande | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'BC' | 'BA'>('all')
+
+  // ── DA state ───────────────────────────────────────────────────────────────
+  const [daRows] = useState<PurchaseRequisitionRow[]>(MOCK_PURCHASE_REQUISITION_ROWS)
+  const [daSearch, setDaSearch] = useState('')
+  const [daStatutFilter, setDaStatutFilter] = useState<StatutDA | 'all'>('all')
 
   const { widths: sWidths, startResize: sSR, reset: sReset, isCustomized: sCust } = useResizableColumns(
     'bluwa:cols:approvisionnement:strategie',
@@ -161,8 +174,9 @@ export default function ApprovisionnementPage() {
       date:        headerData.date,
       fournisseur: headerData.fournisseur,
       contrat:     headerData.contrat,
+      currency:    headerData.currency,
       reception:   null,
-      statut:      'EnCours',
+      statut:      'DRAFT',
     }
     const createdItems: BCItem[] = newItems.map((item, idx) => ({
       ...item,
@@ -176,10 +190,9 @@ export default function ApprovisionnementPage() {
   }
 
   const stats = useMemo(() => ({
-    enCours:   commandes.filter((c) => c.statut === 'EnCours').length,
-    recues:    commandes.filter((c) => c.statut === 'Recue').length,
-    partielles:commandes.filter((c) => c.statut === 'Partielle').length,
-    total:     commandes.length,
+    enCours: commandes.filter((c) => c.statut === 'DRAFT' || c.statut === 'PENDING').length,
+    recues:  commandes.filter((c) => c.statut === 'RECEIVED').length,
+    total:   commandes.length,
   }), [commandes])
 
   const filtered = useMemo(() => {
@@ -202,6 +215,39 @@ export default function ApprovisionnementPage() {
 
   const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
+  const TODAY = new Date().toISOString().split('T')[0]
+
+  const daFiltered = useMemo(() => {
+    const q = daSearch.toLowerCase().trim()
+    return daRows.filter((da) => {
+      if (daStatutFilter !== 'all' && da.status !== daStatutFilter) return false
+      if (q) {
+        return (
+          da.requisitionNumber.toLowerCase().includes(q)
+          || da.articleLabel.toLowerCase().includes(q)
+          || da.articleSku.toLowerCase().includes(q)
+          || da.factoryName.toLowerCase().includes(q)
+          || (da.sourceOrderNumber?.toLowerCase().includes(q) ?? false)
+        )
+      }
+      return true
+    })
+  }, [daRows, daSearch, daStatutFilter])
+
+  const daStats = useMemo(() => ({
+    pending:   daRows.filter((d) => d.status === 'PENDING').length,
+    converted: daRows.filter((d) => d.status === 'CONVERTED').length,
+    cancelled: daRows.filter((d) => d.status === 'CANCELLED').length,
+  }), [daRows])
+
+  // ── Détail commande sélectionnée ───────────────────────────────────────────
+  const selectedHeader = selectedOrderId
+    ? bcHeaders.find((h) => h.id === selectedOrderId) ?? null
+    : null
+  const selectedItems = selectedOrderId
+    ? bcItems.filter((i) => i.headerId === selectedOrderId)
+    : []
+
   return (
     <div className="space-y-6">
 
@@ -219,27 +265,224 @@ export default function ApprovisionnementPage() {
             Nouvelle commande
           </Button>
         )}
+        {tab === 'da' && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Link2 className="size-3.5" />
+            Générées automatiquement par le MRP
+          </span>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: 'commandes',  label: 'Commandes fournisseurs' },
-          { key: 'strategie',  label: 'Stratégie de stock' },
-        ] as const).map(({ key, label }) => (
+          { key: 'da'        as Tab, label: 'Demandes d\'achat',        count: daStats.pending > 0 ? daStats.pending : undefined },
+          { key: 'commandes' as Tab, label: 'Commandes fournisseurs',   count: undefined },
+          { key: 'strategie' as Tab, label: 'Stratégie de stock',       count: undefined },
+        ] as { key: Tab; label: string; count: number | undefined }[]).map(({ key, label, count }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2 ${
               tab === key
                 ? 'border-foreground text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {label}
+            {count !== undefined && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">
+                {count}
+              </span>
+            )}
           </button>
         ))}
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  TAB : Demandes d'achat                                              */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {tab === 'da' && (
+        <div className="space-y-4">
+
+          {/* Chips compteurs statut */}
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              { key: 'all',       label: 'Toutes',                    count: daRows.length,    cls: 'bg-muted border text-foreground' },
+              { key: 'PENDING',   label: STATUT_DA_LABELS.PENDING,    count: daStats.pending,   cls: STATUT_DA_COLORS.PENDING },
+              { key: 'CONVERTED', label: STATUT_DA_LABELS.CONVERTED,  count: daStats.converted, cls: STATUT_DA_COLORS.CONVERTED },
+              { key: 'CANCELLED', label: STATUT_DA_LABELS.CANCELLED,  count: daStats.cancelled, cls: STATUT_DA_COLORS.CANCELLED },
+            ] as { key: StatutDA | 'all'; label: string; count: number; cls: string }[]).map(({ key, label, count, cls }) => (
+              <button
+                key={key}
+                onClick={() => setDaStatutFilter(key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  daStatutFilter === key ? cls + ' ring-2 ring-offset-1 ring-current' : cls + ' opacity-60 hover:opacity-100'
+                }`}
+              >
+                {label}
+                <span className="font-bold">{count}</span>
+              </button>
+            ))}
+
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="N° DA, article, site, OF…"
+                  value={daSearch}
+                  onChange={(e) => setDaSearch(e.target.value)}
+                  className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-56"
+                />
+              </div>
+              {(daSearch !== '' || daStatutFilter !== 'all') && (
+                <button
+                  onClick={() => { setDaSearch(''); setDaStatutFilter('all') }}
+                  className="h-7 px-2.5 text-xs rounded-md flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <X className="size-3" />
+                  Réinitialiser
+                </button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {daFiltered.length} résultat{daFiltered.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+
+          {/* Table DA */}
+          <div className="rounded-lg border overflow-x-auto">
+            <table className="w-full text-sm" style={{ minWidth: 860 }}>
+              <thead>
+                <tr className="bg-muted/40 border-b">
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[130px]">N° DA</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Article</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[120px]">Site</th>
+                  <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide w-[110px]">Qté requise</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[120px]">Date limite</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[120px]">Statut</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[135px]">Source OF</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[155px]">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {daFiltered.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                      Aucune demande d'achat ne correspond aux filtres.
+                    </td>
+                  </tr>
+                ) : daFiltered.map((da) => {
+                  const isUrgent = da.requestedDeliveryDate <= TODAY && da.status === 'PENDING'
+                  return (
+                    <tr key={da.id} className="border-b last:border-0 hover:bg-muted/20">
+
+                      {/* N° DA */}
+                      <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap">
+                        {da.requisitionNumber}
+                      </td>
+
+                      {/* Article */}
+                      <td className="px-4 py-3">
+                        <div className="min-w-0">
+                          <span className="block font-medium text-sm truncate" title={da.articleLabel}>
+                            {da.articleLabel}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {da.articleSku}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Site */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Factory className="size-3 shrink-0" />
+                          {da.factoryName}
+                        </span>
+                      </td>
+
+                      {/* Qté */}
+                      <td className="px-4 py-3 text-right font-mono text-sm whitespace-nowrap">
+                        {formatNumber(da.quantityRequired, locale)}{' '}
+                        <span className="text-muted-foreground text-xs">{da.unitLabel}</span>
+                      </td>
+
+                      {/* Date limite */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 font-mono text-xs ${
+                          isUrgent ? 'text-red-600 font-semibold' : 'text-muted-foreground'
+                        }`}>
+                          {isUrgent && <AlertCircle className="size-3 shrink-0" />}
+                          {da.requestedDeliveryDate}
+                        </span>
+                      </td>
+
+                      {/* Statut */}
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_DA_COLORS[da.status]}`}>
+                          {STATUT_DA_LABELS[da.status]}
+                        </span>
+                      </td>
+
+                      {/* Source OF */}
+                      <td className="px-4 py-3">
+                        {da.sourceOrderNumber ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 font-mono whitespace-nowrap">
+                            <Link2 className="size-2.5 shrink-0" />
+                            {da.sourceOrderNumber}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3">
+                        {da.status === 'CONVERTED' && da.convertedOrderNumber ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 font-mono whitespace-nowrap">
+                            <CheckCheck className="size-3 shrink-0" />
+                            {da.convertedOrderNumber}
+                          </span>
+                        ) : da.status === 'PENDING' ? (
+                          <button
+                            onClick={() => setTab('commandes')}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors whitespace-nowrap"
+                          >
+                            Créer BC/BA
+                            <ArrowRight className="size-3 shrink-0" />
+                          </button>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Note traçabilité MRP */}
+          <div className="rounded-lg border bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800 px-5 py-4 flex gap-3">
+            <Link2 className="size-4 text-violet-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-violet-900 dark:text-violet-300">
+                Demandes d'achat issues du MRP
+              </p>
+              <p className="text-xs text-violet-700 dark:text-violet-400 leading-relaxed">
+                Ces demandes sont générées automatiquement par le calcul MRP à partir des besoins nets en matières premières.
+                Convertissez-les en Bon de Commande (BC) ou Bon d'Achat (BA) dans l'onglet{' '}
+                <strong>Commandes fournisseurs</strong>.
+                La traçabilité <span className="font-mono">OF → DA → BC/BA</span> est maintenue automatiquement.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {tab === 'strategie' && (
         <div className="space-y-4">
@@ -454,7 +697,7 @@ export default function ApprovisionnementPage() {
             <StatCard
               label="Total commandes"
               value={stats.total}
-              sub={`dont ${stats.partielles} partielle(s)`}
+              sub={`dont ${stats.recues} reçue(s)`}
               trendVariant="neutral"
               bgClass="bg-blue-50 dark:bg-blue-950/30"
               iconBgClass="bg-blue-100 dark:bg-blue-900/50"
@@ -482,10 +725,10 @@ export default function ApprovisionnementPage() {
               className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
             >
               <option value="all">Tous statuts</option>
-              <option value="EnCours">En cours</option>
-              <option value="Recue">Reçue</option>
-              <option value="Partielle">Partielle</option>
-              <option value="Annulee">Annulée</option>
+              <option value="DRAFT">Brouillon</option>
+              <option value="PENDING">En attente</option>
+              <option value="APPROVED">Approuvée</option>
+              <option value="RECEIVED">Reçue</option>
             </select>
 
             <select
@@ -581,7 +824,11 @@ export default function ApprovisionnementPage() {
                     </td>
                   </tr>
                 ) : filtered.map((c) => (
-                  <tr key={`${c.id}-${c.itemId}`} className="border-b last:border-0 hover:bg-muted/20">
+                  <tr
+                    key={`${c.id}-${c.itemId}`}
+                    className="border-b last:border-0 hover:bg-muted/20 cursor-pointer"
+                    onClick={() => setSelectedOrderId(c.id)}
+                  >
 
                     <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{c.numero}</td>
 
@@ -613,14 +860,14 @@ export default function ApprovisionnementPage() {
 
                     <td className="px-4 py-3 overflow-hidden">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[c.statut]}`}>
-                        {c.statut === 'Recue'
+                        {c.statut === 'RECEIVED'
                           ? <CheckCheck className="size-3 shrink-0" />
                           : <Clock className="size-3 shrink-0" />}
                         {STATUT_COMMANDE_LABELS[c.statut]}
                       </span>
                     </td>
 
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         title={c.type === 'BC' ? 'Télécharger le bon de commande' : "Télécharger le bon d'achat"}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors ${
@@ -645,6 +892,13 @@ export default function ApprovisionnementPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSave={handleSaveCommande}
+      />
+
+      <CommandeDetailModal
+        open={selectedOrderId !== null}
+        onClose={() => setSelectedOrderId(null)}
+        header={selectedHeader}
+        items={selectedItems}
       />
     </div>
   )

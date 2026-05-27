@@ -108,6 +108,7 @@ export default function ProductionPage() {
   const [showArchives, setShowArchives] = useState(false)
   const [monthOffset, setMonthOffset] = useState(0)
   const [ofModalOpen, setOfModalOpen] = useState(false)
+  const [selectedOf, setSelectedOf]   = useState<OrdreFabrication | null>(null)
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:production',
@@ -195,8 +196,20 @@ export default function ProductionPage() {
     )
   }
 
-  // ── Sauvegarder un nouvel OF ─────────────────────────────────────────────────
+  // ── Sauvegarder (création ou modification) ───────────────────────────────────
   async function handleSaveOF(data: Omit<OrdreFabrication, 'id' | 'numero'>): Promise<boolean> {
+    if (selectedOf) {
+      // Mode édition — mise à jour de l'OF existant
+      setOfs((prev) =>
+        prev.map((o) =>
+          o.id === selectedOf.id
+            ? { ...data, id: selectedOf.id, numero: selectedOf.numero }
+            : o,
+        ),
+      )
+      return true
+    }
+    // Mode création
     const year = new Date().getFullYear()
     const nextSeq = ofs.reduce((max, o) => {
       const match = o.numero.match(/OF-\d{4}-(\d+)/)
@@ -244,7 +257,7 @@ export default function ProductionPage() {
           <Button
             size="sm"
             className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => setOfModalOpen(true)}
+            onClick={() => { setSelectedOf(null); setOfModalOpen(true) }}
           >
             <Plus className="size-4" />
             Nouvel OF
@@ -580,7 +593,11 @@ export default function ProductionPage() {
                                 {transLabel}
                               </button>
                             )}
-                            <button className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                            <button
+                              onClick={() => { setSelectedOf(of); setOfModalOpen(true) }}
+                              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              title="Modifier cet OF"
+                            >
                               <Pencil className="size-3.5" />
                             </button>
                             <button className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -703,10 +720,11 @@ export default function ProductionPage() {
         </div>
       )}
 
-      {/* ── Modal Nouvel OF ────────────────────────────────────────────────── */}
+      {/* ── Modal Nouvel OF / Modifier OF ─────────────────────────────────── */}
       <OFModal
         open={ofModalOpen}
-        onClose={() => setOfModalOpen(false)}
+        onClose={() => { setOfModalOpen(false); setSelectedOf(null) }}
+        of={selectedOf}
         onSave={handleSaveOF}
       />
 

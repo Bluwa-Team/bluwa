@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { X, Loader2, Barcode, Camera, ShieldCheck, CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
 import { BCHeader, BCItem } from '../../approvisionnement/_components/types'
-import { ReceptionHeader, ReceptionItem, StatutLot } from './types'
+import { ReceptionHeader, ReceptionItem, StatutLot, StatutReception, QualiteStatut } from './types'
 
 // ── Types locaux du formulaire ────────────────────────────────────────────────
 
@@ -140,12 +140,19 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     )
   }
 
-  // Statut global dérivé automatiquement des statuts de lots
-  const globalStatut = useMemo((): 'Conforme' | 'Reserve' | 'Attente' => {
-    if (itemForms.length === 0) return 'Attente'
-    if (itemForms.some((f) => f.statutLot === 'Bloque')) return 'Reserve'
-    if (itemForms.every((f) => f.lotFourn.trim() !== '')) return 'Conforme'
-    return 'Attente'
+  // Statut workflow dérivé : DRAFT tant que tout n'est pas saisi, VALIDATED sinon
+  const globalStatut = useMemo((): StatutReception => {
+    if (itemForms.length === 0) return 'DRAFT'
+    if (itemForms.every((f) => f.qteRecue !== '' && !isNaN(parseFloat(f.qteRecue)))) return 'VALIDATED'
+    return 'DRAFT'
+  }, [itemForms])
+
+  // Appréciation qualité dérivée des statuts de lots
+  const globalQualite = useMemo((): QualiteStatut => {
+    if (itemForms.length === 0) return 'NonJuge'
+    if (itemForms.some((f) => f.statutLot === 'Bloque' || f.statutLot === 'NonConforme')) return 'Reserve'
+    if (itemForms.every((f) => f.statutLot === 'Libere')) return 'Conforme'
+    return 'NonJuge'
   }, [itemForms])
 
   function isValid() {
@@ -166,12 +173,13 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     setSaving(true)
     const ok = await onSave(
       {
-        date:            new Date().toISOString().split('T')[0],
-        numeroBon:       selectedHeader.numero,
-        fournisseur:     selectedHeader.fournisseur,
-        typeFournisseur: selectedHeader.type === 'BC' ? 'Formel' : 'Informel',
-        statut:          globalStatut,
-        cloturee:        false,
+        date:               new Date().toISOString().split('T')[0],
+        deliveryNoteNumber: null,
+        numeroBon:          selectedHeader.numero,
+        fournisseur:        selectedHeader.fournisseur,
+        typeFournisseur:    selectedHeader.type === 'BC' ? 'Formel' : 'Informel',
+        statut:             globalStatut,
+        qualiteStatut:      globalQualite,
       },
       itemForms.map((f) => ({
         article:    f.article,
@@ -415,15 +423,15 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {selectedHeader && (
                   <>
-                    <span>Statut global :</span>
+                    <span>Qualité :</span>
                     <span className={`px-2 py-0.5 rounded-full font-medium border ${
-                      globalStatut === 'Conforme'
+                      globalQualite === 'Conforme'
                         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                        : globalStatut === 'Reserve'
+                        : globalQualite === 'Reserve'
                           ? 'bg-orange-100 text-orange-700 border-orange-200'
                           : 'bg-amber-100 text-amber-700 border-amber-200'
                     }`}>
-                      {globalStatut === 'Conforme' ? 'Conforme' : globalStatut === 'Reserve' ? 'Réserve' : 'Attente'}
+                      {globalQualite === 'Conforme' ? 'Conforme' : globalQualite === 'Reserve' ? 'Réserve' : 'Non jugée'}
                     </span>
                   </>
                 )}

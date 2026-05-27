@@ -14,11 +14,37 @@ export interface GammeEtape {
   gammeId: string
   ordre: number
   operation: string
-  duree: number          // minutes
-  temperature?: number   // °C — undefined = pas de contrainte thermique
+  duree: number                   // durée standard pour le lot (minutes) — = duration_min SAP PLPO
+  setupTimeMinutes: number        // temps de réglage machine avant démarrage (= Rüstzeit / VGZ01) — migration 008
+  runTimeMinutesPerUnit: number   // temps machine par unité de PF (= duree / batchSize) — migration 008
+  temperature?: number            // °C — undefined = pas de contrainte thermique
   equipement: string
   pointControle?: string
 }
+
+// ── WorkCenter ─────────────────────────────────────────────────────────────────
+// Aligné sur work_centers après migration 008
+
+export interface WorkCenter {
+  id: string
+  code: string                   // ex. 'LIGNE_EMBOUTEILLAGE' — migration 008
+  name: string                   // ex. 'Ligne embouteillage'
+  ratePerHour: number            // XOF/h — taux horaire pour le calcul du coût gamme
+  dailyCapacityHours: number     // capacité d'ouverture en h/jour — migration 008
+  efficiencyPercentage: number   // taux de performance % — migration 008
+  isActive: boolean
+}
+
+export const MOCK_WORK_CENTERS: WorkCenter[] = [
+  { id: 'wc-001', code: 'BALANCE_IND',     name: 'Balance industrielle',  ratePerHour: 4_800,  dailyCapacityHours: 8, efficiencyPercentage: 98, isActive: true  },
+  { id: 'wc-002', code: 'CUVE_INOX_500L',  name: 'Cuve inox 500L',        ratePerHour: 9_000,  dailyCapacityHours: 8, efficiencyPercentage: 90, isActive: true  },
+  { id: 'wc-003', code: 'FILTRE_PRESSE',   name: 'Filtre presse 0.5µm',   ratePerHour: 7_200,  dailyCapacityHours: 8, efficiencyPercentage: 85, isActive: true  },
+  { id: 'wc-004', code: 'CUVE_MELANGE',    name: 'Cuve de mélange',       ratePerHour: 6_000,  dailyCapacityHours: 8, efficiencyPercentage: 92, isActive: true  },
+  { id: 'wc-005', code: 'ECHANGEUR_THERM', name: 'Échangeur thermique',   ratePerHour: 10_800, dailyCapacityHours: 8, efficiencyPercentage: 88, isActive: true  },
+  { id: 'wc-006', code: 'LAB_QUALITE',     name: 'Lab. qualité',          ratePerHour: 6_000,  dailyCapacityHours: 8, efficiencyPercentage: 100, isActive: true },
+  { id: 'wc-007', code: 'LIGNE_EMBOUTEIL', name: 'Ligne embouteillage',   ratePerHour: 12_000, dailyCapacityHours: 8, efficiencyPercentage: 80, isActive: true  },
+  { id: 'wc-008', code: 'ZONE_PALETTE',    name: 'Zone palettisation',    ratePerHour: 3_600,  dailyCapacityHours: 8, efficiencyPercentage: 95, isActive: true  },
+]
 
 // ── In-memory mutable store ───────────────────────────────────────────────────
 
@@ -32,63 +58,64 @@ let _gammes: GammeFabrication[] = [
 
 let _etapes: GammeEtape[] = [
   // ── PF-BIS-001 : Original ─────────────────────────────────────────────────
-  { id: 'g001-e1', gammeId: 'gam-001', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
-  { id: 'g001-e2', gammeId: 'gam-001', ordre: 2, operation: 'Macération hibiscus',   duree: 45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
-  { id: 'g001-e3', gammeId: 'gam-001', ordre: 3, operation: 'Filtration',            duree: 20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
-  { id: 'g001-e4', gammeId: 'gam-001', ordre: 4, operation: 'Sucrage / Dosage',      duree: 10, temperature: 65, equipement: 'Cuve de mélange' },
-  { id: 'g001-e5', gammeId: 'gam-001', ordre: 5, operation: 'Refroidissement',       duree: 40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
-  { id: 'g001-e6', gammeId: 'gam-001', ordre: 6, operation: 'Contrôle qualité',      duree: 15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
-  { id: 'g001-e7', gammeId: 'gam-001', ordre: 7, operation: 'Embouteillage',         duree: 30, equipement: 'Ligne embouteillage' },
-  { id: 'g001-e8', gammeId: 'gam-001', ordre: 8, operation: 'Capsulage & Étiquetage',duree: 20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
-  { id: 'g001-e9', gammeId: 'gam-001', ordre: 9, operation: 'Palettisation',         duree: 10, equipement: 'Zone palettisation' },
+  // setupTimeMinutes : réglage avant démarrage | runTimeMinutesPerUnit : duree / 100 btl
+  { id: 'g001-e1', gammeId: 'gam-001', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
+  { id: 'g001-e2', gammeId: 'gam-001', ordre: 2, operation: 'Macération hibiscus',   duree: 45, setupTimeMinutes: 10, runTimeMinutesPerUnit: 0.45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
+  { id: 'g001-e3', gammeId: 'gam-001', ordre: 3, operation: 'Filtration',            duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
+  { id: 'g001-e4', gammeId: 'gam-001', ordre: 4, operation: 'Sucrage / Dosage',      duree: 10, setupTimeMinutes: 3,  runTimeMinutesPerUnit: 0.10, temperature: 65, equipement: 'Cuve de mélange' },
+  { id: 'g001-e5', gammeId: 'gam-001', ordre: 5, operation: 'Refroidissement',       duree: 40, setupTimeMinutes: 0,  runTimeMinutesPerUnit: 0.40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
+  { id: 'g001-e6', gammeId: 'gam-001', ordre: 6, operation: 'Contrôle qualité',      duree: 15, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
+  { id: 'g001-e7', gammeId: 'gam-001', ordre: 7, operation: 'Embouteillage',         duree: 30, setupTimeMinutes: 15, runTimeMinutesPerUnit: 0.30, equipement: 'Ligne embouteillage' },
+  { id: 'g001-e8', gammeId: 'gam-001', ordre: 8, operation: 'Capsulage & Étiquetage',duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
+  { id: 'g001-e9', gammeId: 'gam-001', ordre: 9, operation: 'Palettisation',         duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Zone palettisation' },
 
   // ── PF-BIS-002 : Vanille ──────────────────────────────────────────────────
-  { id: 'g002-e1', gammeId: 'gam-002', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
-  { id: 'g002-e2', gammeId: 'gam-002', ordre: 2, operation: 'Macération hibiscus',   duree: 45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
-  { id: 'g002-e3', gammeId: 'gam-002', ordre: 3, operation: 'Infusion vanille',      duree: 30, temperature: 75, equipement: 'Cuve inox 500L',         pointControle: 'Arôme vanille bien intégré' },
-  { id: 'g002-e4', gammeId: 'gam-002', ordre: 4, operation: 'Filtration',            duree: 20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
-  { id: 'g002-e5', gammeId: 'gam-002', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, temperature: 65, equipement: 'Cuve de mélange' },
-  { id: 'g002-e6', gammeId: 'gam-002', ordre: 6, operation: 'Refroidissement',       duree: 40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
-  { id: 'g002-e7', gammeId: 'gam-002', ordre: 7, operation: 'Contrôle qualité',      duree: 15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
-  { id: 'g002-e8', gammeId: 'gam-002', ordre: 8, operation: 'Embouteillage',         duree: 30, equipement: 'Ligne embouteillage' },
-  { id: 'g002-e9', gammeId: 'gam-002', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
-  { id: 'g002-e10',gammeId: 'gam-002', ordre:10, operation: 'Palettisation',         duree: 10, equipement: 'Zone palettisation' },
+  { id: 'g002-e1', gammeId: 'gam-002', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
+  { id: 'g002-e2', gammeId: 'gam-002', ordre: 2, operation: 'Macération hibiscus',   duree: 45, setupTimeMinutes: 10, runTimeMinutesPerUnit: 0.45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
+  { id: 'g002-e3', gammeId: 'gam-002', ordre: 3, operation: 'Infusion vanille',      duree: 30, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.30, temperature: 75, equipement: 'Cuve inox 500L',         pointControle: 'Arôme vanille bien intégré' },
+  { id: 'g002-e4', gammeId: 'gam-002', ordre: 4, operation: 'Filtration',            duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
+  { id: 'g002-e5', gammeId: 'gam-002', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, setupTimeMinutes: 3,  runTimeMinutesPerUnit: 0.10, temperature: 65, equipement: 'Cuve de mélange' },
+  { id: 'g002-e6', gammeId: 'gam-002', ordre: 6, operation: 'Refroidissement',       duree: 40, setupTimeMinutes: 0,  runTimeMinutesPerUnit: 0.40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
+  { id: 'g002-e7', gammeId: 'gam-002', ordre: 7, operation: 'Contrôle qualité',      duree: 15, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
+  { id: 'g002-e8', gammeId: 'gam-002', ordre: 8, operation: 'Embouteillage',         duree: 30, setupTimeMinutes: 15, runTimeMinutesPerUnit: 0.30, equipement: 'Ligne embouteillage' },
+  { id: 'g002-e9', gammeId: 'gam-002', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
+  { id: 'g002-e10',gammeId: 'gam-002', ordre:10, operation: 'Palettisation',         duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Zone palettisation' },
 
   // ── PF-BIS-003 : Gingembre ────────────────────────────────────────────────
-  { id: 'g003-e1', gammeId: 'gam-003', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
-  { id: 'g003-e2', gammeId: 'gam-003', ordre: 2, operation: 'Macération hibiscus',   duree: 45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
-  { id: 'g003-e3', gammeId: 'gam-003', ordre: 3, operation: 'Infusion gingembre',    duree: 25, temperature: 80, equipement: 'Cuve inox 500L',         pointControle: 'Piquant gingembre perceptible sans excès' },
-  { id: 'g003-e4', gammeId: 'gam-003', ordre: 4, operation: 'Filtration',            duree: 20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
-  { id: 'g003-e5', gammeId: 'gam-003', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, temperature: 65, equipement: 'Cuve de mélange' },
-  { id: 'g003-e6', gammeId: 'gam-003', ordre: 6, operation: 'Refroidissement',       duree: 40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
-  { id: 'g003-e7', gammeId: 'gam-003', ordre: 7, operation: 'Contrôle qualité',      duree: 15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
-  { id: 'g003-e8', gammeId: 'gam-003', ordre: 8, operation: 'Embouteillage',         duree: 30, equipement: 'Ligne embouteillage' },
-  { id: 'g003-e9', gammeId: 'gam-003', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
-  { id: 'g003-e10',gammeId: 'gam-003', ordre:10, operation: 'Palettisation',         duree: 10, equipement: 'Zone palettisation' },
+  { id: 'g003-e1', gammeId: 'gam-003', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
+  { id: 'g003-e2', gammeId: 'gam-003', ordre: 2, operation: 'Macération hibiscus',   duree: 45, setupTimeMinutes: 10, runTimeMinutesPerUnit: 0.45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
+  { id: 'g003-e3', gammeId: 'gam-003', ordre: 3, operation: 'Infusion gingembre',    duree: 25, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.25, temperature: 80, equipement: 'Cuve inox 500L',         pointControle: 'Piquant gingembre perceptible sans excès' },
+  { id: 'g003-e4', gammeId: 'gam-003', ordre: 4, operation: 'Filtration',            duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
+  { id: 'g003-e5', gammeId: 'gam-003', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, setupTimeMinutes: 3,  runTimeMinutesPerUnit: 0.10, temperature: 65, equipement: 'Cuve de mélange' },
+  { id: 'g003-e6', gammeId: 'gam-003', ordre: 6, operation: 'Refroidissement',       duree: 40, setupTimeMinutes: 0,  runTimeMinutesPerUnit: 0.40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
+  { id: 'g003-e7', gammeId: 'gam-003', ordre: 7, operation: 'Contrôle qualité',      duree: 15, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
+  { id: 'g003-e8', gammeId: 'gam-003', ordre: 8, operation: 'Embouteillage',         duree: 30, setupTimeMinutes: 15, runTimeMinutesPerUnit: 0.30, equipement: 'Ligne embouteillage' },
+  { id: 'g003-e9', gammeId: 'gam-003', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
+  { id: 'g003-e10',gammeId: 'gam-003', ordre:10, operation: 'Palettisation',         duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Zone palettisation' },
 
   // ── PF-BIS-004 : Menthe ───────────────────────────────────────────────────
-  { id: 'g004-e1', gammeId: 'gam-004', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
-  { id: 'g004-e2', gammeId: 'gam-004', ordre: 2, operation: 'Macération hibiscus',   duree: 45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
-  { id: 'g004-e3', gammeId: 'gam-004', ordre: 3, operation: 'Infusion menthe',       duree: 20, temperature: 60, equipement: 'Cuve inox 500L',         pointControle: 'Fraîcheur mentholée sans amertume' },
-  { id: 'g004-e4', gammeId: 'gam-004', ordre: 4, operation: 'Filtration',            duree: 20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
-  { id: 'g004-e5', gammeId: 'gam-004', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, temperature: 65, equipement: 'Cuve de mélange' },
-  { id: 'g004-e6', gammeId: 'gam-004', ordre: 6, operation: 'Refroidissement',       duree: 40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
-  { id: 'g004-e7', gammeId: 'gam-004', ordre: 7, operation: 'Contrôle qualité',      duree: 15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
-  { id: 'g004-e8', gammeId: 'gam-004', ordre: 8, operation: 'Embouteillage',         duree: 30, equipement: 'Ligne embouteillage' },
-  { id: 'g004-e9', gammeId: 'gam-004', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
-  { id: 'g004-e10',gammeId: 'gam-004', ordre:10, operation: 'Palettisation',         duree: 10, equipement: 'Zone palettisation' },
+  { id: 'g004-e1', gammeId: 'gam-004', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
+  { id: 'g004-e2', gammeId: 'gam-004', ordre: 2, operation: 'Macération hibiscus',   duree: 45, setupTimeMinutes: 10, runTimeMinutesPerUnit: 0.45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
+  { id: 'g004-e3', gammeId: 'gam-004', ordre: 3, operation: 'Infusion menthe',       duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, temperature: 60, equipement: 'Cuve inox 500L',         pointControle: 'Fraîcheur mentholée sans amertume' },
+  { id: 'g004-e4', gammeId: 'gam-004', ordre: 4, operation: 'Filtration',            duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
+  { id: 'g004-e5', gammeId: 'gam-004', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, setupTimeMinutes: 3,  runTimeMinutesPerUnit: 0.10, temperature: 65, equipement: 'Cuve de mélange' },
+  { id: 'g004-e6', gammeId: 'gam-004', ordre: 6, operation: 'Refroidissement',       duree: 40, setupTimeMinutes: 0,  runTimeMinutesPerUnit: 0.40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
+  { id: 'g004-e7', gammeId: 'gam-004', ordre: 7, operation: 'Contrôle qualité',      duree: 15, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
+  { id: 'g004-e8', gammeId: 'gam-004', ordre: 8, operation: 'Embouteillage',         duree: 30, setupTimeMinutes: 15, runTimeMinutesPerUnit: 0.30, equipement: 'Ligne embouteillage' },
+  { id: 'g004-e9', gammeId: 'gam-004', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
+  { id: 'g004-e10',gammeId: 'gam-004', ordre:10, operation: 'Palettisation',         duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Zone palettisation' },
 
   // ── PF-BIS-005 : Citronnelle ──────────────────────────────────────────────
-  { id: 'g005-e1', gammeId: 'gam-005', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
-  { id: 'g005-e2', gammeId: 'gam-005', ordre: 2, operation: 'Macération hibiscus',   duree: 45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
-  { id: 'g005-e3', gammeId: 'gam-005', ordre: 3, operation: 'Infusion citronnelle',  duree: 25, temperature: 70, equipement: 'Cuve inox 500L',         pointControle: 'Notes citronnées légères et persistantes' },
-  { id: 'g005-e4', gammeId: 'gam-005', ordre: 4, operation: 'Filtration',            duree: 20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
-  { id: 'g005-e5', gammeId: 'gam-005', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, temperature: 65, equipement: 'Cuve de mélange' },
-  { id: 'g005-e6', gammeId: 'gam-005', ordre: 6, operation: 'Refroidissement',       duree: 40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
-  { id: 'g005-e7', gammeId: 'gam-005', ordre: 7, operation: 'Contrôle qualité',      duree: 15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
-  { id: 'g005-e8', gammeId: 'gam-005', ordre: 8, operation: 'Embouteillage',         duree: 30, equipement: 'Ligne embouteillage' },
-  { id: 'g005-e9', gammeId: 'gam-005', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
-  { id: 'g005-e10',gammeId: 'gam-005', ordre:10, operation: 'Palettisation',         duree: 10, equipement: 'Zone palettisation' },
+  { id: 'g005-e1', gammeId: 'gam-005', ordre: 1, operation: 'Pesée & Préparation',   duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Balance industrielle',  pointControle: 'Vérifier les quantités vs BOM' },
+  { id: 'g005-e2', gammeId: 'gam-005', ordre: 2, operation: 'Macération hibiscus',   duree: 45, setupTimeMinutes: 10, runTimeMinutesPerUnit: 0.45, temperature: 90, equipement: 'Cuve inox 500L',         pointControle: 'Couleur pourpre intense, arôme floral' },
+  { id: 'g005-e3', gammeId: 'gam-005', ordre: 3, operation: 'Infusion citronnelle',  duree: 25, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.25, temperature: 70, equipement: 'Cuve inox 500L',         pointControle: 'Notes citronnées légères et persistantes' },
+  { id: 'g005-e4', gammeId: 'gam-005', ordre: 4, operation: 'Filtration',            duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Filtre presse 0.5µm',   pointControle: 'Turbidité ≤ 1 NTU' },
+  { id: 'g005-e5', gammeId: 'gam-005', ordre: 5, operation: 'Sucrage / Dosage',      duree: 10, setupTimeMinutes: 3,  runTimeMinutesPerUnit: 0.10, temperature: 65, equipement: 'Cuve de mélange' },
+  { id: 'g005-e6', gammeId: 'gam-005', ordre: 6, operation: 'Refroidissement',       duree: 40, setupTimeMinutes: 0,  runTimeMinutesPerUnit: 0.40, temperature: 20, equipement: 'Échangeur thermique',    pointControle: 'T° ≤ 25°C avant embouteillage' },
+  { id: 'g005-e7', gammeId: 'gam-005', ordre: 7, operation: 'Contrôle qualité',      duree: 15, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.15, equipement: 'Lab. qualité',           pointControle: 'pH 2.5–3.2 · Brix 12–15' },
+  { id: 'g005-e8', gammeId: 'gam-005', ordre: 8, operation: 'Embouteillage',         duree: 30, setupTimeMinutes: 15, runTimeMinutesPerUnit: 0.30, equipement: 'Ligne embouteillage' },
+  { id: 'g005-e9', gammeId: 'gam-005', ordre: 9, operation: 'Capsulage & Étiquetage',duree: 20, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.20, equipement: 'Ligne embouteillage',   pointControle: 'Intégrité capsule + étiquette centrée' },
+  { id: 'g005-e10',gammeId: 'gam-005', ordre:10, operation: 'Palettisation',         duree: 10, setupTimeMinutes: 5,  runTimeMinutesPerUnit: 0.10, equipement: 'Zone palettisation' },
 ]
 
 // ── Public API ────────────────────────────────────────────────────────────────

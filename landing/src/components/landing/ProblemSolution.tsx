@@ -2,11 +2,15 @@ import { useTranslations } from 'next-intl'
 import { Section, Eyebrow } from '@/components/ui/Section'
 import { AlertTriangle, EyeOff, LineChart } from './Icons'
 
+type SolutionRow = { label: string; value: string }
+
 const ICONS = [EyeOff, LineChart, AlertTriangle]
 
 export function ProblemSolution() {
   const t = useTranslations('problem')
+  const tRoot = useTranslations()
   const points = t.raw('points') as Array<{ title: string; body: string }>
+  const solutionRows = tRoot.raw('solutionRows') as SolutionRow[]
 
   return (
     <Section id="problem" className="border-b border-[var(--border)] bg-[var(--muted)]/40">
@@ -50,12 +54,7 @@ export function ProblemSolution() {
           <div className="relative">
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/40 p-5">
               <div className="space-y-3">
-                {[
-                  { label: 'Unifié', value: 'Production · Stocks · Achats · Finance' },
-                  { label: 'Multi-sites', value: '1 à 50 sites · multi-devises' },
-                  { label: 'Copilote IA', value: 'Réponses en langage naturel pour vos COMEX' },
-                  { label: 'Déploiement', value: 'Pilote en 5 à 15 jours' },
-                ].map((row) => (
+                {solutionRows.map((row) => (
                   <div
                     key={row.label}
                     className="flex items-center justify-between gap-4 rounded-lg bg-[var(--background)] px-4 py-3 text-sm"

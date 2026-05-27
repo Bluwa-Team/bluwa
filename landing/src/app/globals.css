@@ -15,8 +15,8 @@
   --color-border: var(--border);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-syne);
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -31,17 +31,17 @@
   --card-foreground: oklch(0.145 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.45 0 0);
-  --primary: oklch(0.627 0.233 248);
-  --primary-foreground: oklch(1 0 0);
-  --accent: oklch(0.965 0.02 248);
+  --primary: #074ce1;
+  --primary-foreground: #ffffff;
+  --accent: #e8effe;
   --accent-foreground: oklch(0.205 0 0);
   --border: oklch(0.922 0 0);
   --radius: 0.75rem;
 
-  --brand-50: oklch(0.97 0.02 248);
-  --brand-500: oklch(0.627 0.233 248);
-  --brand-600: oklch(0.55 0.22 248);
-  --brand-700: oklch(0.46 0.2 248);
+  --brand-50: #e8effe;
+  --brand-500: #074ce1;
+  --brand-600: #0641c4;
+  --brand-700: #0535a0;
 }
 
 @layer base {
@@ -74,7 +74,7 @@
   }
   .bg-radial-brand {
     background:
-      radial-gradient(60% 40% at 50% 0%, oklch(0.627 0.233 248 / 0.18), transparent 70%),
+      radial-gradient(60% 40% at 50% 0%, rgb(7 76 225 / 0.18), transparent 70%),
       radial-gradient(40% 30% at 80% 20%, oklch(0.78 0.15 60 / 0.12), transparent 70%);
   }
 }

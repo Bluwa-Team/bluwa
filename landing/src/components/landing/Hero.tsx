@@ -50,44 +50,47 @@ export function Hero() {
 }
 
 function HeroVisual() {
+  const t = useTranslations('heroVisual')
+  const kpis = t.raw('kpis') as Array<{ label: string; value: string; trend: string; tone: 'good' | 'warn' }>
+
   return (
     <div className="relative mx-auto mt-16 max-w-5xl">
       <div className="absolute inset-x-0 -top-6 -bottom-6 rounded-3xl bg-gradient-to-b from-[var(--primary)]/20 via-transparent to-transparent blur-2xl" />
       <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl">
+        {/* Browser chrome */}
         <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--muted)] px-4 py-2.5">
           <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-          <span className="ml-4 text-xs text-[var(--muted-foreground)]">app.bluwa.io · MRP</span>
+          <span className="ml-4 text-xs text-[var(--muted-foreground)]">{t('browserBar')}</span>
         </div>
         <div className="grid grid-cols-12 gap-4 p-6">
+          {/* KPI cards */}
           <div className="col-span-12 grid grid-cols-2 gap-4 md:col-span-8 md:grid-cols-4">
-            <KpiCard label="Production J" value="12 480 kg" trend="+8%" />
-            <KpiCard label="Couverture" value="42 j" trend="-3 j" tone="warn" />
-            <KpiCard label="OF en cours" value="17" trend="+2" />
-            <KpiCard label="Marge brute" value="34,2 %" trend="+1,4 pt" />
+            {kpis.map((kpi) => (
+              <KpiCard key={kpi.label} label={kpi.label} value={kpi.value} trend={kpi.trend} tone={kpi.tone} />
+            ))}
           </div>
+          {/* AI Copilot */}
           <div className="col-span-12 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 md:col-span-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--muted-foreground)]">Copilote IA</span>
+              <span className="text-xs font-medium text-[var(--muted-foreground)]">{t('copilotLabel')}</span>
               <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--primary)]">
-                en direct
+                {t('copilotLive')}
               </span>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]">
-              « Maïs : stock dans 4 semaines si rythme inchangé. <br />
-              Suggestion d&apos;achat de 18 t auprès de Sahel Agri. »
+              « {t('copilotMessage')} »
             </p>
             <div className="mt-3 h-1.5 rounded-full bg-[var(--muted)]">
               <div className="h-1.5 w-2/3 rounded-full bg-[var(--primary)]" />
             </div>
           </div>
+          {/* Chart */}
           <div className="col-span-12 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-[var(--muted-foreground)]">
-                Ordres de production · 6 mois
-              </span>
-              <span className="text-[10px] text-[var(--muted-foreground)]">M+0 → M+5</span>
+              <span className="text-xs font-medium text-[var(--muted-foreground)]">{t('chartLabel')}</span>
+              <span className="text-[10px] text-[var(--muted-foreground)]">{t('chartPeriod')}</span>
             </div>
             <div className="flex h-24 items-end gap-2">
               {[42, 58, 51, 68, 73, 80].map((h, i) => (
@@ -106,27 +109,15 @@ function HeroVisual() {
 }
 
 function KpiCard({
-  label,
-  value,
-  trend,
-  tone = 'good',
+  label, value, trend, tone = 'good',
 }: {
-  label: string
-  value: string
-  trend: string
-  tone?: 'good' | 'warn'
+  label: string; value: string; trend: string; tone?: 'good' | 'warn'
 }) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3">
       <div className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">{label}</div>
       <div className="mt-1 text-lg font-semibold">{value}</div>
-      <div
-        className={
-          tone === 'good'
-            ? 'mt-1 text-[10px] font-medium text-emerald-600'
-            : 'mt-1 text-[10px] font-medium text-amber-600'
-        }
-      >
+      <div className={tone === 'good' ? 'mt-1 text-[10px] font-medium text-emerald-600' : 'mt-1 text-[10px] font-medium text-amber-600'}>
         {trend}
       </div>
     </div>

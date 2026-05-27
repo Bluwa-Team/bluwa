@@ -21,6 +21,7 @@ import {
   FlaskConical,
   GitBranch,
   FileText,
+  ClipboardCheck,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -100,7 +101,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       label: t('main'),
       items: [
         { title: t('dashboard'), url: '/dashboard', icon: LayoutDashboard, disabled: false },
-        { title: t('marginAnalysis'), url: '/analyse-marge', icon: TrendingUp, disabled: true },
+        { title: t('marginAnalysis'), url: '/analyse-marge', icon: TrendingUp, disabled: false },
       ],
     },
     {
@@ -115,14 +116,15 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       label: t('sourcingSupply'),
       items: [
         { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList, disabled: false },
-        { title: t('stocks'), url: '/stocks', icon: Warehouse, disabled: false },
-        { title: t('mrp'), url: '/mrp', icon: Calculator, disabled: false },
+        { title: t('stocks'),            url: '/stocks',            icon: Warehouse,     disabled: false },
+        { title: t('mrp'),               url: '/mrp',               icon: Calculator,    disabled: false },
       ],
     },
     {
       label: t('logistique'),
       items: [
-        { title: t('reception'), url: '/reception', icon: ShoppingCart, disabled: false },
+        { title: t('reception'),  url: '/reception',  icon: ShoppingCart,  disabled: false },
+        { title: t('inventaire'), url: '/inventaire', icon: ClipboardCheck, disabled: false },
       ],
     },
     {

@@ -123,10 +123,10 @@ export default function ReceptionPage() {
 
   // Stats sur les headers (1 réception = 1 header, pas 1 ligne article)
   const stats = useMemo(() => ({
-    enCours:      recHeaders.filter((h) => !h.cloturee).length,
-    archivees:    recHeaders.filter((h) => h.cloturee).length,
-    conformes:    recHeaders.filter((h) => h.statut === 'Conforme').length,
-    avecReserve:  recHeaders.filter((h) => h.statut === 'Reserve').length,
+    enCours:      recHeaders.filter((h) => h.statut === 'DRAFT').length,
+    archivees:    recHeaders.filter((h) => h.statut !== 'DRAFT').length,
+    conformes:    recHeaders.filter((h) => h.qualiteStatut === 'Conforme').length,
+    avecReserve:  recHeaders.filter((h) => h.qualiteStatut === 'Reserve').length,
     codesScannes: recItems.filter((i) => i.codeBarres !== null).length,
   }), [recHeaders, recItems])
 
@@ -459,7 +459,7 @@ export default function ReceptionPage() {
                     >
                       <Printer className="size-3.5" />
                     </button>
-                    {r.statut === 'Conforme' && !r.cloturee && (
+                    {r.qualiteStatut === 'Conforme' && r.statut !== 'CANCELLED' && (
                       <button
                         title="Clôturer la réception"
                         className="p-1.5 rounded text-orange-600 hover:text-orange-700 hover:bg-orange-50"
@@ -478,7 +478,7 @@ export default function ReceptionPage() {
       <ReceptionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        bcHeaders={MOCK_BC_HEADERS.filter((h) => h.statut === 'EnCours' || h.statut === 'Partielle')}
+        bcHeaders={MOCK_BC_HEADERS.filter((h) => h.statut === 'PENDING' || h.statut === 'APPROVED')}
         bcItems={MOCK_BC_ITEMS}
         onSave={handleSave}
       />

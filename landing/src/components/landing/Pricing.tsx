@@ -37,7 +37,7 @@ export function Pricing() {
               className={cn(
                 'relative flex flex-col rounded-2xl border bg-[var(--background)] p-7',
                 plan.highlighted
-                  ? 'border-[var(--primary)] shadow-[0_24px_60px_-24px_oklch(0.627_0.233_248/0.5)]'
+                  ? 'border-[var(--primary)] shadow-[0_24px_60px_-24px_rgb(7_76_225/0.5)]'
                   : 'border-[var(--border)]',
               )}
             >

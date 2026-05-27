@@ -1,10 +1,28 @@
+'use client'
+
 import { useTranslations } from 'next-intl'
+import { useActionState, useRef } from 'react'
 import { Section, Eyebrow } from '@/components/ui/Section'
 import { Button } from '@/components/ui/Button'
-import { ArrowRight } from './Icons'
+import { ArrowRight, Check } from './Icons'
+import { sendContact } from '@/app/actions/contact'
+
+const initialState = { success: false as boolean, error: undefined as string | undefined }
 
 export function Contact() {
   const t = useTranslations('contact')
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const [state, action, pending] = useActionState(
+    async (_prev: typeof initialState, formData: FormData) => {
+      const result = await sendContact(formData)
+      if (result.success) formRef.current?.reset()
+      return result.success
+        ? { success: true, error: undefined }
+        : { success: false, error: (result as { success: false; error: string }).error }
+    },
+    initialState,
+  )
 
   return (
     <Section id="contact" className="border-t border-[var(--border)] bg-[var(--muted)]/40">
@@ -30,17 +48,32 @@ export function Contact() {
             </div>
           </div>
 
-          <form className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-7">
-            <div className="grid gap-4">
-              <Field label={t('name')} name="name" />
-              <Field label={t('email')} name="email" type="email" />
-              <Field label={t('company')} name="company" />
-              <Field label={t('message')} name="message" textarea />
-              <Button type="submit" size="lg" className="mt-2">
-                {t('submit')}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <form ref={formRef} action={action} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-7">
+            {state.success ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <Check className="h-6 w-6" />
+                </div>
+                <p className="font-semibold">{t('successTitle')}</p>
+                <p className="text-sm text-[var(--muted-foreground)]">{t('successBody')}</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                <Field label={t('name')} name="name" required />
+                <Field label={t('email')} name="email" type="email" required />
+                <Field label={t('company')} name="company" />
+                <Field label={t('message')} name="message" textarea required />
+                {state.error && (
+                  <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">
+                    {state.error}
+                  </p>
+                )}
+                <Button type="submit" size="lg" className="mt-2" disabled={pending}>
+                  {pending ? t('sending') : t('submit')}
+                  {!pending && <ArrowRight className="h-4 w-4" />}
+                </Button>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -49,28 +82,20 @@ export function Contact() {
 }
 
 function Field({
-  label,
-  name,
-  type = 'text',
-  textarea = false,
+  label, name, type = 'text', textarea = false, required = false,
 }: {
-  label: string
-  name: string
-  type?: string
-  textarea?: boolean
+  label: string; name: string; type?: string; textarea?: boolean; required?: boolean
 }) {
-  const baseClass =
+  const base =
     'w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20'
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-[var(--muted-foreground)]">
-        {label}
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
       </span>
-      {textarea ? (
-        <textarea name={name} rows={4} className={baseClass} />
-      ) : (
-        <input name={name} type={type} className={baseClass} />
-      )}
+      {textarea
+        ? <textarea name={name} rows={4} className={base} required={required} />
+        : <input name={name} type={type} className={base} required={required} />}
     </label>
   )
 }

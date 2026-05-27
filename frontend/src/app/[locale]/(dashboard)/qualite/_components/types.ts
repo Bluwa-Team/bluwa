@@ -1,6 +1,129 @@
-export type StatutLot = 'EnControle' | 'Libere' | 'NonConforme'
+// StatutLot = StatutQC unifié depuis @/types/erp
+// TypeArticleQA = ArticleType unifié depuis @/types/erp
+import type { StatutQC, ArticleType } from '@/types/erp'
+export type { StatutQC as StatutLot }
+export type { ArticleType as TypeArticleQA }
+
+// ── Type DB-aligné — quality_inspection_lots (migration 007) ─────────────────
+
+/**
+ * Statut d'un lot d'inspection — aligné sur quality_inspection_lots.status CHECK.
+ * Mapping vers StatutQC (frontend) :
+ *   'En contrôle' → 'EnControle'
+ *   'Libéré'      → 'Libere'
+ *   'Rejeté'      → 'NonConforme'
+ */
+export type StatutInspectionLot = 'En contrôle' | 'Libéré' | 'Rejeté'
+
+export const STATUT_INSPECTION_LABELS: Record<StatutInspectionLot, string> = {
+  'En contrôle': 'En contrôle',
+  'Libéré':      'Libéré',
+  'Rejeté':      'Rejeté',
+}
+
+export const STATUT_INSPECTION_COLORS: Record<StatutInspectionLot, string> = {
+  'En contrôle': 'bg-amber-100 text-amber-700 border border-amber-200',
+  'Libéré':      'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  'Rejeté':      'bg-red-100 text-red-700 border border-red-200',
+}
+
+/**
+ * Lot d'inspection qualité — aligné sur quality_inspection_lots (migration 007).
+ * Créé automatiquement à chaque réception d'article soumis à inspection.
+ */
+export interface QualityInspectionLot {
+  id:                 string
+  organizationId:     string
+  factoryId:          string
+  goodsReceiptItemId: string | null   // lien vers la ligne de réception déclencheuse
+  articleId:          string
+  articleCode:        string          // enrichi en frontend
+  articleDesignation: string          // enrichi en frontend
+  articleType:        ArticleType     // enrichi en frontend
+  batchNumber:        string
+  sampleQuantity:     number | null   // NULL = 100% contrôle
+  status:             StatutInspectionLot
+  decisionBy:         string | null
+  decisionComments:   string | null
+  decisionAt:         string | null
+  createdAt:          string
+  // Champs enrichis UI
+  origine:            string          // fournisseur ou n° OF
+  flux:               'Reception' | 'Production'
+  quantite:           number
+  unite:              string
+}
+
+export const MOCK_QUALITY_INSPECTION_LOTS: QualityInspectionLot[] = [
+  {
+    id: 'qil-001', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: 'gri-031', articleId: 'a-hib',
+    articleCode: 'MP-0001', articleDesignation: "Fleurs d'Hibiscus",
+    articleType: 'MP', batchNumber: 'LOT-MP-2026-0031',
+    sampleQuantity: 5, status: 'En contrôle',
+    decisionBy: null, decisionComments: null, decisionAt: null,
+    createdAt: '2026-05-22T08:00:00Z',
+    origine: 'Coopérative de Thiès', flux: 'Reception', quantite: 50, unite: 'kg',
+  },
+  {
+    id: 'qil-002', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: 'gri-032', articleId: 'a-suc',
+    articleCode: 'MP-0002', articleDesignation: 'Sucre cristallisé',
+    articleType: 'MP', batchNumber: 'LOT-MP-2026-0032',
+    sampleQuantity: 10, status: 'En contrôle',
+    decisionBy: null, decisionComments: null, decisionAt: null,
+    createdAt: '2026-05-22T09:30:00Z',
+    origine: 'Sucrivoire SA', flux: 'Reception', quantite: 200, unite: 'kg',
+  },
+  {
+    id: 'qil-003', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: 'gri-018', articleId: 'a-btl',
+    articleCode: 'AC-0001', articleDesignation: 'Bouteille verre 1L',
+    articleType: 'AC', batchNumber: 'LOT-AC-2026-0018',
+    sampleQuantity: 20, status: 'En contrôle',
+    decisionBy: null, decisionComments: null, decisionAt: null,
+    createdAt: '2026-05-23T10:00:00Z',
+    origine: 'PlastiSénégal', flux: 'Reception', quantite: 500, unite: 'u',
+  },
+  {
+    id: 'qil-004', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: null, articleId: 'a-pf1',
+    articleCode: 'PF-BIS-001', articleDesignation: 'Bissap Pourpre Original 1L',
+    articleType: 'PF', batchNumber: 'LOT-PF-2026-0041',
+    sampleQuantity: null, status: 'En contrôle',
+    decisionBy: null, decisionComments: null, decisionAt: null,
+    createdAt: '2026-05-24T14:00:00Z',
+    origine: 'OF-2026-041', flux: 'Production', quantite: 200, unite: 'btl',
+  },
+  {
+    id: 'qil-005', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: null, articleId: 'a-pf2',
+    articleCode: 'PF-BIS-002', articleDesignation: 'Bissap Pourpre Vanille 1L',
+    articleType: 'PF', batchNumber: 'LOT-PF-2026-0042',
+    sampleQuantity: null, status: 'Libéré',
+    decisionBy: 'user-qa', decisionComments: 'Paramètres conformes — pH 3.7, Brix 12.2',
+    decisionAt: '2026-05-24T16:30:00Z',
+    createdAt: '2026-05-23T14:00:00Z',
+    origine: 'OF-2026-042', flux: 'Production', quantite: 150, unite: 'btl',
+  },
+  {
+    id: 'qil-006', organizationId: 'org-1', factoryId: 'fac-1',
+    goodsReceiptItemId: 'gri-029', articleId: 'a-gin',
+    articleCode: 'MP-0011', articleDesignation: 'Gingembre frais',
+    articleType: 'MP', batchNumber: 'LOT-MP-2026-0029',
+    sampleQuantity: 3, status: 'Rejeté',
+    decisionBy: 'user-qa', decisionComments: "Taux d'humidité hors norme — mesuré 19.2% (limite 15%)",
+    decisionAt: '2026-05-21T11:00:00Z',
+    createdAt: '2026-05-21T08:00:00Z',
+    origine: 'AgriLocal Mali', flux: 'Reception', quantite: 25, unite: 'kg',
+  },
+]
+
 export type FluxLot = 'Reception' | 'Production'
-export type TypeArticleQA = 'MP' | 'AC' | 'PF' | 'PSF'
+
+// Alias locaux pour backward-compat avec le reste du module
+type StatutLot = StatutQC
+type TypeArticleQA = ArticleType
 export type StatutNC = 'Ouvert' | 'EnCours' | 'Clos'
 export type ActionNC = 'Rebut' | 'Retravail' | 'Derogation'
 
@@ -58,15 +181,17 @@ export interface GenealogiePF {
 // ── Labels & Colors ───────────────────────────────────────────────────────────
 
 export const STATUT_LOT_LABELS: Record<StatutLot, string> = {
-  EnControle: 'En contrôle',
-  Libere: 'Libéré',
+  EnControle:  'En contrôle',
+  Libere:      'Libéré',
+  Bloque:      'Bloqué',
   NonConforme: 'Non-conforme',
 }
 
 export const STATUT_LOT_COLORS: Record<StatutLot, string> = {
-  EnControle: 'bg-amber-100 text-amber-700 border border-amber-200',
-  Libere:     'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  NonConforme: 'bg-red-100 text-red-700 border border-red-200',
+  EnControle:  'bg-amber-100 text-amber-700 border border-amber-200',
+  Libere:      'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  Bloque:      'bg-red-100 text-red-700 border border-red-200',
+  NonConforme: 'bg-red-600 text-white border border-red-700',
 }
 
 export const FLUX_LOT_LABELS: Record<FluxLot, string> = {
@@ -76,9 +201,10 @@ export const FLUX_LOT_LABELS: Record<FluxLot, string> = {
 
 export const TYPE_ARTICLE_COLORS: Record<TypeArticleQA, string> = {
   MP:  'bg-blue-100 text-blue-700',
-  AC:  'bg-purple-100 text-purple-700',
+  PSF: 'bg-purple-100 text-purple-700',
   PF:  'bg-emerald-100 text-emerald-700',
-  PSF: 'bg-orange-100 text-orange-700',
+  AC:  'bg-violet-100 text-violet-700',
+  CS:  'bg-gray-100 text-gray-600',
 }
 
 export const STATUT_NC_LABELS: Record<StatutNC, string> = {

@@ -3,6 +3,14 @@
 import { getSupabaseWithOrg } from './helpers'
 import { Client, ClientStatut, ClientType, GrilleTarifaire } from '@/app/[locale]/(dashboard)/clients/_components/types'
 
+// ── Type léger pour les articles (autocomplete grille tarifaire) ──
+export interface ArticleLite {
+  code:        string
+  designation: string
+  prixVente:   number | null
+  unite:       string
+}
+
 function toClient(row: Record<string, unknown>, grille: GrilleTarifaire[] = []): Client {
   return {
     id: row.id as string,
@@ -130,5 +138,86 @@ export async function updateClient(id: string, c: Partial<Client>): Promise<Clie
   } catch (e) {
     console.error('[supabase action] error:', e)
     return null
+  }
+}
+
+// ── Grille tarifaire ──────────────────────────────────────────────────────────
+
+export async function upsertGrilleTarifaire(
+  clientId: string,
+  entry: Omit<GrilleTarifaire, 'designation'> & { designation: string },
+): Promise<GrilleTarifaire | null> {
+  try {
+    const { supabase } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('grilles_tarifaires')
+      .upsert(
+        {
+          client_id:    clientId,
+          article_code: entry.articleCode,
+          designation:  entry.designation,
+          prix_negocie: entry.prixNegecie,
+          devise:       entry.devise,
+        },
+        { onConflict: 'client_id,article_code' },   // UNIQUE(client_id, article_code)
+      )
+      .select()
+      .single()
+    if (error) throw error
+    return data
+      ? {
+          articleCode: data.article_code as string,
+          designation: (data.designation as string) ?? '',
+          prixNegecie: data.prix_negocie as number,
+          devise:      (data.devise as string) ?? 'XOF',
+        }
+      : null
+  } catch (e) {
+    console.error('[grille] upsertGrilleTarifaire:', e)
+    return null
+  }
+}
+
+export async function deleteGrilleTarifaire(
+  clientId: string,
+  articleCode: string,
+): Promise<boolean> {
+  try {
+    const { supabase } = await getSupabaseWithOrg()
+    const { error } = await supabase
+      .from('grilles_tarifaires')
+      .delete()
+      .eq('client_id', clientId)
+      .eq('article_code', articleCode)
+    if (error) throw error
+    return true
+  } catch (e) {
+    console.error('[grille] deleteGrilleTarifaire:', e)
+    return false
+  }
+}
+
+// ── Articles (autocomplete grille tarifaire) ──────────────────────────────────
+
+export async function getArticlesLite(): Promise<ArticleLite[]> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('articles')
+      .select('code, designation, prix_vente, unite_vente')
+      .eq('organization_id', orgId)
+      .eq('statut', 'Actif')
+      .in('type', ['PF', 'PSF'])             // on ne négocie que sur les PF/PSF
+      .order('code', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      code:       r.code        as string,
+      designation: r.designation as string,
+      prixVente:  (r.prix_vente  as number) ?? null,
+      unite:      (r.unite_vente as string) ?? 'u',
+    }))
+  } catch (e) {
+    console.error('[articles] getArticlesLite:', e)
+    return []
   }
 }

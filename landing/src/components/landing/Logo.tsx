@@ -1,15 +1,17 @@
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <div className={cn('inline-flex items-center gap-2', className)}>
-      <div
-        aria-hidden
-        className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] font-bold"
-      >
-        b
-      </div>
-      <span className="text-base font-semibold tracking-tight">Bluwa</span>
+    <div className={cn('inline-flex items-center', className)}>
+      <Image
+        src="/logo.png"
+        alt="Bluwa"
+        width={120}
+        height={40}
+        style={{ height: '2rem', width: 'auto' }}
+        priority
+      />
     </div>
   )
 }
