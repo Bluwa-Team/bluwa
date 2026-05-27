@@ -84,24 +84,6 @@ export const STATUT_QC_COLORS: Record<StatutQC, string> = {
   NonConforme: 'bg-red-600 text-white border border-red-700',
 }
 
-// ── Work Centers ─────────────────────────────────────────────────────────────
-
-/**
- * Poste de charge / ligne de production (≡ CR03 SAP).
- * Source : table work_centers (migrations 006 + 008).
- */
-export interface WorkCenter {
-  id:                   string
-  name:                 string
-  code:                 string | null
-  ratePerHour:          number
-  currency:             string
-  dailyCapacityHours:   number
-  efficiencyPercentage: number
-  isActive:             boolean
-  createdAt:            string
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Renvoie "X jours" ou "Aujourd'hui" ou "Dépassé de X j" selon la DLC */

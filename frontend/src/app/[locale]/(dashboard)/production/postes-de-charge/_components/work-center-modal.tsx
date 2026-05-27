@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Factory } from 'lucide-react'
-import { WorkCenter, WorkCenterInput } from '@/lib/actions/work-centers'
+import type { WorkCenter } from '@/types/erp'
+import type { WorkCenterInput } from '@/lib/actions/work-centers'
 
 interface Props {
   open: boolean

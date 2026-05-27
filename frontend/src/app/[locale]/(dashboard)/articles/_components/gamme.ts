@@ -1,5 +1,5 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
-import { WorkCenter } from '@/types/erp'
+import type { WorkCenter } from '@/types/erp'
 export type { WorkCenter }
 
 export interface GammeFabrication {

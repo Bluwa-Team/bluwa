@@ -1,9 +1,7 @@
 'use server'
 
 import { getSupabaseWithOrg } from './helpers'
-import { WorkCenter } from '@/types/erp'
-
-export type { WorkCenter }
+import type { WorkCenter } from '@/types/erp'
 
 export type WorkCenterInput = Pick<
   WorkCenter,

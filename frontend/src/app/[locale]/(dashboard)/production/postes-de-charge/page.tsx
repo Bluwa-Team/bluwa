@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { Factory, Plus, Pencil, Power, Clock, Zap, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { WorkCenter } from '@/types/erp'
+import type { WorkCenter } from '@/types/erp'
+import type { WorkCenterInput } from '@/lib/actions/work-centers'
 import {
   getAllWorkCenters,
   createWorkCenter,
   updateWorkCenter,
-  WorkCenterInput,
 } from '@/lib/actions/work-centers'
 import { WorkCenterModal } from './_components/work-center-modal'
 
