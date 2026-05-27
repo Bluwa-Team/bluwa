@@ -32,6 +32,24 @@ export const ARTICLE_TYPE_COLORS: Record<ArticleType, string> = {
   CS:  'bg-gray-100 text-gray-600',
 }
 
+// ── Work Centers ─────────────────────────────────────────────────────────────
+
+/**
+ * Poste de charge / ligne de production (≡ CR03 SAP).
+ * Source : table work_centers (migrations 006 + 008).
+ */
+export interface WorkCenter {
+  id:                   string
+  name:                 string
+  code:                 string | null
+  ratePerHour:          number
+  currency:             string
+  dailyCapacityHours:   number
+  efficiencyPercentage: number
+  isActive:             boolean
+  createdAt:            string
+}
+
 // ── Statut QC des lots ────────────────────────────────────────────────────────
 
 /**
