@@ -1,6 +1,11 @@
 -- ============================================================
 -- ERP Agro-Alimentaire — Tables métier
 -- Migration 002 — Articles, Fournisseurs, Clients, Stocks
+--
+-- IDEMPOTENTE :
+--   CREATE TABLE IF NOT EXISTS sur chaque table
+--   DROP POLICY IF EXISTS avant chaque CREATE POLICY
+--   Triggers protégés par EXCEPTION WHEN duplicate_object
 -- ============================================================
 
 -- ── ARTICLES ──────────────────────────────────────────────
@@ -38,6 +43,11 @@ CREATE TABLE IF NOT EXISTS articles (
 
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "articles_org_select" ON articles;
+DROP POLICY IF EXISTS "articles_org_insert" ON articles;
+DROP POLICY IF EXISTS "articles_org_update" ON articles;
+DROP POLICY IF EXISTS "articles_org_delete" ON articles;
+
 CREATE POLICY "articles_org_select" ON articles FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 CREATE POLICY "articles_org_insert" ON articles FOR INSERT
@@ -47,8 +57,8 @@ CREATE POLICY "articles_org_update" ON articles FOR UPDATE
 CREATE POLICY "articles_org_delete" ON articles FOR DELETE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX IF NOT EXISTS articles_org_idx ON articles(organization_id);
-CREATE INDEX IF NOT EXISTS articles_type_idx ON articles(type);
+CREATE INDEX IF NOT EXISTS articles_org_idx    ON articles(organization_id);
+CREATE INDEX IF NOT EXISTS articles_type_idx   ON articles(type);
 CREATE INDEX IF NOT EXISTS articles_statut_idx ON articles(statut);
 
 
@@ -76,6 +86,11 @@ CREATE TABLE IF NOT EXISTS fournisseurs (
 );
 
 ALTER TABLE fournisseurs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "fournisseurs_org_select" ON fournisseurs;
+DROP POLICY IF EXISTS "fournisseurs_org_insert" ON fournisseurs;
+DROP POLICY IF EXISTS "fournisseurs_org_update" ON fournisseurs;
+DROP POLICY IF EXISTS "fournisseurs_org_delete" ON fournisseurs;
 
 CREATE POLICY "fournisseurs_org_select" ON fournisseurs FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
@@ -116,6 +131,11 @@ CREATE TABLE IF NOT EXISTS clients (
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "clients_org_select" ON clients;
+DROP POLICY IF EXISTS "clients_org_insert" ON clients;
+DROP POLICY IF EXISTS "clients_org_update" ON clients;
+DROP POLICY IF EXISTS "clients_org_delete" ON clients;
+
 CREATE POLICY "clients_org_select" ON clients FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 CREATE POLICY "clients_org_insert" ON clients FOR INSERT
@@ -141,6 +161,11 @@ CREATE TABLE IF NOT EXISTS grilles_tarifaires (
 );
 
 ALTER TABLE grilles_tarifaires ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "grilles_select" ON grilles_tarifaires;
+DROP POLICY IF EXISTS "grilles_insert" ON grilles_tarifaires;
+DROP POLICY IF EXISTS "grilles_update" ON grilles_tarifaires;
+DROP POLICY IF EXISTS "grilles_delete" ON grilles_tarifaires;
 
 CREATE POLICY "grilles_select" ON grilles_tarifaires FOR SELECT
   USING (client_id IN (
@@ -177,6 +202,10 @@ CREATE TABLE IF NOT EXISTS entrepots (
 
 ALTER TABLE entrepots ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "entrepots_org_select" ON entrepots;
+DROP POLICY IF EXISTS "entrepots_org_insert" ON entrepots;
+DROP POLICY IF EXISTS "entrepots_org_update" ON entrepots;
+
 CREATE POLICY "entrepots_org_select" ON entrepots FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 CREATE POLICY "entrepots_org_insert" ON entrepots FOR INSERT
@@ -202,12 +231,16 @@ CREATE TABLE IF NOT EXISTS stocks (
   pmp             NUMERIC,
   stock_securite  NUMERIC,
   point_commande  NUMERIC,
-  statut          TEXT DEFAULT 'OK' CHECK (statut IN ('OK','Alerte','Rupture','Exces')),
+  statut          TEXT DEFAULT 'OK' CHECK (statut IN ('OK','Alerte','Rupture','Exces','Bloqué')),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE stocks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "stocks_org_select" ON stocks;
+DROP POLICY IF EXISTS "stocks_org_insert" ON stocks;
+DROP POLICY IF EXISTS "stocks_org_update" ON stocks;
 
 CREATE POLICY "stocks_org_select" ON stocks FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
@@ -216,7 +249,7 @@ CREATE POLICY "stocks_org_insert" ON stocks FOR INSERT
 CREATE POLICY "stocks_org_update" ON stocks FOR UPDATE
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX IF NOT EXISTS stocks_org_idx ON stocks(organization_id);
+CREATE INDEX IF NOT EXISTS stocks_org_idx     ON stocks(organization_id);
 CREATE INDEX IF NOT EXISTS stocks_article_idx ON stocks(article_code);
 
 
@@ -241,12 +274,15 @@ CREATE TABLE IF NOT EXISTS mouvements_stock (
 
 ALTER TABLE mouvements_stock ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "mouvements_org_select" ON mouvements_stock;
+DROP POLICY IF EXISTS "mouvements_org_insert" ON mouvements_stock;
+
 CREATE POLICY "mouvements_org_select" ON mouvements_stock FOR SELECT
   USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 CREATE POLICY "mouvements_org_insert" ON mouvements_stock FOR INSERT
   WITH CHECK (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX IF NOT EXISTS mouvements_org_idx ON mouvements_stock(organization_id);
+CREATE INDEX IF NOT EXISTS mouvements_org_idx  ON mouvements_stock(organization_id);
 CREATE INDEX IF NOT EXISTS mouvements_date_idx ON mouvements_stock(date DESC);
 
 
@@ -256,11 +292,22 @@ RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER articles_updated_at BEFORE UPDATE ON articles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER fournisseurs_updated_at BEFORE UPDATE ON fournisseurs
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER clients_updated_at BEFORE UPDATE ON clients
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER stocks_updated_at BEFORE UPDATE ON stocks
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DO $$ BEGIN
+  CREATE TRIGGER articles_updated_at BEFORE UPDATE ON articles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER fournisseurs_updated_at BEFORE UPDATE ON fournisseurs
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER clients_updated_at BEFORE UPDATE ON clients
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER stocks_updated_at BEFORE UPDATE ON stocks
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
