@@ -6,7 +6,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Plus, Trash2, Settings2, AlertTriangle } from 'lucide-react'
+import { X, Plus, Trash2, Settings2 } from 'lucide-react'
 import {
   BillOfMaterial,
   BOMIngredient,
@@ -156,16 +156,6 @@ export function BomEditModal({ open, onClose, bom, ingredients, onSave }: Props)
               <Button variant="ghost" size="icon-sm" onClick={onClose}>
                 <X className="size-4" />
               </Button>
-            </div>
-
-            {/* ── Mock warning ──────────────────────────────────────── */}
-            <div className="mx-6 mt-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800 shrink-0">
-              <AlertTriangle className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
-              <span>
-                <strong>Données simulées.</strong> Les modifications sont sauvegardées en mémoire
-                et prises en compte dans le module Production (modal &quot;Nouvel OF&quot;)
-                jusqu&apos;au rechargement de la page.
-              </span>
             </div>
 
             {/* ── Body ──────────────────────────────────────────────── */}

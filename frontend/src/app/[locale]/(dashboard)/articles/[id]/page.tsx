@@ -21,11 +21,11 @@ import {
   Article, TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from '../_components/types'
 import {
-  BillOfMaterial, BOMIngredient, getBOMByArticleCode, updateBOM, createBOM,
+  BillOfMaterial, BOMIngredient,
 } from '../_components/bom'
 import { BomEditModal } from '../_components/bom-edit-modal'
 import {
-  GammeFabrication, GammeEtape, getGammeByArticleCode, updateGamme, createGamme,
+  GammeFabrication, GammeEtape,
 } from '../_components/gamme'
 import { GammeEditModal } from '../_components/gamme-edit-modal'
 import {
@@ -34,6 +34,10 @@ import {
 } from '../../stocks/_components/types'
 import { getArticleById, updateArticle } from '@/lib/actions/articles'
 import { getMouvementsByArticle, getLotsByArticle } from '@/lib/actions/stocks'
+import {
+  getBomByArticleId, upsertBom,
+  getGammeByArticleId, upsertGamme,
+} from '@/lib/actions/bom'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -87,14 +91,14 @@ export default function ArticleDetailPage() {
       if (art) {
         getMouvementsByArticle(art.code).then(setMouvements)
         getLotsByArticle(art.code).then(setLots)
-        // BOM mock lookup
-        const { bom: b, ingredients } = getBOMByArticleCode(art.code)
-        setBom(b)
-        setBomIngredients(ingredients)
-        // Gamme mock lookup
-        const { gamme: g, etapes } = getGammeByArticleCode(art.code)
-        setGamme(g)
-        setGammeEtapes(etapes)
+        getBomByArticleId(id).then(({ bom: b, ingredients }) => {
+          setBom(b)
+          setBomIngredients(ingredients)
+        })
+        getGammeByArticleId(id).then(({ gamme: g, etapes }) => {
+          setGamme(g)
+          setGammeEtapes(etapes)
+        })
       }
     })
   }, [id])
@@ -611,15 +615,14 @@ export default function ArticleDetailPage() {
         bom={bom}
         ingredients={bomIngredients}
         onSave={(header, ingredients) => {
-          if (bom) {
-            setBom({ ...bom, ...header })
-            setBomIngredients(ingredients)
-            updateBOM(bom.id, header, ingredients)
-          } else {
-            const newBom = createBOM(article.code, article.designation, header, ingredients)
-            setBom(newBom)
-            setBomIngredients(ingredients)
-          }
+          // Optimistic update
+          if (bom) setBom({ ...bom, ...header })
+          setBomIngredients(ingredients)
+          // Persist to Supabase then refresh with DB-assigned IDs
+          upsertBom(id, header, ingredients, bom?.id).then(({ bom: b, ingredients: ing }) => {
+            setBom(b)
+            setBomIngredients(ing)
+          })
         }}
       />
 
@@ -629,15 +632,14 @@ export default function ArticleDetailPage() {
         gamme={gamme}
         etapes={gammeEtapes}
         onSave={(header, etapes) => {
-          if (gamme) {
-            setGamme({ ...gamme, ...header })
-            setGammeEtapes(etapes)
-            updateGamme(gamme.id, header, etapes)
-          } else {
-            const newGamme = createGamme(article.code, article.designation, header, etapes)
-            setGamme(newGamme)
-            setGammeEtapes(etapes)
-          }
+          // Optimistic update
+          if (gamme) setGamme({ ...gamme, ...header })
+          setGammeEtapes(etapes)
+          // Persist to Supabase then refresh with DB-assigned IDs
+          upsertGamme(id, header, etapes, gamme?.id).then(({ gamme: g, etapes: steps }) => {
+            setGamme(g)
+            setGammeEtapes(steps)
+          })
         }}
       />
     </div>
