@@ -11,7 +11,7 @@
   "hero": {
     "badge": "Built for West Africa",
     "title": "Pilot your margin. Master your supply chain.",
-    "subtitle": "The growth copilot for African agri-food companies — world-class industrial standards, ultra-simple interface, deployed hand in hand with your teams.",
+    "subtitle": "The growth copilot for African agri-food companies: world-class industrial standards, ultra-simple interface, deployed hand in hand with your teams.",
     "primaryCta": "Book a demo",
     "secondaryCta": "Watch a 2-min demo",
     "trust": "Designed with processors in Togo, Benin, Côte d’Ivoire and Senegal"
@@ -56,7 +56,7 @@
     ],
     "solutionEyebrow": "Our response",
     "solutionTitle": "Industrial rigor. Absolute simplicity.",
-    "solutionBody": "Bluwa guarantees your margin and operational rigor — multi-site, multi-currency, with an AI copilot that answers your leadership in real time."
+    "solutionBody": "Bluwa guarantees your margin and operational rigor: multi-site, multi-currency, with an AI copilot that answers your leadership in real time."
   },
   "features": {
     "eyebrow": "The 5 pillars",
@@ -65,7 +65,7 @@
     "items": [
       {
         "title": "Master Data (MDM)",
-        "body": "Items, BOMs, customers, suppliers. Clean reference data — the foundation every Bluwa insight rests on."
+        "body": "Items, BOMs, customers, suppliers. Clean reference data: the foundation every Bluwa insight rests on."
       },
       {
         "title": "Production & MES",
@@ -143,7 +143,7 @@
     "items": [
       {
         "q": "How does the guaranteed paid trial work?",
-        "a": "You pay the one-time installation fee at signing (covers setup, configuration and 3 months of support). The first SaaS month is on us. Not the right fit after 30 days? Walk away — no further billing."
+        "a": "You pay the one-time installation fee at signing (covers setup, configuration and 3 months of support). The first SaaS month is on us. Not the right fit after 30 days? Walk away, no further billing."
       },
       {
         "q": "What do the installation fees cover?",
@@ -155,7 +155,7 @@
       },
       {
         "q": "Can Bluwa scale with my group's growth?",
-        "a": "Yes. Bluwa is built to grow with you — from a single production unit to a multi-site, multi-country group. The factory core (V1) extends to ADV and Logistics WM (Phase 2), then Engineering &amp; Methods (Phase 3). Enterprise clients get priority access to every extension."
+        "a": "Yes. Bluwa is built to grow with you, from a single production unit to a multi-site, multi-country group. The factory core (V1) extends to ADV and Logistics WM (Phase 2), then Engineering &amp; Methods (Phase 3). Enterprise clients get priority access to every extension."
       },
       {
         "q": "Does Bluwa work offline?",
@@ -184,7 +184,7 @@
   },
   "footer": {
     "tagline": "The nervous system of West Africa's agri-food industry.",
-    "vision": "Built to last — from your first plant to your multi-country group.",
+    "vision": "Built to last, from your first plant to your multi-country group.",
     "product": "Product",
     "company": "Company",
     "legal": "Legal",

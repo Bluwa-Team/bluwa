@@ -11,7 +11,7 @@
   "hero": {
     "badge": "Pensé pour l’Afrique de l’Ouest",
     "title": "Pilotez votre marge. Maîtrisez votre supply chain.",
-    "subtitle": "Le copilote de croissance des agroalimentaires africains — standards industriels mondiaux, interface ultra-simple, déployé main dans la main avec votre terrain.",
+    "subtitle": "Le copilote de croissance des agroalimentaires africains : standards industriels mondiaux, interface ultra-simple, déployé main dans la main avec votre terrain.",
     "primaryCta": "Demander une démo",
     "secondaryCta": "Voir une démo en 2 min",
     "trust": "Conçu avec des transformateurs au Togo, Bénin, Côte d’Ivoire et Sénégal"
@@ -56,7 +56,7 @@
     ],
     "solutionEyebrow": "Notre réponse",
     "solutionTitle": "Rigueur industrielle. Simplicité absolue.",
-    "solutionBody": "Bluwa garantit votre marge et votre rigueur opérationnelle — multi-sites, multi-devises, avec un copilote IA qui répond à vos dirigeants en temps réel."
+    "solutionBody": "Bluwa garantit votre marge et votre rigueur opérationnelle : multi-sites, multi-devises, avec un copilote IA qui répond à vos dirigeants en temps réel."
   },
   "features": {
     "eyebrow": "Les 5 piliers",
@@ -155,7 +155,7 @@
       },
       {
         "q": "Bluwa peut-il suivre la croissance de mon groupe ?",
-        "a": "Oui. Bluwa est construit pour grandir avec vous — d'une unité de production à un groupe multi-sites, multi-pays. Le cœur d'usine (V1) s'étendra vers l'ADV et la Logistique WM (Phase 2), puis vers l'Ingénierie & Méthodes (Phase 3). Les clients Enterprise bénéficient d'un accès prioritaire à chaque extension."
+        "a": "Oui. Bluwa est construit pour grandir avec vous, d'une unité de production à un groupe multi-sites, multi-pays. Le cœur d'usine (V1) s'étendra vers l'ADV et la Logistique WM (Phase 2), puis vers l'Ingénierie & Méthodes (Phase 3). Les clients Enterprise bénéficient d'un accès prioritaire à chaque extension."
       },
       {
         "q": "Bluwa fonctionne-t-il hors-ligne ?",
@@ -184,7 +184,7 @@
   },
   "footer": {
     "tagline": "Le système nerveux de l’industrie agroalimentaire ouest-africaine.",
-    "vision": "Construit pour durer — de votre première usine à votre groupe multi-pays.",
+    "vision": "Construit pour durer, de votre première usine à votre groupe multi-pays.",
     "product": "Produit",
     "company": "Entreprise",
     "legal": "Légal",
