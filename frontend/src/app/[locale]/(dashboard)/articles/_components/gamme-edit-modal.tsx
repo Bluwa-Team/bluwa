@@ -6,13 +6,15 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Plus, Trash2, ListChecks } from 'lucide-react'
+import { X, Plus, Trash2, ListChecks, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import {
   GammeFabrication,
   GammeEtape,
   OPERATIONS_PREDEFINIES,
-  EQUIPEMENTS_PREDEFINIS,
 } from './gamme'
+import { WorkCenter } from '@/types/erp'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,7 @@ interface Props {
   onClose: () => void
   gamme: GammeFabrication | null
   etapes: GammeEtape[]
+  workCenters: WorkCenter[]
   onSave: (header: GammeHeader, etapes: GammeEtape[]) => void
 }
 
@@ -44,7 +47,8 @@ function Field({ label, required, children }: {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
-export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) {
+export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSave }: Props) {
+  const locale = useLocale()
   const [version, setVersion] = useState('v1.0')
   const [rows, setRows]       = useState<GammeEtape[]>([])
   const [saving, setSaving]   = useState(false)
@@ -69,12 +73,24 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
       runTimeMinutesPerUnit: 0,
       temperature:           undefined,
       equipement:            '',
+      workCenterId:          null,
     }
     setRows((prev) => [...prev, newRow])
   }
 
-  function updateRow(id: string, field: keyof GammeEtape, value: string | number | undefined) {
+  function updateRow(id: string, field: keyof GammeEtape, value: string | number | undefined | null) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)))
+  }
+
+  function setWorkCenter(rowId: string, wcId: string) {
+    const wc = workCenters.find((w) => w.id === wcId) ?? null
+    setRows((prev) => prev.map((r) => r.id === rowId ? {
+      ...r,
+      workCenterId:          wc?.id ?? null,
+      workCenterName:        wc?.name ?? '',
+      workCenterCode:        wc?.code ?? null,
+      workCenterRatePerHour: wc?.ratePerHour ?? 0,
+    } : r))
   }
 
   function deleteRow(id: string) {
@@ -91,8 +107,12 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
     onClose()
   }
 
-  const totalDuree  = rows.reduce((s, r) => s + (r.duree || 0), 0)
-  const hasInvalid  = rows.some((r) => r.operation.trim() && r.duree <= 0)
+  const totalDuree = rows.reduce((s, r) => s + (r.duree || 0), 0)
+  const totalCout  = rows.reduce((s, r) => {
+    const rate = r.workCenterRatePerHour ?? 0
+    return s + (r.duree + (r.setupTimeMinutes ?? 0)) / 60 * rate
+  }, 0)
+  const hasInvalid = rows.some((r) => r.operation.trim() && r.duree <= 0)
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -104,7 +124,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
           data-slot="dialog-content"
           className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          <div className="w-[min(820px,92vw)] max-h-[88vh] flex flex-col rounded-xl border bg-card shadow-lg">
+          <div className="w-[min(900px,94vw)] max-h-[88vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
             {/* ── Header ────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
@@ -147,18 +167,30 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
 
               {/* Step rows */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                  Étapes de fabrication
-                </p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Étapes de fabrication
+                  </p>
+                  {workCenters.length === 0 && (
+                    <Link
+                      href={`/${locale}/production/postes-de-charge`}
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                      onClick={onClose}
+                    >
+                      <ExternalLink className="size-3" />
+                      Gérer les postes de charge
+                    </Link>
+                  )}
+                </div>
 
                 {/* Column headers */}
                 <div className="flex items-center gap-x-2 mb-2 px-1">
                   <span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground text-center">#</span>
                   <span className="flex-1 min-w-0 text-xs font-semibold text-muted-foreground">Opération</span>
-                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Lot (min)</span>
-                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Réglage (min)</span>
-                  <span className="w-[72px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Temp. (°C)</span>
-                  <span className="w-[150px] shrink-0 text-xs font-semibold text-muted-foreground">Équipement</span>
+                  <span className="w-[180px] shrink-0 text-xs font-semibold text-muted-foreground">Poste de charge</span>
+                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Lot (min)</span>
+                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Rég. (min)</span>
+                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">T° (°C)</span>
                   <span className="w-9 shrink-0" />
                 </div>
 
@@ -183,30 +215,40 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                           className="flex-1 min-w-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         />
 
+                        {/* Poste de charge */}
+                        <select
+                          value={row.workCenterId ?? ''}
+                          onChange={(e) => setWorkCenter(row.id, e.target.value)}
+                          className="w-[180px] shrink-0 h-9 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 truncate"
+                        >
+                          <option value="">— Aucun poste —</option>
+                          {workCenters.map((wc) => (
+                            <option key={wc.id} value={wc.id}>
+                              {wc.code ? `[${wc.code}] ` : ''}{wc.name}
+                            </option>
+                          ))}
+                        </select>
+
                         {/* Lot (min) = duree */}
                         <Input
                           type="number"
                           min="0"
                           value={row.duree === 0 ? '' : row.duree}
-                          onChange={(e) =>
-                            updateRow(row.id, 'duree', parseInt(e.target.value) || 0)
-                          }
+                          onChange={(e) => updateRow(row.id, 'duree', parseInt(e.target.value) || 0)}
                           placeholder="0"
-                          className={`w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
+                          className={`w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
                             invalid ? 'border-red-400 focus-visible:ring-red-300' : ''
                           }`}
                         />
 
-                        {/* Réglage (min) = setupTimeMinutes */}
+                        {/* Réglage (min) */}
                         <Input
                           type="number"
                           min="0"
                           value={row.setupTimeMinutes === 0 ? '' : row.setupTimeMinutes}
-                          onChange={(e) =>
-                            updateRow(row.id, 'setupTimeMinutes', parseInt(e.target.value) || 0)
-                          }
+                          onChange={(e) => updateRow(row.id, 'setupTimeMinutes', parseInt(e.target.value) || 0)}
                           placeholder="0"
-                          className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                          className="w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
                         {/* Température */}
@@ -216,23 +258,10 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                           max="200"
                           value={row.temperature ?? ''}
                           onChange={(e) =>
-                            updateRow(
-                              row.id,
-                              'temperature',
-                              e.target.value ? parseInt(e.target.value) : undefined,
-                            )
+                            updateRow(row.id, 'temperature', e.target.value ? parseInt(e.target.value) : undefined)
                           }
                           placeholder="—"
-                          className="w-[72px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
-                        />
-
-                        {/* Équipement */}
-                        <input
-                          list="gamme-equipements-list"
-                          value={row.equipement}
-                          onChange={(e) => updateRow(row.id, 'equipement', e.target.value)}
-                          placeholder="Équipement"
-                          className="w-[150px] shrink-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 truncate"
+                          className="w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
                         {/* Supprimer */}
@@ -248,12 +277,9 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                   })}
                 </div>
 
-                {/* Datalists pour autocomplete */}
+                {/* Datalists pour autocomplete opérations */}
                 <datalist id="gamme-operations-list">
                   {OPERATIONS_PREDEFINIES.map((op) => <option key={op} value={op} />)}
-                </datalist>
-                <datalist id="gamme-equipements-list">
-                  {EQUIPEMENTS_PREDEFINIS.map((eq) => <option key={eq} value={eq} />)}
                 </datalist>
 
                 {/* Ajouter une étape */}
@@ -266,26 +292,28 @@ export function GammeEditModal({ open, onClose, gamme, etapes, onSave }: Props) 
                 </button>
 
                 <p className="mt-3 text-xs text-muted-foreground">
-                  <strong>Lot</strong> : durée standard pour le lot (minutes).
+                  <strong>Poste</strong> : poste de charge ou ligne de production.
                   <span className="mx-1.5">·</span>
-                  <strong>Réglage</strong> : temps de réglage machine avant démarrage (Rüstzeit).
+                  <strong>Lot</strong> : durée standard pour le lot.
                   <span className="mx-1.5">·</span>
-                  <strong>Temp.</strong> : température cible — laisser vide si pas de contrainte thermique.
+                  <strong>Rég.</strong> : temps de réglage machine (Rüstzeit).
+                  <span className="mx-1.5">·</span>
+                  <strong>T°</strong> : température cible.
                 </p>
               </div>
             </div>
 
             {/* ── Footer ────────────────────────────────────────────── */}
             <div className="flex items-center justify-between gap-3 px-6 py-4 border-t bg-muted/20 shrink-0">
-              <span className="text-xs text-muted-foreground">
-                {rows.length} étape{rows.length !== 1 ? 's' : ''}
+              <div className="text-xs text-muted-foreground space-x-3">
+                <span>{rows.length} étape{rows.length !== 1 ? 's' : ''}</span>
                 {totalDuree > 0 && (
-                  <span className="ml-1.5">
-                    · Durée totale :&nbsp;
-                    <strong className="text-foreground">{totalDuree} min</strong>
-                  </span>
+                  <span>· <strong className="text-foreground">{totalDuree} min</strong></span>
                 )}
-              </span>
+                {totalCout > 0 && (
+                  <span>· Coût ≈ <strong className="text-foreground">{Math.round(totalCout).toLocaleString('fr-FR')} XOF</strong></span>
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" onClick={onClose} disabled={saving}>
                   Annuler

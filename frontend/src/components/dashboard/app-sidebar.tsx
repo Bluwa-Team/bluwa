@@ -22,6 +22,7 @@ import {
   GitBranch,
   FileText,
   ClipboardCheck,
+  Cog,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -130,9 +131,10 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('production'),
       items: [
-        { title: t('ordresFabrication'), url: '/production',     icon: Factory,     disabled: false },
-        { title: t('mes'),              url: '/production/mes', icon: MonitorPlay, disabled: false },
-        { title: t('productionBatches'), url: '/lots', icon: Package, disabled: true },
+        { title: t('ordresFabrication'),  url: '/production',                       icon: Factory,     disabled: false },
+        { title: t('mes'),                url: '/production/mes',                   icon: MonitorPlay, disabled: false },
+        { title: 'Postes de charge',      url: '/production/postes-de-charge',      icon: Cog,         disabled: false },
+        { title: t('productionBatches'),  url: '/lots',                             icon: Package,     disabled: true  },
       ],
     },
     {

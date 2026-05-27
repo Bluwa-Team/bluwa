@@ -59,6 +59,9 @@ function toRoutingHeader(
 }
 
 function toRoutingStep(row: Record<string, unknown>): GammeEtape {
+  const wc = row.work_centers as {
+    name: string; code: string | null; rate_per_hour: number
+  } | null
   return {
     id:                    row.id as string,
     gammeId:               row.routing_header_id as string,
@@ -70,6 +73,10 @@ function toRoutingStep(row: Record<string, unknown>): GammeEtape {
     temperature:           row.temperature_c != null ? parseFloat(String(row.temperature_c)) : undefined,
     equipement:            (row.equipment as string) ?? '',
     pointControle:         (row.control_point as string | undefined) ?? undefined,
+    workCenterId:          (row.work_center_id as string | null) ?? null,
+    workCenterName:        wc?.name ?? '',
+    workCenterCode:        wc?.code ?? null,
+    workCenterRatePerHour: wc ? parseFloat(String(wc.rate_per_hour ?? 0)) : 0,
   }
 }
 
@@ -251,7 +258,7 @@ export async function getGammeByArticleId(articleId: string): Promise<{
 
     const { data: steps, error: stepsError } = await supabase
       .from('routing_steps')
-      .select('*')
+      .select('*, work_centers(name, code, rate_per_hour)')
       .eq('routing_header_id', header.id)
       .order('step_order')
 
@@ -319,16 +326,17 @@ export async function upsertGamme(
 
     if (etapes.length > 0) {
       const stepsToInsert = etapes.map((e, idx) => ({
-        organization_id:          orgId,
-        routing_header_id:        gammeId,
-        step_order:               idx + 1,
-        operation:                e.operation,
-        duration_min:             e.duree,
-        temperature_c:            e.temperature ?? null,
-        equipment:                e.equipement || null,
-        control_point:            e.pointControle ?? null,
-        setup_time_minutes:       e.setupTimeMinutes ?? 0,
+        organization_id:           orgId,
+        routing_header_id:         gammeId,
+        step_order:                idx + 1,
+        operation:                 e.operation,
+        duration_min:              e.duree,
+        temperature_c:             e.temperature ?? null,
+        equipment:                 e.equipement || null,
+        control_point:             e.pointControle ?? null,
+        setup_time_minutes:        e.setupTimeMinutes ?? 0,
         run_time_minutes_per_unit: e.runTimeMinutesPerUnit || (e.duree > 0 ? e.duree / 100 : 0),
+        work_center_id:            e.workCenterId ?? null,
       }))
 
       const { error } = await supabase.from('routing_steps').insert(stepsToInsert)

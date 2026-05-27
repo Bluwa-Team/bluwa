@@ -38,6 +38,8 @@ import {
   getBomByArticleId, upsertBom,
   getGammeByArticleId, upsertGamme,
 } from '@/lib/actions/bom'
+import { getWorkCenters } from '@/lib/actions/work-centers'
+import { WorkCenter } from '@/types/erp'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -84,8 +86,10 @@ export default function ArticleDetailPage() {
   const [gamme, setGamme] = useState<GammeFabrication | null>(null)
   const [gammeEtapes, setGammeEtapes] = useState<GammeEtape[]>([])
   const [gammeEditOpen, setGammeEditOpen] = useState(false)
+  const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
 
   useEffect(() => {
+    getWorkCenters().then(setWorkCenters)
     getArticleById(id).then((art) => {
       setArticle(art)
       if (art) {
@@ -497,7 +501,14 @@ export default function ArticleDetailPage() {
                 </p>
               )}
             </div>
-          ) : (
+          ) : (() => {
+            const totalDuree   = gammeEtapes.reduce((s, e) => s + e.duree, 0)
+            const totalSetup   = gammeEtapes.reduce((s, e) => s + (e.setupTimeMinutes ?? 0), 0)
+            const totalCout    = gammeEtapes.reduce((s, e) => {
+              const rate = e.workCenterRatePerHour ?? 0
+              return s + (e.duree + (e.setupTimeMinutes ?? 0)) / 60 * rate
+            }, 0)
+            return (
             <div className="space-y-4">
 
               {/* Gamme summary header */}
@@ -527,10 +538,13 @@ export default function ArticleDetailPage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {gammeEtapes.length} étape{gammeEtapes.length !== 1 ? 's' : ''}
                       <span className="mx-1.5">·</span>
-                      Durée totale :&nbsp;
-                      <strong className="text-foreground">
-                        {gammeEtapes.reduce((s, e) => s + e.duree, 0)} min
-                      </strong>
+                      Durée lot : <strong className="text-foreground">{totalDuree} min</strong>
+                      {totalSetup > 0 && (
+                        <><span className="mx-1.5">·</span>Réglages : <strong className="text-foreground">{totalSetup} min</strong></>
+                      )}
+                      {totalCout > 0 && (
+                        <><span className="mx-1.5">·</span>Coût gamme ≈ <strong className="text-foreground">{Math.round(totalCout).toLocaleString('fr-FR')} XOF</strong></>
+                      )}
                       <span className="mx-1.5">·</span>
                       Créée le {gamme.createdAt}
                     </p>
@@ -552,53 +566,100 @@ export default function ArticleDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
-                      <TableHead className="text-xs font-semibold text-muted-foreground w-12 text-center">#</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground w-10 text-center">#</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground">Opération</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[90px]">Durée (min)</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[90px]">Temp. (°C)</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground w-[160px]">Équipement</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground w-[180px]">Poste de charge</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[80px]">Lot (min)</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[80px]">Rég. (min)</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[70px]">T° (°C)</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground">Point de contrôle</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground text-right w-[110px]">Coût ≈</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {gammeEtapes.map((etape) => (
-                      <TableRow key={etape.id}>
-                        <TableCell className="text-center">
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-[10px] font-bold tabular-nums text-muted-foreground">
-                            {etape.ordre}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-medium text-sm">{etape.operation}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums text-sm">
-                          {etape.duree}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {etape.temperature != null ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
-                              {etape.temperature}°C
+                    {gammeEtapes.map((etape) => {
+                      const rate      = etape.workCenterRatePerHour ?? 0
+                      const coutEtape = rate > 0 ? (etape.duree + (etape.setupTimeMinutes ?? 0)) / 60 * rate : null
+                      return (
+                        <TableRow key={etape.id}>
+                          <TableCell className="text-center">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-[10px] font-bold tabular-nums text-muted-foreground">
+                              {etape.ordre}
                             </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{etape.equipement}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {etape.pointControle ?? (
-                            <span className="text-muted-foreground/40">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="font-medium text-sm">{etape.operation}</TableCell>
+                          <TableCell>
+                            {etape.workCenterName ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                {etape.workCenterCode && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono bg-slate-100 text-slate-600 shrink-0">
+                                    {etape.workCenterCode}
+                                  </span>
+                                )}
+                                <span className="text-xs truncate">{etape.workCenterName}</span>
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono tabular-nums text-sm">
+                            {etape.duree}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {etape.setupTimeMinutes > 0 ? (
+                              <span className="font-mono tabular-nums text-xs text-muted-foreground">
+                                {etape.setupTimeMinutes}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {etape.temperature != null ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                                {etape.temperature}°C
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {etape.pointControle ?? <span className="text-muted-foreground/40">—</span>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {coutEtape != null ? (
+                              <span className="font-mono tabular-nums text-xs font-semibold text-foreground">
+                                {Math.round(coutEtape).toLocaleString('fr-FR')}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
 
+              {/* Totaux */}
+              {totalCout > 0 && (
+                <div className="flex items-center justify-end gap-4 px-1 text-xs text-muted-foreground">
+                  <span>Durée totale lot : <strong className="text-foreground tabular-nums">{totalDuree} min</strong></span>
+                  <span>Réglages : <strong className="text-foreground tabular-nums">{totalSetup} min</strong></span>
+                  <span className="text-sm font-semibold text-foreground">
+                    Coût gamme total ≈ {Math.round(totalCout).toLocaleString('fr-FR')} XOF
+                  </span>
+                </div>
+              )}
+
               <p className="text-xs text-muted-foreground/60 italic">
                 La gamme définit la séquence d&apos;opérations pour produire cet article.
-                Elle est consultée lors de la création d&apos;un ordre de fabrication.
+                Le coût gamme est calculé depuis le taux horaire de chaque poste de charge.
               </p>
             </div>
-          )}
+            )
+          })()}
         </TabsContent>
       </Tabs>
 
@@ -631,6 +692,7 @@ export default function ArticleDetailPage() {
         onClose={() => setGammeEditOpen(false)}
         gamme={gamme}
         etapes={gammeEtapes}
+        workCenters={workCenters}
         onSave={(header, etapes) => {
           // Optimistic update
           if (gamme) setGamme({ ...gamme, ...header })

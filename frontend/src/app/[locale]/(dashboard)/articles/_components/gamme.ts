@@ -1,4 +1,6 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
+import { WorkCenter } from '@/types/erp'
+export type { WorkCenter }
 
 export interface GammeFabrication {
   id: string
@@ -18,33 +20,15 @@ export interface GammeEtape {
   setupTimeMinutes: number        // temps de réglage machine avant démarrage (= Rüstzeit / VGZ01) — migration 008
   runTimeMinutesPerUnit: number   // temps machine par unité de PF (= duree / batchSize) — migration 008
   temperature?: number            // °C — undefined = pas de contrainte thermique
-  equipement: string
+  equipement: string              // note texte libre (legacy — remplacé fonctionnellement par le poste)
   pointControle?: string
+  // ── Work center (dénormalisé depuis routing_steps JOIN work_centers) ──────
+  workCenterId?:          string | null
+  workCenterName?:        string
+  workCenterCode?:        string | null
+  workCenterRatePerHour?: number
 }
 
-// ── WorkCenter ─────────────────────────────────────────────────────────────────
-// Aligné sur work_centers après migration 008
-
-export interface WorkCenter {
-  id: string
-  code: string                   // ex. 'LIGNE_EMBOUTEILLAGE' — migration 008
-  name: string                   // ex. 'Ligne embouteillage'
-  ratePerHour: number            // XOF/h — taux horaire pour le calcul du coût gamme
-  dailyCapacityHours: number     // capacité d'ouverture en h/jour — migration 008
-  efficiencyPercentage: number   // taux de performance % — migration 008
-  isActive: boolean
-}
-
-export const MOCK_WORK_CENTERS: WorkCenter[] = [
-  { id: 'wc-001', code: 'BALANCE_IND',     name: 'Balance industrielle',  ratePerHour: 4_800,  dailyCapacityHours: 8, efficiencyPercentage: 98, isActive: true  },
-  { id: 'wc-002', code: 'CUVE_INOX_500L',  name: 'Cuve inox 500L',        ratePerHour: 9_000,  dailyCapacityHours: 8, efficiencyPercentage: 90, isActive: true  },
-  { id: 'wc-003', code: 'FILTRE_PRESSE',   name: 'Filtre presse 0.5µm',   ratePerHour: 7_200,  dailyCapacityHours: 8, efficiencyPercentage: 85, isActive: true  },
-  { id: 'wc-004', code: 'CUVE_MELANGE',    name: 'Cuve de mélange',       ratePerHour: 6_000,  dailyCapacityHours: 8, efficiencyPercentage: 92, isActive: true  },
-  { id: 'wc-005', code: 'ECHANGEUR_THERM', name: 'Échangeur thermique',   ratePerHour: 10_800, dailyCapacityHours: 8, efficiencyPercentage: 88, isActive: true  },
-  { id: 'wc-006', code: 'LAB_QUALITE',     name: 'Lab. qualité',          ratePerHour: 6_000,  dailyCapacityHours: 8, efficiencyPercentage: 100, isActive: true },
-  { id: 'wc-007', code: 'LIGNE_EMBOUTEIL', name: 'Ligne embouteillage',   ratePerHour: 12_000, dailyCapacityHours: 8, efficiencyPercentage: 80, isActive: true  },
-  { id: 'wc-008', code: 'ZONE_PALETTE',    name: 'Zone palettisation',    ratePerHour: 3_600,  dailyCapacityHours: 8, efficiencyPercentage: 95, isActive: true  },
-]
 
 // ── In-memory mutable store ───────────────────────────────────────────────────
 
