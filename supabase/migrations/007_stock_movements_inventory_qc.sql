@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS stock_movements (
   batch_number         VARCHAR(50),
 
   -- Audit
-  created_by           UUID           REFERENCES users(id) ON DELETE RESTRICT,
+  created_by           UUID           REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT TIMEZONE('utc'::text, NOW())
 );
 
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS inventory_documents (
     CHECK (status IN ('PROPOSED', 'COUNTED', 'POSTED')),
 
   -- Audit
-  created_by      UUID         REFERENCES users(id) ON DELETE RESTRICT,
+  created_by      UUID         REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT TIMEZONE('utc'::text, NOW()),
   posted_at       TIMESTAMP WITH TIME ZONE,  -- Date de validation comptable des écarts
 
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS quality_inspection_lots (
     CHECK (status IN ('En contrôle', 'Libéré', 'Rejeté')),
 
   -- Décision QA
-  decision_by         UUID           REFERENCES users(id)                        ON DELETE RESTRICT,
+  decision_by         UUID           REFERENCES auth.users(id)                   ON DELETE SET NULL,
   decision_comments   TEXT,
   decision_at         TIMESTAMP WITH TIME ZONE,
 
