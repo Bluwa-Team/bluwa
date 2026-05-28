@@ -167,6 +167,20 @@ export interface GenealogieLien {
   statut: StatutLot
 }
 
+export interface ControleCCP {
+  nom: string
+  valeur: string        // valeur mesurée affichée (ex : "82°C / 25s")
+  spec: string          // plage de conformité (ex : "≥ 82°C / ≥ 20s")
+  conforme: boolean
+}
+
+export interface DestinationAval {
+  destination: string
+  dateLivraison: string | null  // null = stock non encore expédié
+  quantite: number
+  unite: string
+}
+
 export interface GenealogiePF {
   codeLotPF: string
   articlePF: string
@@ -176,6 +190,8 @@ export interface GenealogiePF {
   unite: string
   statut: StatutLot
   ingredients: GenealogieLien[]
+  ccps?: ControleCCP[]
+  destinations?: DestinationAval[]
 }
 
 // ── Labels & Colors ───────────────────────────────────────────────────────────
@@ -393,12 +409,22 @@ export const MOCK_GENEALOGIE: GenealogiePF[] = [
     unite: 'btl',
     statut: 'EnControle',
     ingredients: [
-      { codeLot: 'LOT-MP-2025-0031', article: "Fleurs d'Hibiscus",     typeArticle: 'MP', qteUtilisee: 6,   unite: 'kg', fournisseur: 'Coopérative de Thiès', dateReception: '2025-05-22', statut: 'EnControle' },
-      { codeLot: 'LOT-MP-2025-0028', article: 'Sucre raffiné',         typeArticle: 'MP', qteUtilisee: 9.6, unite: 'kg', fournisseur: 'Sucrivoire SA',         dateReception: '2025-05-10', statut: 'Libere'     },
-      { codeLot: 'LOT-MP-2025-0025', article: 'Eau purifiée',          typeArticle: 'MP', qteUtilisee: 240, unite: 'L',  fournisseur: 'Forage interne',         dateReception: '2025-05-24', statut: 'Libere'     },
-      { codeLot: 'LOT-AC-2025-0018', article: 'Bouteilles 1L PET',     typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-23', statut: 'EnControle' },
-      { codeLot: 'LOT-AC-2025-0016', article: 'Bouchons vissants',     typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-15', statut: 'Libere'     },
-      { codeLot: 'LOT-AC-2025-0017', article: 'Étiquettes autocollantes', typeArticle: 'AC', qteUtilisee: 240, unite: 'u', fournisseur: 'ImpriPrint Dakar',    dateReception: '2025-05-18', statut: 'Libere'     },
+      { codeLot: 'LOT-MP-2025-0031', article: "Fleurs d'Hibiscus",       typeArticle: 'MP', qteUtilisee: 6,   unite: 'kg', fournisseur: 'Coopérative de Thiès', dateReception: '2025-05-22', statut: 'EnControle' },
+      { codeLot: 'LOT-MP-2025-0028', article: 'Sucre raffiné',           typeArticle: 'MP', qteUtilisee: 9.6, unite: 'kg', fournisseur: 'Sucrivoire SA',         dateReception: '2025-05-10', statut: 'Libere'     },
+      { codeLot: 'LOT-MP-2025-0025', article: 'Eau purifiée',            typeArticle: 'MP', qteUtilisee: 240, unite: 'L',  fournisseur: 'Forage interne',         dateReception: '2025-05-24', statut: 'Libere'     },
+      { codeLot: 'LOT-AC-2025-0018', article: 'Bouteilles 1L PET',       typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-23', statut: 'EnControle' },
+      { codeLot: 'LOT-AC-2025-0016', article: 'Bouchons vissants',       typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-15', statut: 'Libere'     },
+      { codeLot: 'LOT-AC-2025-0017', article: 'Étiquettes autocollantes',typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'ImpriPrint Dakar',       dateReception: '2025-05-18', statut: 'Libere'     },
+    ],
+    ccps: [
+      { nom: 'Pasteurisation', valeur: '82°C / 25s', spec: '≥ 82°C / ≥ 20s', conforme: true  },
+      { nom: 'pH final',       valeur: '4.7',         spec: '3.5 – 4.5',       conforme: false },
+      { nom: 'Brix',           valeur: '12.5°Bx',     spec: '11 – 13°Bx',      conforme: true  },
+    ],
+    destinations: [
+      { destination: 'Super Marché Hayat', dateLivraison: '2025-05-28', quantite: 120, unite: 'btl' },
+      { destination: 'Boulangerie Étoile', dateLivraison: '2025-05-28', quantite:  60, unite: 'btl' },
+      { destination: 'Stock disponible',   dateLivraison: null,          quantite:  60, unite: 'btl' },
     ],
   },
   {
@@ -415,6 +441,16 @@ export const MOCK_GENEALOGIE: GenealogiePF[] = [
       { codeLot: 'LOT-MP-2025-0025', article: 'Eau purifiée',      typeArticle: 'MP', qteUtilisee: 120, unite: 'L',  fournisseur: 'Forage interne',         dateReception: '2025-05-23', statut: 'Libere'     },
       { codeLot: 'LOT-AC-2025-0018', article: 'Bouteilles 1L PET', typeArticle: 'AC', qteUtilisee: 120, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-23', statut: 'EnControle' },
       { codeLot: 'LOT-AC-2025-0016', article: 'Bouchons vissants', typeArticle: 'AC', qteUtilisee: 120, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2025-05-15', statut: 'Libere'     },
+    ],
+    ccps: [
+      { nom: 'Pasteurisation', valeur: '84°C / 22s', spec: '≥ 82°C / ≥ 20s', conforme: true },
+      { nom: 'pH final',       valeur: '3.8',         spec: '3.5 – 4.5',       conforme: true },
+      { nom: 'Brix',           valeur: '12.2°Bx',     spec: '11 – 13°Bx',      conforme: true },
+    ],
+    destinations: [
+      { destination: 'Épicerie Centrale Abidjan', dateLivraison: '2025-05-25', quantite: 60, unite: 'btl' },
+      { destination: 'Hôtel Teranga',             dateLivraison: '2025-05-26', quantite: 48, unite: 'btl' },
+      { destination: 'Stock disponible',          dateLivraison: null,          quantite: 12, unite: 'btl' },
     ],
   },
 ]
