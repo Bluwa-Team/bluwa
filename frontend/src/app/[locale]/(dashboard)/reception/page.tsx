@@ -17,7 +17,8 @@ import {
   STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
   StatutReception, flattenReception,
 } from './_components/types'
-import { ReceptionModal } from './_components/reception-modal'
+import { ReceptionModal }    from './_components/reception-modal'
+import { LabelPrintModal }   from './_components/label-print-modal'
 import type { BCHeader, BCItem } from '../approvisionnement/_components/types'
 import { getGoodsReceipts, createGoodsReceipt } from '@/lib/actions/reception'
 import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
@@ -106,7 +107,8 @@ export default function ReceptionPage() {
   const [recHeaders, setRecHeaders] = useState<ReceptionHeader[]>([])
   const [recItems,   setRecItems]   = useState<ReceptionItem[]>([])
   const receptions = useMemo<ReceptionFlat[]>(() => flattenReception(recHeaders, recItems), [recHeaders, recItems])
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen,    setModalOpen]    = useState(false)
+  const [printRow,     setPrintRow]     = useState<ReceptionFlat | null>(null)
   const [bcHeaders, setBcHeaders] = useState<BCHeader[]>([])
   const [bcItems,   setBcItems]   = useState<BCItem[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -456,6 +458,7 @@ export default function ReceptionPage() {
                   <div className="flex items-center justify-end gap-1">
                     <button
                       title="Imprimer les étiquettes"
+                      onClick={() => setPrintRow(r)}
                       className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     >
                       <Printer className="size-3.5" />
@@ -475,6 +478,12 @@ export default function ReceptionPage() {
           </tbody>
         </table>
       </div>
+
+      <LabelPrintModal
+        open={printRow !== null}
+        row={printRow}
+        onClose={() => setPrintRow(null)}
+      />
 
       <ReceptionModal
         open={modalOpen}
