@@ -54,7 +54,11 @@
     "nonConformitesQA": "Non-Conformities",
     "genealogie": "Genealogy",
     "gedQualite": "Quality DMS",
-    "inventaire": "Stock Takes"
+    "inventaire": "Stock Takes",
+    "ventes": "Sales & ADV",
+    "commandesClients": "Sales Orders",
+    "adv": "Invoicing",
+    "bonsLivraison": "Delivery Notes"
   },
   "header": {
     "aiAgent": "AI Agent",

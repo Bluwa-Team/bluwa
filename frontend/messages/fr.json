@@ -54,7 +54,11 @@
     "nonConformitesQA": "Non-Conformités",
     "genealogie": "Généalogie",
     "gedQualite": "GED Qualité",
-    "inventaire": "Inventaires"
+    "inventaire": "Inventaires",
+    "ventes": "Ventes & ADV",
+    "commandesClients": "Commandes clients",
+    "adv": "Facturation ADV",
+    "bonsLivraison": "Bons de livraison"
   },
   "header": {
     "aiAgent": "Agent IA",

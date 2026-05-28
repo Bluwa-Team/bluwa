@@ -23,6 +23,9 @@ import {
   FileText,
   ClipboardCheck,
   Cog,
+  ShoppingBag,
+  Receipt,
+  PackageCheck,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -124,8 +127,12 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       ],
     },
     {
-      label: t('logistique'),
-      items: [],
+      label: t('ventes'),
+      items: [
+        { title: t('commandesClients'), url: '/ventes',     icon: ShoppingBag,   disabled: false },
+        { title: t('adv'),              url: '/adv',         icon: Receipt,       disabled: false },
+        { title: t('bonsLivraison'),    url: '/logistique',  icon: PackageCheck,  disabled: false },
+      ],
     },
     {
       label: t('production'),
