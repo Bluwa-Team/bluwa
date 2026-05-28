@@ -129,9 +129,9 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('ventes'),
       items: [
-        { title: t('commandesClients'), url: '/ventes',     icon: ShoppingBag,   disabled: false },
-        { title: t('adv'),              url: '/adv',         icon: Receipt,       disabled: false },
-        { title: t('bonsLivraison'),    url: '/logistique',  icon: PackageCheck,  disabled: false },
+        { title: t('commandesClients'), url: '/ventes',     icon: ShoppingBag,   disabled: true },
+        { title: t('adv'),              url: '/adv',         icon: Receipt,       disabled: true },
+        { title: t('bonsLivraison'),    url: '/logistique',  icon: PackageCheck,  disabled: true },
       ],
     },
     {
