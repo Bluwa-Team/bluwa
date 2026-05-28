@@ -8,6 +8,7 @@ export { STATUT_QC_LABELS as STATUT_QC_LABELS_ERP, STATUT_QC_COLORS as STATUT_QC
 
 import type { ArticleType } from '@/types/erp'
 import type { StatutQC } from '@/types/erp'
+import type { InventoryDocument, InventoryDocumentItem } from '@/types/erp'
 
 export type EtatLot = 'Disponible' | 'Dormant' | 'Obsolete'
 export type OrigineType = 'Formel' | 'Informel'

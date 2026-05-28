@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Search, X, RotateCcw, MoreHorizontal,
   Check, Moon, AlertTriangle, Clock, Lock,
@@ -16,8 +16,9 @@ import {
 import {
   LotStock, EtatLot, TypeArticle, StatutQC, Mouvement,
   ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
-  STATUT_QC_COLORS, STATUT_QC_LABELS, MOCK_LOTS,
+  STATUT_QC_COLORS, STATUT_QC_LABELS,
 } from './_components/types'
+import { getLotStocks } from '@/lib/actions/stocks'
 import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
@@ -81,7 +82,15 @@ function StatCard({
 
 export default function StocksPage() {
   const locale = useLocale()
-  const [lots, setLots] = useState<LotStock[]>(MOCK_LOTS)
+  const [lots, setLots] = useState<LotStock[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getLotStocks().then((data) => {
+      setLots(data)
+      setLoading(false)
+    })
+  }, [])
   const [search, setSearch] = useState('')
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
   const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')

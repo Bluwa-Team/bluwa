@@ -1,187 +1,196 @@
 'use server'
 
 import { getSupabaseWithOrg } from './helpers'
-import { StockLigne, Mouvement, Lot, StatutStock, TypeMouvement, StatutLot } from '@/app/[locale]/(dashboard)/stocks/_components/types'
+import type { LotStock, EtatLot, OrigineType, Mouvement, Lot, StatutLot, TypeMouvement } from '@/app/[locale]/(dashboard)/stocks/_components/types'
+import type { ArticleType, StatutQC } from '@/types/erp'
 
-function toStock(row: Record<string, unknown>): StockLigne {
-  return {
-    id: row.id as string,
-    articleCode: row.article_code as string,
-    articleDesignation: (row.article_designation as string) ?? '',
-    articleType: (row.article_type as string) ?? '',
-    entrepot: (row.entrepot_code as string) ?? '',
-    emplacement: (row.emplacement as string) ?? '',
-    lot: (row.lot as string) ?? '',
-    datePeremption: (row.date_peremption as string) ?? null,
-    quantite: (row.quantite as number) ?? 0,
-    unite: (row.unite as string) ?? '',
-    pmp: (row.pmp as number) ?? null,
-    valeurStock: row.pmp && row.quantite ? (row.pmp as number) * (row.quantite as number) : null,
-    stockSecurite: (row.stock_securite as number) ?? null,
-    pointCommande: (row.point_commande as number) ?? null,
-    statut: (row.statut as StatutStock) ?? 'OK',
-  }
-}
+// ── Mouvements de stock par article ──────────────────────────────────────────
 
-function toMouvement(row: Record<string, unknown>): Mouvement {
-  return {
-    id: row.id as string,
-    date: ((row.date as string) ?? '').split('T')[0],
-    type: row.type as TypeMouvement,
-    articleCode: row.article_code as string,
-    articleDesignation: (row.article_designation as string) ?? '',
-    lot: (row.lot as string) ?? '',
-    quantite: (row.quantite as number) ?? 0,
-    unite: (row.unite as string) ?? '',
-    entrepotSource: (row.entrepot_source as string) ?? '',
-    entrepotDest: (row.entrepot_dest as string) ?? '',
-    reference: (row.reference as string) ?? '',
-    motif: (row.motif as string) ?? '',
-    operateur: (row.operateur as string) ?? '',
-  }
-}
-
-function toLot(row: Record<string, unknown>): Lot {
-  const datePeremption = row.date_peremption as string | null
-  let joursRestants: number | null = null
-  if (datePeremption) {
-    const diff = new Date(datePeremption).getTime() - Date.now()
-    joursRestants = Math.floor(diff / (1000 * 60 * 60 * 24))
-  }
-  let statut: StatutLot = 'OK'
-  if (joursRestants !== null) {
-    if (joursRestants < 0) statut = 'Expire'
-    else if (joursRestants < 90) statut = 'ProcheExpiration'
-  }
-  return {
-    id: row.id as string,
-    lotCode: (row.lot as string) ?? '',
-    articleCode: row.article_code as string,
-    articleDesignation: (row.article_designation as string) ?? '',
-    entrepot: (row.entrepot_code as string) ?? '',
-    emplacement: (row.emplacement as string) ?? '',
-    quantite: (row.quantite as number) ?? 0,
-    unite: (row.unite as string) ?? '',
-    dateReception: ((row.created_at as string) ?? '').split('T')[0],
-    datePeremption,
-    joursRestants,
-    statut,
-  }
-}
-
-export async function getStocks(): Promise<StockLigne[]> {
-  try {
-    const { supabase, orgId } = await getSupabaseWithOrg()
-    const { data, error } = await supabase
-      .from('stocks')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('article_code')
-    if (error) throw error
-    return (data ?? []).map(toStock)
-  } catch (e) {
-    console.error('[supabase action] error:', e)
-    return []
-  }
-}
-
-export async function getMouvements(): Promise<Mouvement[]> {
-  try {
-    const { supabase, orgId } = await getSupabaseWithOrg()
-    const { data, error } = await supabase
-      .from('mouvements_stock')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('date', { ascending: false })
-      .limit(100)
-    if (error) throw error
-    return (data ?? []).map(toMouvement)
-  } catch (e) {
-    console.error('[supabase action] error:', e)
-    return []
-  }
-}
-
-export async function getLots(): Promise<Lot[]> {
-  try {
-    const { supabase, orgId } = await getSupabaseWithOrg()
-    const { data, error } = await supabase
-      .from('stocks')
-      .select('*')
-      .eq('organization_id', orgId)
-      .not('lot', 'is', null)
-      .neq('lot', '')
-      .order('date_peremption', { ascending: true, nullsFirst: false })
-    if (error) throw error
-    return (data ?? []).map(toLot)
-  } catch (e) {
-    console.error('[supabase action] error:', e)
-    return []
-  }
+function mvtType(t: string): TypeMouvement {
+  if (t === 'CONSO_OF') return 'Sortie'
+  if (t === 'INV_ADJ')  return 'Ajustement'
+  return 'Entree'
 }
 
 export async function getMouvementsByArticle(articleCode: string): Promise<Mouvement[]> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    // Résoudre article_id depuis le code
+    const { data: art } = await supabase
+      .from('articles')
+      .select('id, designation, unite_stock')
+      .eq('organization_id', orgId)
+      .eq('code', articleCode)
+      .maybeSingle()
+    if (!(art as any)?.id) return []
+
     const { data, error } = await supabase
-      .from('mouvements_stock')
+      .from('stock_movements')
       .select('*')
       .eq('organization_id', orgId)
-      .eq('article_code', articleCode)
-      .order('date', { ascending: false })
+      .eq('article_id', (art as any).id)
+      .order('created_at', { ascending: false })
+      .limit(100)
     if (error) throw error
-    return (data ?? []).map(toMouvement)
+
+    return (data ?? []).map((m) => ({
+      id:                 m.id as string,
+      date:               ((m.created_at as string) ?? '').split('T')[0],
+      type:               mvtType(m.movement_type as string),
+      articleCode,
+      articleDesignation: (art as any).designation ?? '',
+      lot:                (m.batch_number as string) ?? '',
+      quantite:           Number(m.quantity) || 0,
+      unite:              (art as any).unite_stock ?? '',
+      entrepotSource:     '',
+      entrepotDest:       '',
+      reference:          (m.source_document_id as string) ?? '',
+      motif:              (m.movement_type as string) ?? '',
+      operateur:          '',
+    }))
   } catch (e) {
-    console.error('[supabase action] error:', e)
+    console.error('[getMouvementsByArticle]', e)
     return []
   }
 }
+
+// ── Lots par article ──────────────────────────────────────────────────────────
 
 export async function getLotsByArticle(articleCode: string): Promise<Lot[]> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
-    const { data, error } = await supabase
-      .from('stocks')
-      .select('*')
+
+    const { data: art } = await supabase
+      .from('articles')
+      .select('id, designation, unite_stock')
       .eq('organization_id', orgId)
-      .eq('article_code', articleCode)
-      .not('lot', 'is', null)
-      .neq('lot', '')
-      .order('date_peremption', { ascending: true, nullsFirst: false })
+      .eq('code', articleCode)
+      .maybeSingle()
+    if (!(art as any)?.id) return []
+
+    const { data, error } = await supabase
+      .from('goods_receipt_items')
+      .select('id, batch_number, quantity_received, expiry_date, created_at')
+      .eq('organization_id', orgId)
+      .eq('article_id', (art as any).id)
+      .not('batch_number', 'is', null)
+      .order('expiry_date', { ascending: true, nullsFirst: false })
     if (error) throw error
-    return (data ?? []).map(toLot)
+
+    const today = Date.now()
+    return (data ?? []).map((row) => {
+      const dlc = (row.expiry_date as string | null) ?? null
+      let joursRestants: number | null = null
+      if (dlc) {
+        joursRestants = Math.floor((new Date(dlc).getTime() - today) / 86_400_000)
+      }
+      let statut: StatutLot = 'OK'
+      if (joursRestants !== null) {
+        if (joursRestants < 0) statut = 'Expire'
+        else if (joursRestants < 90) statut = 'ProcheExpiration'
+      }
+      return {
+        id:                row.id as string,
+        lotCode:           (row.batch_number as string) ?? '',
+        articleCode,
+        articleDesignation: (art as any).designation ?? '',
+        entrepot:          '',
+        emplacement:       '',
+        quantite:          Number(row.quantity_received) || 0,
+        unite:             (art as any).unite_stock ?? '',
+        dateReception:     ((row.created_at as string) ?? '').split('T')[0],
+        datePeremption:    dlc,
+        joursRestants,
+        statut,
+      }
+    })
   } catch (e) {
-    console.error('[supabase action] error:', e)
+    console.error('[getLotsByArticle]', e)
     return []
   }
 }
 
-export async function createMouvement(m: Partial<Mouvement>): Promise<Mouvement | null> {
+// ── Lots de stock ─────────────────────────────────────────────────────────────
+//
+// Source : goods_receipt_items × goods_receipts × purchase_orders × articles
+// Une ligne = un lot réceptionné (batch_number)
+//
+// PMP : articles.pmp (coût standard mis à jour par l'ERP)
+// Valeur : pmp × quantity_received
+// StatutQC : null pour l'instant (TODO : quality_inspection_lots)
+// Évolue vers stock_movements quand les sorties sont tracées.
+
+export async function getLotStocks(): Promise<LotStock[]> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+
     const { data, error } = await supabase
-      .from('mouvements_stock')
-      .insert({
-        organization_id: orgId,
-        date: m.date ?? new Date().toISOString().split('T')[0],
-        type: m.type,
-        article_code: m.articleCode,
-        article_designation: m.articleDesignation,
-        lot: m.lot,
-        quantite: m.quantite,
-        unite: m.unite,
-        entrepot_source: m.entrepotSource,
-        entrepot_dest: m.entrepotDest,
-        reference: m.reference,
-        motif: m.motif,
-        operateur: m.operateur,
-      })
-      .select()
-      .single()
+      .from('goods_receipt_items')
+      .select(`
+        id,
+        batch_number,
+        quantity_received,
+        expiry_date,
+        goods_receipt_id,
+        goods_receipts!goods_receipt_id (
+          receipt_number,
+          received_at,
+          purchase_orders!purchase_order_id (
+            order_number,
+            suppliers!supplier_id ( name, vendor_type )
+          )
+        ),
+        articles!article_id ( code, designation, type, unite_stock, pmp )
+      `)
+      .eq('organization_id', orgId)
+      .order('goods_receipt_id', { ascending: false })
     if (error) throw error
-    return data ? toMouvement(data) : null
+
+    const today = Date.now()
+
+    return (data ?? []).map((row) => {
+      const gr       = (row as any).goods_receipts
+      const po       = gr?.purchase_orders
+      const supplier = po?.suppliers
+      const art      = (row as any).articles
+
+      const pmp      = Number(art?.pmp) || 0
+      const quantite = Number(row.quantity_received) || 0
+      const dlc      = (row.expiry_date as string | null) ?? ''
+      const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
+      const receivedTs = gr?.received_at ? new Date(gr.received_at).getTime() : 0
+      const daysSinceEntry = receivedTs ? Math.floor((today - receivedTs) / 86_400_000) : 0
+
+      // Évaluation de l'état du lot
+      let etat: EtatLot = 'Disponible'
+      if (dlc) {
+        const daysLeft = Math.floor((new Date(dlc).getTime() - today) / 86_400_000)
+        if (daysLeft < 0) etat = 'Obsolete'
+      }
+      if (etat === 'Disponible' && daysSinceEntry >= 60) etat = 'Dormant'
+
+      return {
+        id:                    row.id as string,
+        numero:                (row.batch_number as string) || `LOT-${(row.id as string).substring(0, 8)}`,
+        sku:                   art?.code ?? '',
+        designation:           art?.designation ?? '',
+        type:                  (art?.type ?? 'MP') as ArticleType,
+        quantite,
+        unite:                 art?.unite_stock ?? '',
+        pmp,
+        valeur:                Math.round(pmp * quantite),
+        bcBa:                  po?.order_number ?? '',
+        reception:             gr?.receipt_number ?? '',
+        dateEntree,
+        dlc,
+        origine:               ((supplier?.vendor_type ?? 'Formel') === 'Informel' ? 'Informel' : 'Formel') as OrigineType,
+        statutQC:              null as StatutQC | null,
+        etat,
+        seuilAlertePeremption: 30,
+      }
+    })
   } catch (e) {
-    console.error('[supabase action] error:', e)
-    return null
+    console.error('[getLotStocks]', e)
+    return []
   }
 }

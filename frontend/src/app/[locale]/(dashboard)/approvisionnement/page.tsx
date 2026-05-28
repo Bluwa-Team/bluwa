@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Plus, FileDown, FileText, Leaf,
   Clock, CheckCheck, RotateCcw, Search, X,
@@ -16,16 +16,19 @@ import {
 import {
   BCHeader, BCItem, BCFlat, CommandeFournisseur,
   STATUT_COMMANDE_COLORS, STATUT_COMMANDE_LABELS,
-  StatutCommande, flattenBC, MOCK_BC_HEADERS, MOCK_BC_ITEMS,
-  ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd, MOCK_STRATEGIE,
+  StatutCommande, flattenBC,
+  ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd,
 } from './_components/types'
 import { CommandeModal }       from './_components/commande-modal'
 import { CommandeDetailModal } from './_components/commande-detail-modal'
 import {
   type PurchaseRequisitionRow, type StatutDA,
   STATUT_DA_LABELS, STATUT_DA_COLORS,
-  MOCK_PURCHASE_REQUISITION_ROWS,
 } from '../mrp/_components/types'
+import {
+  getPurchaseOrders, getPurchaseRequisitions, getArticleStrategies,
+  createPurchaseOrder, type CreatePurchaseOrderInput,
+} from '@/lib/actions/approvisionnement'
 
 type Tab = 'da' | 'commandes' | 'strategie'
 
@@ -110,12 +113,27 @@ export default function ApprovisionnementPage() {
   const locale = useLocale()
   const [tab, setTab] = useState<Tab>('commandes')
   // State Header/Item — la vue aplatie est dérivée par useMemo
-  const [bcHeaders, setBcHeaders] = useState<BCHeader[]>(MOCK_BC_HEADERS)
-  const [bcItems,   setBcItems]   = useState<BCItem[]>(MOCK_BC_ITEMS)
+  const [bcHeaders, setBcHeaders] = useState<BCHeader[]>([])
+  const [bcItems,   setBcItems]   = useState<BCItem[]>([])
   const commandes = useMemo<BCFlat[]>(() => flattenBC(bcHeaders, bcItems), [bcHeaders, bcItems])
   const [modalOpen,       setModalOpen]       = useState(false)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  const [strategie, setStrategie] = useState<ArticleStrategie[]>(MOCK_STRATEGIE)
+  const [strategie, setStrategie] = useState<ArticleStrategie[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      getPurchaseOrders(),
+      getPurchaseRequisitions(),
+      getArticleStrategies(),
+    ]).then(([po, da, strat]) => {
+      setBcHeaders(po.headers)
+      setBcItems(po.items)
+      setDaRows(da)
+      setStrategie(strat)
+      setLoading(false)
+    })
+  }, [])
   const [sSearch, setSSearch] = useState('')
   const [sStatutFilter, setSStatutFilter] = useState<'all' | 'aCommander' | 'ok'>('all')
   const [search, setSearch] = useState('')
@@ -123,7 +141,7 @@ export default function ApprovisionnementPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'BC' | 'BA'>('all')
 
   // ── DA state ───────────────────────────────────────────────────────────────
-  const [daRows] = useState<PurchaseRequisitionRow[]>(MOCK_PURCHASE_REQUISITION_ROWS)
+  const [daRows, setDaRows] = useState<PurchaseRequisitionRow[]>([])
   const [daSearch, setDaSearch] = useState('')
   const [daStatutFilter, setDaStatutFilter] = useState<StatutDA | 'all'>('all')
 
@@ -162,30 +180,28 @@ export default function ApprovisionnementPage() {
     headerData: Omit<BCHeader, 'id' | 'numero' | 'reception' | 'statut'>,
     newItems: Omit<BCItem, 'id' | 'headerId'>[],
   ): Promise<boolean> {
-    const year   = new Date().getFullYear()
-    const prefix = headerData.type
-    const next   = bcHeaders.filter((h) => h.type === prefix).length + 1
-    const hId    = Date.now().toString()
-
-    const newHeader: BCHeader = {
-      id:          hId,
-      numero:      `${prefix}-${year}-${String(next).padStart(3, '0')}`,
+    const input: CreatePurchaseOrderInput = {
       type:        headerData.type,
       date:        headerData.date,
       fournisseur: headerData.fournisseur,
       contrat:     headerData.contrat,
       currency:    headerData.currency,
-      reception:   null,
-      statut:      'DRAFT',
+      items:       newItems.map((i) => ({
+        article:               i.article,
+        articleId:             null,
+        quantite:              i.quantite,
+        puHT:                  i.puHT,
+        livraisonPrevue:       i.livraisonPrevue,
+        dureeVie:              i.dureeVie,
+        purchaseRequisitionId: i.purchaseRequisitionId,
+      })),
     }
-    const createdItems: BCItem[] = newItems.map((item, idx) => ({
-      ...item,
-      id:       `${hId}-i${idx + 1}`,
-      headerId: hId,
-    }))
-
-    setBcHeaders((prev) => [newHeader, ...prev])
-    setBcItems((prev)   => [...createdItems, ...prev])
+    const result = await createPurchaseOrder(input)
+    if (!result) return false
+    // Rafraîchir depuis Supabase
+    const { headers, items } = await getPurchaseOrders()
+    setBcHeaders(headers)
+    setBcItems(items)
     return true
   }
 

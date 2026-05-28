@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Plus, Printer, Barcode,
   Check, AlertTriangle, Clock, RotateCcw, CheckCheck,
@@ -16,12 +16,11 @@ import {
   ReceptionHeader, ReceptionItem, ReceptionFlat, Reception,
   STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
   StatutReception, flattenReception,
-  MOCK_RECEPTION_HEADERS, MOCK_RECEPTION_ITEMS,
 } from './_components/types'
 import { ReceptionModal } from './_components/reception-modal'
-import {
-  MOCK_BC_HEADERS, MOCK_BC_ITEMS,
-} from '../approvisionnement/_components/types'
+import type { BCHeader, BCItem } from '../approvisionnement/_components/types'
+import { getGoodsReceipts, createGoodsReceipt } from '@/lib/actions/reception'
+import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
   Conforme: <Check className="size-3" />,
@@ -104,10 +103,27 @@ function StatCard({
 export default function ReceptionPage() {
   const locale = useLocale()
   // State Header/Item — la vue aplatie est dérivée par useMemo
-  const [recHeaders, setRecHeaders] = useState<ReceptionHeader[]>(MOCK_RECEPTION_HEADERS)
-  const [recItems,   setRecItems]   = useState<ReceptionItem[]>(MOCK_RECEPTION_ITEMS)
+  const [recHeaders, setRecHeaders] = useState<ReceptionHeader[]>([])
+  const [recItems,   setRecItems]   = useState<ReceptionItem[]>([])
   const receptions = useMemo<ReceptionFlat[]>(() => flattenReception(recHeaders, recItems), [recHeaders, recItems])
   const [modalOpen, setModalOpen] = useState(false)
+  const [bcHeaders, setBcHeaders] = useState<BCHeader[]>([])
+  const [bcItems,   setBcItems]   = useState<BCItem[]>([])
+  const [loading,   setLoading]   = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      getGoodsReceipts(),
+      getPurchaseOrders(),
+    ]).then(([rec, po]) => {
+      setRecHeaders(rec.headers)
+      setRecItems(rec.items)
+      // Commandes ouvertes (PENDING ou APPROVED) pour la modale de réception
+      setBcHeaders(po.headers.filter((h) => h.statut === 'PENDING' || h.statut === 'APPROVED'))
+      setBcItems(po.items)
+      setLoading(false)
+    })
+  }, [])
   const [search, setSearch] = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutReception | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'Formel' | 'Informel'>('all')
@@ -155,27 +171,12 @@ export default function ReceptionPage() {
     headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
     newItems: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
   ): Promise<boolean> {
-    const year = new Date().getFullYear()
-    const next = recHeaders.length + 1
-    const hId  = Date.now().toString()
-
-    const newHeader: ReceptionHeader = {
-      id:     hId,
-      numero: `REC-${year}-${String(next).padStart(3, '0')}`,
-      ...headerData,
-    }
-    const createdItems: ReceptionItem[] = newItems.map((item, idx) => {
-      const abbr = item.article.substring(0, 3).toUpperCase().replace(/\s+/g, '')
-      return {
-        ...item,
-        id:       `${hId}-ri${idx + 1}`,
-        headerId: hId,
-        lot:      `LOT-${abbr}-${String(next).padStart(3, '0')}${idx > 0 ? `-${idx + 1}` : ''}`,
-      }
-    })
-
-    setRecHeaders((prev) => [newHeader, ...prev])
-    setRecItems((prev)   => [...createdItems, ...prev])
+    const result = await createGoodsReceipt(headerData, newItems)
+    if (!result) return false
+    // Rafraîchir depuis Supabase pour avoir les lots générés
+    const { headers, items } = await getGoodsReceipts()
+    setRecHeaders(headers)
+    setRecItems(items)
     return true
   }
 
@@ -478,8 +479,8 @@ export default function ReceptionPage() {
       <ReceptionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        bcHeaders={MOCK_BC_HEADERS.filter((h) => h.statut === 'PENDING' || h.statut === 'APPROVED')}
-        bcItems={MOCK_BC_ITEMS}
+        bcHeaders={bcHeaders}
+        bcItems={bcItems}
         onSave={handleSave}
       />
     </div>
