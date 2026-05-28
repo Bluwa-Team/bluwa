@@ -55,6 +55,67 @@ const CA_MARGE_DATA = [
   { mois: 'Mai', ca: 6_400_000, cout: 4_160_000 },
 ]
 
+// ── Mock data — Marge, Alertes, P&L ──────────────────────────────────────────
+
+const MARGE_INSIGHT = {
+  ecartMoyen:       +4.2,
+  ecartTendance:    'up' as const,    // up = dégradation
+  produitDéviant:   'Vanille',
+  ecartProduit:     +6.8,
+  commentaire:      'Surconsommation MP & rebuts ligne C.',
+}
+
+type AlertePrio = {
+  id:      string
+  niveau:  'rouge' | 'jaune' | 'bleu' | 'vert'
+  emoji:   string
+  titre:   string
+  detail:  string
+  lien?:   string
+}
+
+const ALERTES_PRIORITAIRES: AlertePrio[] = [
+  {
+    id: 'a1', niveau: 'rouge', emoji: '⚠️',
+    titre:  'Gousses de vanille — 3 kg restants',
+    detail: 'Sous stock de sécurité · OF Vanille à risque sous 5j',
+    lien:   '/stocks',
+  },
+  {
+    id: 'a2', niveau: 'jaune', emoji: '⏳',
+    titre:  'Lot LOT-PFORI-039 — DLC dans 8j',
+    detail: '142 bouteilles · à prioriser sur ventes Dakar',
+    lien:   '/stocks',
+  },
+  {
+    id: 'a3', niveau: 'bleu', emoji: '🧑‍💼',
+    titre:  'MRP : 4 composants à commander',
+    detail: 'Calcul à partir des OF planifiés · Voir suggestions',
+    lien:   '/approvisionnement',
+  },
+  {
+    id: 'a4', niveau: 'vert', emoji: '✅',
+    titre:  'Bouteilles 1L — réception confirmée',
+    detail: '2 400 u reçues · Verrerie Dakar · Lot OK',
+    lien:   '/reception',
+  },
+]
+
+const PL_DATA = {
+  ca:           6_400_000,
+  coutProd:     4_160_000,
+  margebrute:   2_240_000,
+  chargesFixes: 1_400_000,
+  ebitda:         840_000,
+}
+
+const ALERTE_STYLES: Record<AlertePrio['niveau'], { bg: string; border: string; titleColor: string }> = {
+  rouge: { bg: 'bg-red-50',    border: 'border-red-200',    titleColor: 'text-red-800'    },
+  jaune: { bg: 'bg-amber-50',  border: 'border-amber-200',  titleColor: 'text-amber-800'  },
+  bleu:  { bg: 'bg-blue-50',   border: 'border-blue-200',   titleColor: 'text-blue-800'   },
+  vert:  { bg: 'bg-emerald-50',border: 'border-emerald-200',titleColor: 'text-emerald-800'},
+}
+
 const MIX_VENTES = [
   { name: 'Originale',   value: 42, color: '#2563eb' },
   { name: 'Vanille',     value: 28, color: '#f97316' },
@@ -309,6 +370,107 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ── Marge insight + Alertes ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Analyse de marge — compact */}
+        <div className="rounded-2xl border bg-card shadow-sm p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <span>💰</span> Analyse de marge
+              <span className="text-muted-foreground font-normal">— Coût théorique vs réel</span>
+            </p>
+            <Link href={`/${locale}/analyse-marge`} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5">
+              Détail <ArrowRight className="size-3" />
+            </Link>
+          </div>
+
+          {/* Trois métriques */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Écart coût moyen</p>
+              <p className={`text-xl font-bold ${MARGE_INSIGHT.ecartMoyen > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                {MARGE_INSIGHT.ecartMoyen > 0 ? '+' : ''}{MARGE_INSIGHT.ecartMoyen}%
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">sur le coût de revient</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Produit déviant</p>
+              <p className="text-xl font-bold text-orange-600">{MARGE_INSIGHT.produitDéviant}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">+{MARGE_INSIGHT.ecartProduit}% d&apos;écart</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Tendance</p>
+              <p className={`text-xl font-bold ${MARGE_INSIGHT.ecartTendance === 'up' ? 'text-red-500' : 'text-emerald-500'}`}>
+                {MARGE_INSIGHT.ecartTendance === 'up' ? '↑' : '↓'}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">vs M-1</p>
+            </div>
+          </div>
+
+          {/* Phrase d'insight */}
+          <p className="text-xs text-muted-foreground border-t pt-3">
+            <span className={`font-semibold ${MARGE_INSIGHT.ecartMoyen > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+              Écart moyen : {MARGE_INSIGHT.ecartMoyen > 0 ? '+' : ''}{MARGE_INSIGHT.ecartMoyen}%
+            </span>
+            {' '}sur le coût de revient — {MARGE_INSIGHT.commentaire}
+          </p>
+        </div>
+
+        {/* Alertes prioritaires */}
+        <div className="rounded-2xl border bg-card shadow-sm p-5 flex flex-col gap-3">
+          <p className="text-sm font-semibold flex items-center gap-2">
+            <span>⚠️</span> Alertes prioritaires
+          </p>
+          <div className="space-y-2">
+            {ALERTES_PRIORITAIRES.map((a) => {
+              const s = ALERTE_STYLES[a.niveau]
+              const inner = (
+                <div className={`rounded-xl border px-3.5 py-2.5 ${s.bg} ${s.border}`}>
+                  <p className={`text-xs font-semibold flex items-center gap-1.5 ${s.titleColor}`}>
+                    <span>{a.emoji}</span> {a.titre}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{a.detail}</p>
+                </div>
+              )
+              return a.lien
+                ? <Link key={a.id} href={`/${locale}${a.lien}`} className="block hover:opacity-80 transition-opacity">{inner}</Link>
+                : <div key={a.id}>{inner}</div>
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── P&L prévisionnel ── */}
+      <div className="rounded-2xl border bg-card shadow-sm p-5">
+        <p className="text-sm font-semibold flex items-center gap-2 mb-4">
+          <span>🧳</span> P&amp;L prévisionnel — Mois en cours
+        </p>
+        <div className="grid grid-cols-5 gap-0 items-center">
+          {[
+            { label: 'CA',              value: PL_DATA.ca,           color: 'text-foreground',    op: null   },
+            { label: '– Coût production',value: PL_DATA.coutProd,    color: 'text-muted-foreground', op: '–' },
+            { label: '= Marge brute',   value: PL_DATA.margebrute,   color: 'text-emerald-600',   op: '='   },
+            { label: '– Charges fixes', value: PL_DATA.chargesFixes, color: 'text-muted-foreground', op: '–' },
+            { label: '= EBITDA',        value: PL_DATA.ebitda,       color: 'text-blue-600',      op: '='   },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center">
+              {item.op && (
+                <span className="text-lg text-muted-foreground font-light px-2 hidden sm:block">
+                  {item.op}
+                </span>
+              )}
+              <div className={`flex-1 ${i > 0 ? 'pl-2 sm:pl-0' : ''}`}>
+                <p className="text-[11px] text-muted-foreground font-medium">{item.label}</p>
+                <p className={`text-base font-bold tabular-nums mt-0.5 ${item.color}`}>
+                  {item.value.toLocaleString('fr-FR')}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
