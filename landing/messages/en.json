@@ -92,14 +92,14 @@
   "pricing": {
     "eyebrow": "Pricing",
     "title": "Simple. Predictable. Built to scale.",
-    "subtitle": "First SaaS month free. One-time installation fee at signing.",
-    "billing": "No commitment · Annual plan = 2 months free",
+    "subtitle": "Priced per site. Add sites as you grow.",
+    "billing": "First month free · No commitment · Annual = 2 months free",
     "plans": [
       {
         "name": "Starter",
         "price": "from 30,000",
-        "currency": "XOF / month",
-        "tagline": "Early-stage SMBs · 1 to 3 users",
+        "currency": "XOF / site / month",
+        "tagline": "1 to 3 users",
         "features": [
           "1 site",
           "Stock, production, purchasing",
@@ -111,10 +111,10 @@
       {
         "name": "Growth",
         "price": "150,000",
-        "currency": "XOF / month",
-        "tagline": "Multi-site SMBs · up to 15 users",
+        "currency": "XOF / site / month",
+        "tagline": "Up to 15 users",
         "features": [
-          "Up to 5 sites",
+          "1 site",
           "Full MRP + Quality DMS",
           "Leadership AI copilot",
           "WhatsApp priority support"
@@ -125,10 +125,10 @@
       {
         "name": "Enterprise",
         "price": "350,000",
-        "currency": "XOF / month",
-        "tagline": "Large structures · unlimited users",
+        "currency": "XOF / site / month",
+        "tagline": "Unlimited users",
         "features": [
-          "Unlimited sites and users",
+          "1 site",
           "Priority access Phase 2: ADV & Logistics WM",
           "SSO, audit, compliance",
           "Dedicated Customer Success"

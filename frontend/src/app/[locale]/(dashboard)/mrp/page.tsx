@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   MoreHorizontal, ArrowRight, Settings,
   Package, TrendingUp, AlertTriangle, Calculator,
   RotateCcw, CalendarDays, Check, ShoppingCart,
-  FlaskConical, BadgeCheck, Clock,
+  FlaskConical, BadgeCheck, Clock, Bell, Loader2,
+  CheckCircle2, XCircle, RefreshCw, ShoppingBag, Factory,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -18,15 +19,25 @@ import {
   calcBesoinNetBOM, MOCK_BOM,
   MOIS_LABELS, MOCK_PREVISIONS_6M, MOCK_PREVISIONS_ANNUELLES,
 } from './_components/types'
+import {
+  getMrpRecommendations, getLatestMrpRun,
+  convertRecommendation, ignoreRecommendation,
+} from '@/lib/actions/mrp'
+import type { MrpRecommendationRow, MrpRun, MrpRecommendationStatus } from '@/types/erp'
+import {
+  MRP_ACTION_LABELS, MRP_ACTION_COLORS,
+  MRP_REC_STATUS_LABELS, MRP_REC_STATUS_COLORS,
+} from '@/types/erp'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'atp' | 'horizon' | 'pic'
+type Tab = 'atp' | 'horizon' | 'pic' | 'recommandations'
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'atp',     label: '① ATP · M+0 & BOM'    },
-  { key: 'horizon', label: '② Horizon 6 mois'      },
-  { key: 'pic',     label: '③ PIC · 12 mois'       },
+  { key: 'atp',             label: '① ATP · M+0 & BOM'    },
+  { key: 'horizon',         label: '② Horizon 6 mois'      },
+  { key: 'pic',             label: '③ PIC · 12 mois'       },
+  { key: 'recommandations', label: '④ Recommandations'     },
 ]
 
 // ── Colonnes résizables ───────────────────────────────────────────────────────
@@ -122,6 +133,52 @@ export default function MrpPage() {
   const locale = useLocale()
   const [tab, setTab]           = useState<Tab>('atp')
   const [produits, setProduits] = useState<ProduitMRP[]>(MOCK_PRODUITS_MRP)
+
+  // ── Onglet ④ — Recommandations (données réelles DB) ──────────────────────────
+  const [recFilter, setRecFilter] = useState<MrpRecommendationStatus | 'ALL'>('NEW')
+  const [recs, setRecs]           = useState<MrpRecommendationRow[]>([])
+  const [latestRun, setLatestRun] = useState<MrpRun | null>(null)
+  const [recLoading, setRecLoading] = useState(false)
+  const [actingId, setActingId]   = useState<string | null>(null)
+
+  const loadRecs = useCallback(async () => {
+    setRecLoading(true)
+    const [newRecs, run] = await Promise.all([
+      getMrpRecommendations(recFilter),
+      getLatestMrpRun(),
+    ])
+    setRecs(newRecs)
+    setLatestRun(run)
+    setRecLoading(false)
+  }, [recFilter])
+
+  useEffect(() => {
+    if (tab === 'recommandations') loadRecs()
+  }, [tab, loadRecs])
+
+  async function handleConvert(rec: MrpRecommendationRow) {
+    setActingId(rec.id)
+    const updated = await convertRecommendation(rec.id)
+    if (updated) setRecs((prev) => prev.map((r) => r.id === rec.id ? updated : r))
+    setActingId(null)
+  }
+
+  async function handleIgnore(rec: MrpRecommendationRow) {
+    setActingId(rec.id)
+    const updated = await ignoreRecommendation(rec.id)
+    if (updated) setRecs((prev) => prev.map((r) => r.id === rec.id ? updated : r))
+    setActingId(null)
+  }
+
+  // Compteurs par statut (depuis tous les recs chargés)
+  const recCounts = useMemo(() => {
+    const all = recs
+    return {
+      NEW:       all.filter((r) => r.status === 'NEW').length,
+      CONVERTED: all.filter((r) => r.status === 'CONVERTED').length,
+      IGNORED:   all.filter((r) => r.status === 'IGNORED').length,
+    }
+  }, [recs])
 
   function updateProduit(id: string, patch: Partial<ProduitMRP>) {
     setProduits((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
@@ -260,13 +317,18 @@ export default function MrpPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === t.key
                 ? 'border-foreground text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.label}
+            {t.key === 'recommandations' && recCounts.NEW > 0 && (
+              <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                {recCounts.NEW}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -715,6 +777,228 @@ export default function MrpPage() {
               <Calculator className="size-3.5 text-muted-foreground shrink-0" />
               <p className="text-xs text-muted-foreground">
                 Besoin annuel = Σ (Prévision annuelle PF × qty/btl composant) · Couverture = Stock actuel + En commande
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          ④ RECOMMANDATIONS MRP — données réelles (migration 012)
+      ═════════════════════════════════════════════════════════════════════= */}
+      {tab === 'recommandations' && (
+        <div className="space-y-4">
+
+          {/* Barre info dernière passe + actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-5 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                <Bell className="size-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Recommandations MRP</p>
+                {latestRun ? (
+                  <p className="text-xs text-muted-foreground">
+                    Dernière passe :{' '}
+                    <span className="font-mono">
+                      {new Date(latestRun.executedAt).toLocaleString('fr-FR', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </span>
+                    {' · '}{latestRun.executedBySystem ? 'Planificateur auto' : 'Manuel'}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Aucune passe MRP effectuée</p>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline" size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={loadRecs}
+              disabled={recLoading}
+            >
+              {recLoading
+                ? <Loader2 className="size-3.5 animate-spin" />
+                : <RefreshCw className="size-3.5" />
+              }
+              Actualiser
+            </Button>
+          </div>
+
+          {/* Stat cards NEW / CONVERTED / IGNORED */}
+          <div className="grid gap-3 grid-cols-3">
+            <div className="rounded-xl border bg-orange-50 dark:bg-orange-950/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <Bell className="size-3.5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold text-orange-700">Nouvelles</span>
+              </div>
+              <p className="text-2xl font-bold text-orange-700">{recCounts.NEW}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">En attente de traitement</p>
+            </div>
+            <div className="rounded-xl border bg-emerald-50 dark:bg-emerald-950/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="size-3.5 text-emerald-600" />
+                </div>
+                <span className="text-xs font-semibold text-emerald-700">Converties</span>
+              </div>
+              <p className="text-2xl font-bold text-emerald-700">{recCounts.CONVERTED}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">DA ou OF créé</p>
+            </div>
+            <div className="rounded-xl border bg-gray-50 dark:bg-gray-900/20 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <XCircle className="size-3.5 text-gray-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">Ignorées</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-600">{recCounts.IGNORED}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Rejetées manuellement</p>
+            </div>
+          </div>
+
+          {/* Filtres */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-medium">Filtre :</span>
+            {(['NEW', 'CONVERTED', 'IGNORED', 'ALL'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setRecFilter(f)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  recFilter === f
+                    ? 'bg-foreground text-background'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                }`}
+              >
+                {f === 'NEW' ? 'Nouvelles' : f === 'CONVERTED' ? 'Converties' : f === 'IGNORED' ? 'Ignorées' : 'Toutes'}
+                {f === 'NEW' && recCounts.NEW > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center h-3.5 min-w-3.5 px-1 rounded-full text-[9px] font-bold bg-orange-500 text-white">
+                    {recCounts.NEW}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Table recommandations */}
+          <div className="rounded-lg border bg-card">
+            {recLoading ? (
+              <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span className="text-sm">Chargement…</span>
+              </div>
+            ) : recs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                <Bell className="size-8 opacity-30" />
+                <p className="text-sm font-medium">Aucune recommandation</p>
+                <p className="text-xs">
+                  {recFilter === 'NEW'
+                    ? 'Toutes les recommandations ont été traitées.'
+                    : 'Lancez une passe MRP pour générer des recommandations.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/40 border-b">
+                      <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Article</th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs tracking-wide">Action</th>
+                      <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Qté suggérée</th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs tracking-wide">Date commande</th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs tracking-wide">Date besoin</th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs tracking-wide">Statut</th>
+                      <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recs.map((rec) => {
+                      const isActing = actingId === rec.id
+                      const reqDate  = new Date(rec.requiredDate)
+                      const today    = new Date()
+                      const daysLeft = Math.ceil((reqDate.getTime() - today.getTime()) / 86_400_000)
+                      const urgent   = daysLeft <= 7 && rec.status === 'NEW'
+                      return (
+                        <tr key={rec.id} className={`border-b last:border-0 hover:bg-muted/20 ${urgent ? 'bg-red-50/30 dark:bg-red-950/10' : ''}`}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-sm truncate max-w-[200px]" title={rec.articleLabel}>
+                              {rec.articleLabel}
+                            </p>
+                            <p className="font-mono text-xs text-muted-foreground">{rec.articleSku}</p>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${MRP_ACTION_COLORS[rec.actionType]}`}>
+                              {rec.actionType === 'BUY'
+                                ? <ShoppingBag className="size-3 shrink-0" />
+                                : rec.actionType === 'PRODUCE'
+                                  ? <Factory className="size-3 shrink-0" />
+                                  : <RefreshCw className="size-3 shrink-0" />
+                              }
+                              {MRP_ACTION_LABELS[rec.actionType]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-semibold">
+                            {formatNumber(rec.suggestedQuantity, locale)}
+                            <span className="text-xs font-normal text-muted-foreground ml-1">{rec.articleUnit}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono text-xs text-muted-foreground">
+                            {new Date(rec.suggestedOrderDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <p className="font-mono text-xs">
+                              {new Date(rec.requiredDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                            {rec.status === 'NEW' && (
+                              <p className={`text-[10px] font-medium mt-0.5 ${urgent ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                {daysLeft < 0 ? `Dépassé de ${-daysLeft}j` : daysLeft === 0 ? "Aujourd'hui" : `${daysLeft}j`}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${MRP_REC_STATUS_COLORS[rec.status]}`}>
+                              {MRP_REC_STATUS_LABELS[rec.status]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {rec.status === 'NEW' ? (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleConvert(rec)}
+                                  disabled={isActing}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {isActing ? <Loader2 className="size-3 animate-spin" /> : <CheckCircle2 className="size-3 shrink-0" />}
+                                  Valider
+                                </button>
+                                <button
+                                  onClick={() => handleIgnore(rec)}
+                                  disabled={isActing}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {isActing ? <Loader2 className="size-3 animate-spin" /> : <XCircle className="size-3 shrink-0" />}
+                                  Ignorer
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground text-right block">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="px-5 py-3 border-t bg-muted/10 flex items-start gap-2">
+              <Calculator className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium">Valider</span> crée une DA (BUY) ou un OF (PRODUCE) et verrouille la recommandation ·{' '}
+                <span className="font-medium">Ignorer</span> rejette sans créer de document · Les décisions sont immuables (audit trail).
               </p>
             </div>
           </div>

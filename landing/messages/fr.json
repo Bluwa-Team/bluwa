@@ -92,14 +92,14 @@
   "pricing": {
     "eyebrow": "Tarifs",
     "title": "Simple. Prévisible. À votre échelle.",
-    "subtitle": "1er mois d’abonnement offert. Frais d’installation uniques à la signature.",
-    "billing": "Sans engagement · Engagement annuel = 2 mois offerts",
+    "subtitle": "Tarif par site. Ajoutez des sites selon votre croissance.",
+    "billing": "1er mois offert · Sans engagement · Annuel = 2 mois offerts",
     "plans": [
       {
         "name": "Starter",
         "price": "dès 30 000",
-        "currency": "FCFA / mois",
-        "tagline": "TPE & PME débutantes · 1 à 3 utilisateurs",
+        "currency": "FCFA / site / mois",
+        "tagline": "1 à 3 utilisateurs",
         "features": [
           "1 site",
           "Stocks, production, achats",
@@ -111,10 +111,10 @@
       {
         "name": "Growth",
         "price": "150 000",
-        "currency": "FCFA / mois",
-        "tagline": "PME multi-sites · jusqu’à 15 utilisateurs",
+        "currency": "FCFA / site / mois",
+        "tagline": "Jusqu’à 15 utilisateurs",
         "features": [
-          "Jusqu’à 5 sites",
+          "1 site",
           "MRP complet + GED qualité",
           "Copilote IA dirigeants",
           "Support prioritaire WhatsApp"
@@ -125,10 +125,10 @@
       {
         "name": "Enterprise",
         "price": "350 000",
-        "currency": "FCFA / mois",
-        "tagline": "Grandes structures · utilisateurs illimités",
+        "currency": "FCFA / site / mois",
+        "tagline": "Utilisateurs illimités",
         "features": [
-          "Sites et utilisateurs illimités",
+          "1 site",
           "Accès prioritaire Phase 2 : ADV & Logistique WM",
           "SSO, audit, conformité",
           "Customer Success dédié"

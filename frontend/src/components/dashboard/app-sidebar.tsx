@@ -116,17 +116,16 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('sourcingSupply'),
       items: [
-        { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList, disabled: false },
-        { title: t('stocks'),            url: '/stocks',            icon: Warehouse,     disabled: false },
-        { title: t('mrp'),               url: '/mrp',               icon: Calculator,    disabled: false },
+        { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList,  disabled: false },
+        { title: t('reception'),         url: '/reception',         icon: ShoppingCart,   disabled: false },
+        { title: t('stocks'),            url: '/stocks',            icon: Warehouse,      disabled: false },
+        { title: t('inventaire'),        url: '/inventaire',        icon: ClipboardCheck, disabled: false },
+        { title: t('mrp'),               url: '/mrp',               icon: Calculator,     disabled: false },
       ],
     },
     {
       label: t('logistique'),
-      items: [
-        { title: t('reception'),  url: '/reception',  icon: ShoppingCart,  disabled: false },
-        { title: t('inventaire'), url: '/inventaire', icon: ClipboardCheck, disabled: false },
-      ],
+      items: [],
     },
     {
       label: t('production'),
@@ -134,7 +133,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('ordresFabrication'),  url: '/production',                       icon: Factory,     disabled: false },
         { title: t('mes'),                url: '/production/mes',                   icon: MonitorPlay, disabled: false },
         { title: 'Postes de charge',      url: '/production/postes-de-charge',      icon: Cog,         disabled: false },
-        { title: t('productionBatches'),  url: '/lots',                             icon: Package,     disabled: true  },
+        { title: t('productionBatches'),  url: '/lots',                             icon: Package,     disabled: false },
       ],
     },
     {
@@ -167,7 +166,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV_GROUPS.map((group) => (
+        {NAV_GROUPS.filter((g) => g.items.length > 0).map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

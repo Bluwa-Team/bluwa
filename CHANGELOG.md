@@ -327,6 +327,182 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-05-28] — Session 10
+
+### Migration 013 — Production Outputs (Fin de production & Entrée stock PF)
+
+#### `supabase/migrations/013_production_outputs.sql`
+- **Nouvelle table `production_outputs`** : déclarations de fin de fabrication (≡ SAP CO11N / MB31)
+  - Colonnes : `organization_id`, `factory_id`, `production_order_id` (FK RESTRICT), `article_id`, `output_number`, `status`, `quantity_produced`, `quantity_scrap`, `product_batch_number`, `expiry_date`, `declared_by` → **`auth.users(id)`** (fix vs original), `declared_at`, `confirmed_by`, `confirmed_at`, `posted_at`, `notes`, `created_at`, `updated_at`
+  - `status CHECK ('DRAFT', 'CONFIRMED', 'POSTED')` — cycle de vie complet
+  - **3 CHECK de cohérence** : qté > 0, CONFIRMED/POSTED requiert `confirmed_by + confirmed_at`, POSTED requiert `posted_at`, DLC > date déclaration
+  - `CONSTRAINT unique_output_number_per_tenant` + `unique_product_batch_per_tenant`
+  - RLS : UPDATE bloqué si POSTED (immuable) ; DELETE bloqué sauf DRAFT
+  - Trigger `updated_at` ; 9 index (org, factory, OF, article, date DESC, batch, DLC ASC FEFO, partial pending, déclarant)
+- **Corrections vs SQL fourni** : `users(id)` → `auth.users(id)` ; ajout `status` + cycle de vie ; `updated_at` + trigger ; RLS complète ; 9 index ; 3 CHECK de cohérence ; champs `confirmed_by/at`, `posted_at`, `notes`
+
+### Câblage App — Types, Actions & Page Lots de production
+
+#### `src/types/erp.ts` — section Production Outputs (migration 013)
+- `ProductionOutputStatus = 'DRAFT' | 'CONFIRMED' | 'POSTED'`
+- Interface `ProductionOutput` (tous les champs DB)
+- Interface `ProductionOutputRow` : enrichie avec `articleLabel`, `articleSku`, `articleUnit`, `orderNumber`, `tauxRebut` (% calculé)
+- `PRODUCTION_OUTPUT_STATUS_LABELS/COLORS`
+
+#### `lib/actions/production-outputs.ts` (nouveau)
+- `getProductionOutputs(filter?)` — toutes les déclarations avec JOIN `articles!article_id` + `production_orders!production_order_id`
+- `getProductionOrdersForDeclaration()` — OFs RELEASED/IN_PROGRESS avec infos article (dont `duree_vie` pour auto-calcul DLC)
+- `createProductionOutput(input)` — INSERT DRAFT + génération séquentielle `DP-YYYY-NNNN`
+- `confirmProductionOutput(id)` — DRAFT → CONFIRMED ; enregistre `confirmed_by` (user JWT) + `confirmed_at`
+- `postProductionOutput(id)` — CONFIRMED → POSTED ; enregistre `posted_at`
+- `deleteProductionOutput(id)` — DELETE DRAFT uniquement (RLS guard double-vérif)
+- Helper interne `resolveFactoryId()` — copié du pattern work-centers.ts
+
+#### `lots/_components/declare-output-modal.tsx` (nouveau)
+- **Section ①** : sélecteur OF (RELEASED/IN_PROGRESS) — auto-fill article + calcul DLC (`today + duree_vie`)
+- **Section ②** : Qté produite + Qté rebuts ; indicateur taux rebut temps réel (vert / amber / rouge si > 5%)
+- **Section ③** : N° Lot PF (suggestion `LOT-FIN-YYYYMMDD-01`, éditable) + DLC (éditable, min=today)
+- **Section ④** : Notes libres (observations fin de ligne)
+- Statut initial : DRAFT — info footer "à confirmer par le chef d'équipe"
+- Erreur non silencieuse si lot PF déjà existant (contrainte UNIQUE DB)
+
+#### `lots/page.tsx` (nouveau) — `/lots`
+- **4 cartes stat** : En stock (POSTED count + total unités) · À comptabiliser (CONFIRMED) · Brouillons (DRAFT) · Taux rebut moyen % (rouge si > 5%)
+- **Filtres pill** : Tous / Brouillon / Confirmé / Comptabilisé avec compteurs
+- **Tableau 10 colonnes** resizable (`useResizableColumns 'bluwa:cols:lots-production'`) : N° Déclaration · Article PF · N° OF · Lot PF · Qté produite · Rebuts (+ % taux) · DLC (urgence FEFO) · Date déclaration · Statut · Actions
+- **Actions par ligne** : DRAFT → Confirmer (amber) + Trash2 (supprimer) · CONFIRMED → Comptabiliser (émeraude) · POSTED → immuable
+- Mise à jour **optimiste** : `setOutputs(prev => ...)` — pas de re-fetch
+- Modal Nouvelle déclaration intégré
+
+#### Sidebar
+- Lien "Lots de production" → `/lots` : `disabled: false` (était `true`)
+
+---
+
+## [2026-05-28] — Session 9
+
+### Migration 012 — Moteur MRP : Runs & Recommandations
+
+#### `supabase/migrations/012_mrp_engine.sql`
+- **Nouvelle table `mrp_runs`** : journal des passes de calcul MRP (≡ SAP MD01/MDRE)
+  - Colonnes : `organization_id`, `factory_id`, `executed_at` (UTC), `executed_by_system`, `status`
+  - `status CHECK ('RUNNING', 'SUCCESS', 'FAILED')` — `DEFAULT 'RUNNING'` pour les passes asynchrones
+  - RLS : SELECT + INSERT libres (par org) ; UPDATE restreint aux runs `RUNNING` uniquement — un run SUCCESS/FAILED est **immuable** (audit trail)
+  - 4 index : org, factory, composite `(factory_id, executed_at DESC)` pour récupérer la dernière passe, partial `WHERE status = 'RUNNING'`
+
+- **Nouvelle table `mrp_recommendations`** : recommandations & alertes MRP (≡ SAP MDTB)
+  - Colonnes : `organization_id`, `factory_id`, `mrp_run_id` (FK cascade), `article_id`, `action_type`, `suggested_quantity`, `suggested_order_date`, `required_date`, `status`, `linked_purchase_requisition_id`, `linked_production_order_id`, `created_at`, `updated_at`
+  - `action_type CHECK ('BUY', 'PRODUCE', 'EXPEDITE')` — BUY→DA, PRODUCE→OF, EXPEDITE→avancer BC existant
+  - `status CHECK ('NEW', 'CONVERTED', 'IGNORED')` — `DEFAULT 'NEW'` ; CONVERTED/IGNORED sont **immuables** (RLS UPDATE bloqué dès que status ≠ 'NEW')
+  - `CONSTRAINT mrp_rec_dates_coherence CHECK (required_date >= suggested_order_date)`
+  - Traçabilité bidirectionnelle : `linked_purchase_requisition_id` (BUY) + `linked_production_order_id` (PRODUCE) — `ON DELETE SET NULL`
+  - Trigger `updated_at` (passage NEW → CONVERTED/IGNORED)
+  - 9 index : org, factory, run, article, partial `WHERE status='NEW'`, composite dashboard `(factory_id, status, required_date ASC)`, action_type, preq, prod_order
+
+### Câblage App — MRP Types, Actions & Tab ④
+
+#### `src/types/erp.ts` — section MRP (migration 012)
+- `MrpRunStatus = 'RUNNING' | 'SUCCESS' | 'FAILED'`
+- Interface `MrpRun` : id, organizationId, factoryId, executedAt, executedBySystem, status
+- `MrpActionType = 'BUY' | 'PRODUCE' | 'EXPEDITE'`
+- `MrpRecommendationStatus = 'NEW' | 'CONVERTED' | 'IGNORED'`
+- Interface `MrpRecommendation` (tous les champs DB) + `MrpRecommendationRow` (étendue avec `articleLabel`, `articleSku`, `articleUnit`)
+- Constantes label/couleur : `MRP_ACTION_LABELS/COLORS`, `MRP_REC_STATUS_LABELS/COLORS`
+
+#### `lib/actions/mrp.ts` (nouveau)
+- `getLatestMrpRun()` — dernière passe SUCCESS (`ORDER BY executed_at DESC LIMIT 1`)
+- `getMrpRecommendations(filter)` — toutes les recs avec JOIN `articles!article_id(designation, code, unite_stock)` ; filtré par statut ou ALL
+- `getRecommendationsByRun(runId)` — recs d'une passe spécifique
+- `convertRecommendation(id, opts?)` — `UPDATE status='CONVERTED' WHERE status='NEW'` + FK optionnelles `linked_purchase_requisition_id` / `linked_production_order_id`
+- `ignoreRecommendation(id)` — `UPDATE status='IGNORED' WHERE status='NEW'`
+- `createMrpRun(factoryId)` — INSERT `status='RUNNING'`, `executed_by_system=false` pour passes manuelles
+
+#### `mrp/page.tsx` — Tab ④ Recommandations (données réelles)
+- Nouveau tab `{ key: 'recommandations', label: '④ Recommandations' }` avec badge compteur orange si recs NEW > 0
+- États : `recFilter`, `recs`, `latestRun`, `recLoading`, `actingId`
+- `loadRecs()` : `Promise.all([getMrpRecommendations(filter), getLatestMrpRun()])` — chargement parallèle
+- `useEffect` déclenché au changement de tab ou de filtre
+- **UI** : barre info (dernière passe + date + type) + bouton Actualiser · 3 cartes stat (NEW/CONVERTED/IGNORED) · filtres boutons pill · tableau 7 colonnes (article, action badge, qté, date commande, date besoin + countdown j, statut, actions)
+- Boutons **Valider** / **Ignorer** par ligne — disabled si `actingId === rec.id` (anti-double-clic) ; spinner Loader2 pendant l'action
+- Urgence visuelle : fond rouge atténué + countdown "Xj" rouge si date besoin ≤ 7 jours et status NEW
+- Mise à jour **optimiste** : `setRecs(prev => prev.map(r => r.id === rec.id ? updated : r))` — pas de re-fetch complet
+- Note de bas de tableau : "Valider crée une DA (BUY) ou un OF (PRODUCE) · les décisions sont immuables (audit trail)"
+
+---
+
+## [2026-05-27] — Session 8
+
+### BOM & Gamme — Câblage Supabase complet
+
+#### `lib/actions/bom.ts` (nouveau)
+- `getBomByArticleId(articleId)` — lecture BOM active avec JOIN `articles!component_id(code)` pour résoudre les codes composants
+- `upsertBom(articleId, header, ingredients, existingBomId?)` — insert ou update avec désactivation de la BOM précédente (contrainte `EXCLUDE` d'unicité) et remplacement atomique des lignes (delete + re-insert)
+- `getGammeByArticleId(articleId)` — lecture gamme active avec JOIN `work_centers(name, code, rate_per_hour)` → dénormalise les infos poste dans chaque étape
+- `upsertGamme(articleId, header, etapes, existingGammeId?)` — même pattern : désactivation + insert ; persiste `work_center_id` sur chaque `routing_step`
+- Mappers `toBomHeader`, `toBomIngredient`, `toRoutingHeader`, `toRoutingStep` avec cast `as unknown as Record<string, unknown>` pour les retours Supabase jointurés
+- Page article `[id]` : `useEffect` charge BOM et gamme depuis Supabase au montage ; fin des mocks
+
+#### `GammeEtape` enrichie (`articles/_components/gamme.ts`)
+- Nouveaux champs dénormalisés : `workCenterId`, `workCenterName`, `workCenterCode`, `workCenterRatePerHour`
+- Suppression du tableau `MOCK_WORK_CENTERS` (devenu dead code)
+
+### Postes de charge (Work Centers)
+
+#### `lib/actions/work-centers.ts` (nouveau)
+- `getWorkCenters()` — postes actifs uniquement (pour dropdowns)
+- `getAllWorkCenters()` — actifs + inactifs (page de gestion)
+- `createWorkCenter(input)` — insert avec résolution `factory_id` via helper `resolveFactoryId()` (tente `profiles.factory_id`, repli sur premier factory de l'org)
+- `updateWorkCenter(id, input)` — patch partiel incluant `isActive` pour le toggle
+
+#### Interface `WorkCenter` (`src/types/erp.ts`)
+- Source de vérité unique : `id`, `name`, `code`, `ratePerHour`, `currency`, `dailyCapacityHours`, `efficiencyPercentage`, `isActive`, `createdAt`
+
+#### Page `/production/postes-de-charge`
+- 3 cartes résumé : postes actifs · capacité effective totale (h/j) · TRS moyen
+- Tableau : code badge monospace, nom, taux (XOF/h), capacité (h/j), barre TRS colorée (vert ≥90% / orange ≥70% / rouge), capacité effective + coût journalier estimé
+- Actions par ligne : Pencil (modifier) + Power (activer/désactiver) avec état `togglingId`
+- Sidebar : entrée "Postes de charge" sous Production (icône `Cog`)
+
+#### `WorkCenterModal` (`_components/work-center-modal.tsx`)
+- Champs : Nom*, Code court (uppercase, optionnel), Taux horaire (XOF/h), Capacité journalière, Efficacité TRS %
+- Récapitulatif temps réel : capacité effective = h/j × TRS%, coût journalier = capEff × taux, coût horaire facturé
+- Validation : nom requis, taux ≥ 0, capacité > 0, TRS entre 1 et 100
+
+#### Gamme — intégration postes de charge dans l'UI
+- `GammeEditModal` : dropdown `<select>` des postes (depuis DB) remplace le champ texte `equipement`
+- Helper `setWorkCenter()` : met à jour les 4 champs dénormalisés (`workCenterId`, `workCenterName`, `workCenterCode`, `workCenterRatePerHour`) en une seule opération
+- Footer modal : coût gamme total en temps réel `Σ (duree + setupTimeMinutes) / 60 × ratePerHour`
+- Lien vers `/production/postes-de-charge` si aucun poste n'existe encore
+- Page article `[id]` — onglet Gamme : colonnes "Poste de charge" (badge `[CODE] Nom`), "Rég. (min)" (setup time) et "Coût ≈" par étape ; ligne de totaux (durée + coût gamme)
+
+### Analyse de marge — Données réelles Supabase
+
+#### `lib/actions/marge.ts` (nouveau)
+- `getMarginAnalysis()` : calcule le coût standard pour tous les articles `PF` — **5 requêtes** optimisées (pas de N+1) :
+  1. Articles PF (`id`, `code`, `designation`, `pmp`, `prix_vente`)
+  2. BOM headers actifs pour ces articles
+  3. BOM items + `articles!component_id(code, designation, pmp)` pour les PMPs composants
+  4. Routing headers actifs
+  5. Routing steps + `work_centers(name, code, rate_per_hour)` pour les taux
+- Formule coût standard : ① `Σ qté/u × articles.pmp` + ② `Σ (durée_lot_min / 60 / batchSize) × rate_per_hour` + ③ FG 8% × directs + ④ forfait énergie 50 XOF
+- Retourne `MarginLine[]` avec décomposition complète + détails BOM + gamme pour drill-down
+- Types exportés : `MarginLine`, `MarginLigneBOM`, `MarginLigneGamme`
+
+#### `analyse-marge/page.tsx` — refactorisé
+- **Supprimé** : `TAUX_PAR_EQUIPEMENT`, `PMP`, `PRIX_VENTE_HT`, `PF_SKUS`, `TAUX_DEFAUT`, `calcCoutStandard()`, imports mock `getBOMByArticleCode` / `getGammeByArticleCode`
+- **Ajouté** : `useState<MarginLine[]>` + `useEffect(() => getMarginAnalysis().then(setStandards))`
+- Spinner de chargement + état vide si aucun article PF en base
+- Mock OFs (onglets 2 & 3) : filtrés sur les SKUs présents en DB ; bandeau "données de démonstration" — seront remplacés par de vrais OFs dès l'activation du module
+- Drill-down gamme : affiche poste `[CODE] Nom`, durée en min, taux en **XOF/h** (cohérent avec la DB)
+- Alerte visuelle si `pmp = 0` sur un composant BOM
+
+### Fix — Turbopack / Next.js 16
+- **Règle établie** : toutes les interfaces TypeScript importées depuis des fichiers `'use server'` utilisent `import type` (ex. `import type { WorkCenter } from '@/types/erp'`)
+- Ne jamais `export type` depuis un fichier `'use server'` vers un composant client — les types doivent être importés directement depuis `@/types/erp` ou le fichier de types
+- Cause : Turbopack cherche une valeur runtime pour `import { X }` ; une `interface` TypeScript étant effacée à la compilation, la résolution échoue avec "Export X doesn't exist in target module"
+
+---
+
 ## À venir
 
 ### Migrations à appliquer en Supabase (priorité)
@@ -337,12 +513,14 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 - [ ] Dashboard — brancher les KPI cards sur les vraies données (mock d'abord)
 - [ ] Articles — revoir la codification TYPE-XXXX (`MP-0001`, `PSF-0042`…)
 - [ ] Stocks — connecter `MOCK_LOTS` sur les vraies tables lots (FEFO/FIFO)
-- [ ] MRP — stub à implémenter
-- [ ] Analyse de marge — stub à implémenter
+- [x] MRP — câbler la page sur `mrp_runs` + `mrp_recommendations` — Tab ④ Recommandations (Session 9)
+- [x] Analyse de marge — câblée sur Supabase (Session 8)
 - [ ] Paramètres — page non implémentée
 - [x] Production OF — modal "Nouvel OF" (formulaire complet + câblage page)
 - [x] Contrats fournisseurs — modal + server action + câblage Supabase (Session 7)
 - [x] Grille tarifaire clients — modal + server actions upsert/delete + câblage Supabase (Session 7)
+- [x] BOM & Gamme — server actions + câblage Supabase (Session 8)
+- [x] Postes de charge — page CRUD + modal + server actions (Session 8)
 
 ### Dette technique identifiée
 - [ ] Colonne `Article` (onglet Stratégie, page Approvisionnement) : même bug `defaultWidth: null` que corrigé sur Commandes

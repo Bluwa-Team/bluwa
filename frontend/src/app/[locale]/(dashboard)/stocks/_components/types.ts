@@ -171,46 +171,16 @@ export interface StockMovement {
   createdAt:          string
 }
 
-/** Statuts d'un document d'inventaire — aligné sur inventory_documents.status CHECK */
-export type InventoryStatus = 'PROPOSED' | 'COUNTED' | 'POSTED'
-
-export const INVENTORY_STATUS_LABELS: Record<InventoryStatus, string> = {
-  PROPOSED: 'Proposé',
-  COUNTED:  'Compté',
-  POSTED:   'Validé',
-}
-
-export const INVENTORY_STATUS_COLORS: Record<InventoryStatus, string> = {
-  PROPOSED: 'bg-slate-100 text-slate-600 border border-slate-200',
-  COUNTED:  'bg-amber-100 text-amber-700 border border-amber-200',
-  POSTED:   'bg-emerald-100 text-emerald-700 border border-emerald-200',
-}
-
-/** En-tête document d'inventaire — aligné sur inventory_documents (migration 007) */
-export interface InventoryDocument {
-  id:             string
-  organizationId: string
-  factoryId:      string
-  documentNumber: string       // ex. 'INV-2026-0001'
-  status:         InventoryStatus
-  createdBy:      string | null
-  createdAt:      string
-  postedAt:       string | null
-}
-
-/** Ligne de comptage — alignée sur inventory_document_items (migration 007) */
-export interface InventoryDocumentItem {
-  id:                   string
-  inventoryDocumentId:  string
-  articleId:            string
-  articleCode:          string        // enrichi en frontend
-  articleDesignation:   string        // enrichi en frontend
-  unite:                string        // enrichi en frontend
-  batchNumber:          string | null
-  bookQuantity:         number        // stock théorique
-  countedQuantity:      number | null // NULL = non encore compté
-  differenceQuantity:   number | null // calculé : counted − book
-}
+// Source de vérité déplacée dans @/types/erp — re-exports pour rétrocompatibilité
+export type {
+  InventoryStatus,
+  InventoryDocument,
+  InventoryDocumentItem,
+} from '@/types/erp'
+export {
+  INVENTORY_STATUS_LABELS,
+  INVENTORY_STATUS_COLORS,
+} from '@/types/erp'
 
 // ── Mock data — Inventaires ───────────────────────────────────────────────────
 
