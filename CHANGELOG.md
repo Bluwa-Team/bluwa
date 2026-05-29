@@ -503,6 +503,114 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-05-28] — Session 11 — Câblage Supabase (Appro / Réception / Stocks)
+
+### Migration 014 — `014_add_receipt_number.sql`
+- **Nouvelle colonne** `receipt_number TEXT` sur `goods_receipts` — numérotation interne `REC-YYYY-NNNN` indépendante du bon fournisseur
+
+### `lib/actions/approvisionnement.ts` — refactorisé
+- `getPurchaseOrders()` — retourne `BCFlat[]` avec JOIN vendor + lines ; tri `created_at DESC`
+- `getPurchaseRequisitions()` — DA issues du moteur MRP
+- `getArticleStrategies()` — paramètres MRP par article
+- `createPurchaseOrder(input)` — upsert fournisseur (via `vendors` ou texte libre) ; numérotation séquentielle `BC-YYYY-NNN` / `BA-YYYY-NNN` ; insert header + lignes en transaction
+
+### `lib/actions/reception.ts` (nouveau)
+- `getGoodsReceipts()` — toutes les réceptions avec JOIN `vendors` + `goods_receipt_items × articles`
+- `createGoodsReceipt(input)` — numérotation `REC-YYYY-NNNN` ; rapprochement automatique lignes BC par `article_label` ; calcul DLC = `today + shelf_life_days` depuis le BC correspondant
+
+### `lib/actions/stocks.ts` — refactorisé
+- `getLotStocks()` — construit depuis `goods_receipt_items × articles` (plus de mock)
+- `getMouvementsByArticle()` + `getLotsByArticle()` — restaurés sur `stock_movements` + `goods_receipt_items` réels
+
+### Pages mises à jour
+- `approvisionnement/page.tsx` + `reception/page.tsx` + `stocks/page.tsx` : `useEffect` → server actions ; états `loading` ; handlers `handleSave` câblés
+
+---
+
+## [2026-05-29] — Session 12 — Phase 2 : Ventes & Logistique + Dashboard Direction + Généalogie
+
+### Phase 2 — Modules Ventes, ADV, Logistique (structure, désactivés en nav)
+
+#### `ventes/page.tsx` (nouveau)
+- 4 cartes stat : CA confirmé · Commandes en cours · En attente · Taux OTIF
+- Tableau resizable `useResizableColumns('bluwa:cols:ventes')` : N° commande · Client · Articles · Qté · Prix unitaire · Montant HT · Livraison prévue · Statut · Action
+- `flattenCommandes()` — vue plate Header × Item pour l'affichage tableau
+- Avancement statut contextuel via `STATUT_COMMANDE_NEXT` + bouton `ChevronRight` au survol
+- Server actions prévues : `getSalesOrders`, `createSalesOrder`, `updateSalesOrderStatus`
+
+#### `adv/page.tsx` (nouveau)
+- Deux onglets : **Factures** + **Commandes à facturer**
+- `createInvoiceFromOrder` sur bouton "Créer facture" · `updateInvoiceStatus` pour avancement
+- Server actions prévues : `getCustomerInvoices`, `getSalesOrders`
+
+#### `logistique/page.tsx` (nouveau)
+- `CreateBLModal` inline : sélecteur commande client, date livraison, transporteur, référence suivi, adresse
+- Server actions prévues : `createDeliveryNote`, `updateDeliveryStatus`
+
+#### Sidebar
+- Nouveau groupe **Ventes & Logistique** (`t('ventes')`) avec 3 items `disabled: true` :
+  - Commandes clients (`/ventes`, `ShoppingBag`)
+  - Facturation ADV (`/adv`, `Receipt`)
+  - Bons de livraison (`/logistique`, `PackageCheck`)
+- i18n `fr.json` : `ventes`, `commandesClients`, `adv`, `bonsLivraison`
+- i18n `en.json` : idem en anglais
+
+---
+
+### Réception — Impression étiquettes traçabilité par contenant
+
+#### `reception/_components/label-print-modal.tsx` (nouveau)
+- Props : `{ open, row: ReceptionFlat | null, onClose }`
+- Types de contenant : Carton · Palette · Sac · Caisse · Bidon · Vrac
+- Qté/contenant : auto-calculée `Math.ceil(total ÷ nbContenants)`, éditable
+- `buildPrintHtml()` : génère N étiquettes 100 × 72 mm en HTML avec barcodes CODE128 (JsBarcode CDN)
+  - Contenu étiquette : code lot (bold), désignation article, date réception, DLC (rouge), qté/contenant (rouge), footer N° réception + fournisseur + total
+  - `window.open()` → `window.print()` déclenché après 400 ms (evite flash)
+- Page `reception/page.tsx` : bouton Printer existant → `setPrintRow(r)` → modal
+
+---
+
+### Dashboard — Refonte direction (KPIs managériaux)
+
+#### KPIs remplacés
+- Abandonne : "Lots actifs", "Stock total", "Rendement", "Non-conformités" (trop opérationnel)
+- Remplace par 6 métriques gérant : **CA du mois** · **Marge brute** · **EBITDA** · **TRS** · **OTIF** · **Valeur stock**
+- Composant `KpiDir` : accent coloré `h-1` en haut, label small-caps, valeur large, sous-titre
+
+#### Graphiques Recharts ajoutés
+- `BarChart` : CA vs Coût de production (6 derniers mois) — `ResponsiveContainer`
+- `PieChart` donut (`innerRadius={55}`) : mix ventes par produit — 4 segments colorés + légende
+- Dépendance `recharts: ^3.8.1` ajoutée à `package.json`
+
+#### Blocs analytiques
+- **Analyse de marge** (insight compact 3 métriques) : Écart moyen · Produit déviant · Tendance + lien "Détail →"
+- **Alertes prioritaires** (4 niveaux code couleur rouge/jaune/bleu/vert) : emoji + titre + détail + lien `Link`
+- **P&L cascade** : `grid-cols-5` horizontal — CA → Coût production → **Marge brute** (émeraude) → Charges fixes → **EBITDA** (bleu)
+
+#### Suppression sections opérationnelles
+- Retirés : Production active · DA · Contrôle qualité · Non-conformités · Alertes DLC · Commandes
+- Règle appliquée : *"le tableau de bord alerte et redirige, la page explique"*
+- Nettoyage : tous les imports mock operationnels, `useMemo`, `Section`, `ProgressBar`, `formatDlcStatus` supprimés (−436 lignes)
+
+---
+
+### Généalogie — Sections CCP et Destinations AVAL
+
+#### `qualite/_components/types.ts`
+- Nouveau type `ControleCCP` : `{ nom, valeur, spec, conforme: boolean }`
+- Nouveau type `DestinationAval` : `{ destination, dateLivraison: string | null, quantite, unite }`
+- `GenealogiePF` étendu : `ccps?: ControleCCP[]` · `destinations?: DestinationAval[]`
+- Mock data LOT-PF-0041 : Pasteurisation ✓ · pH 4.7 ⚠ hors spec · Brix ✓ ; 3 destinations (Super Marché Hayat, Boulangerie Étoile, Stock dispo)
+- Mock data LOT-PF-0042 : 3 CCP tous conformes ; 3 destinations (Abidjan, Hôtel Teranga, Stock dispo)
+
+#### `qualite/genealogie/page.tsx`
+- `PFResult` : section **Contrôles CCP** — 3 cartes côte à côte, accent gauche vert/rouge, badge "✓ Conforme" / "⚠ Hors spec"
+- `PFResult` : section **AVAL — Destinations & Distribution** — table (destination · date livraison · quantité)
+- Export TXT enrichi avec les deux nouvelles sections
+- Imports ajoutés : `FlaskConical`, `TruckIcon`, `ControleCCP`, `DestinationAval`
+
+---
+
 ## À venir
 
 ### Migrations à appliquer en Supabase (priorité)
@@ -510,7 +618,8 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 - [ ] **Migration 009** — `009_master_schema_v1.sql` (schema maître complet — à planifier avec migration des données existantes)
 
 ### Phase 1 — Écrans restants à construire ou compléter
-- [ ] Dashboard — brancher les KPI cards sur les vraies données (mock d'abord)
+- [x] Dashboard — KPIs direction + graphiques + alertes prioritaires + P&L (Session 12)
+- [ ] Dashboard — brancher les KPI cards sur les vraies données Supabase
 - [ ] Articles — revoir la codification TYPE-XXXX (`MP-0001`, `PSF-0042`…)
 - [ ] Stocks — connecter `MOCK_LOTS` sur les vraies tables lots (FEFO/FIFO)
 - [x] MRP — câbler la page sur `mrp_runs` + `mrp_recommendations` — Tab ④ Recommandations (Session 9)
@@ -521,6 +630,13 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 - [x] Grille tarifaire clients — modal + server actions upsert/delete + câblage Supabase (Session 7)
 - [x] BOM & Gamme — server actions + câblage Supabase (Session 8)
 - [x] Postes de charge — page CRUD + modal + server actions (Session 8)
+- [x] Généalogie — sections CCP + destinations AVAL (Session 12)
+
+### Phase 2 — Ventes & Logistique (modules structurés, en attente activation)
+- [ ] Ventes — câbler `getSalesOrders` + `createSalesOrder` sur Supabase
+- [ ] ADV — câbler `getCustomerInvoices` + `createInvoiceFromOrder` sur Supabase
+- [ ] Logistique — câbler `createDeliveryNote` + `updateDeliveryStatus` sur Supabase
+- [ ] Activer les 3 modules dans la sidebar (`disabled: false`) quand les tables sont en base
 
 ### Dette technique identifiée
 - [ ] Colonne `Article` (onglet Stratégie, page Approvisionnement) : même bug `defaultWidth: null` que corrigé sur Commandes
@@ -533,3 +649,4 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 - [ ] `BCHeader.fournisseur` est un string texte — migrer vers `fournisseur_id UUID` une fois migration 009 appliquée
 - [ ] `getArticlesLite()` filtre `type IN ('PF','PSF')` — à adapter si la grille tarifaire doit couvrir d'autres types d'articles
 - [ ] Onglets "Commandes" et "Livraisons" des pages Fournisseur et Client restent vides (`EmptyTab`) — nécessitent `sales_orders` et `purchase_orders` en base
+- [ ] Dashboard KPIs : brancher sur vraies données Supabase (CA, marge, OTIF, valeur stock)
