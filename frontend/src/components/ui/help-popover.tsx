@@ -56,9 +56,11 @@ export function HelpPopover({ section }: { section: string }) {
               <div className="px-4 pb-4 pt-2 border-t space-y-1.5">
                 {entry.glossary.map((g, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
-                    <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0 leading-tight mt-0.5">
-                      {g.term}
-                    </span>
+                    {g.term && (
+                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0 leading-tight mt-0.5">
+                        {g.term}
+                      </span>
+                    )}
                     <span className="text-muted-foreground leading-relaxed">{g.def}</span>
                   </div>
                 ))}
