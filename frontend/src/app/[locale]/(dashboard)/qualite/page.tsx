@@ -15,11 +15,11 @@ import {
 } from '@/hooks/use-resizable-columns'
 import { DragDrop } from './_components/drag-drop'
 import {
-  LotControle, NonConformite,
-  MOCK_LOTS_CONTROLE, MOCK_NON_CONFORMITES,
-  STATUT_LOT_LABELS, STATUT_LOT_COLORS,
+  QualityInspectionLot, LaboratoryResults,
+  MOCK_QUALITY_INSPECTION_LOTS,
+  STATUT_INSPECTION_LABELS, STATUT_INSPECTION_COLORS,
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
-  StatutLot, FluxLot,
+  StatutInspectionLot, FluxLot,
 } from './_components/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -27,11 +27,16 @@ import {
 const ANALYSTES = ['Fatou Diallo', 'Moussa Koné', 'Aminata Sow', 'Ousmane Ba', 'Ibrahim Diop']
 
 const EMPTY_ANALYSE = {
-  pH: '', brix: '', temperature: '', analyste: ANALYSTES[0], commentaire: '',
+  humidity_pct: '',
+  ph: '',
+  brix_degree: '',
+  temperature_c: '',
+  analyste: ANALYSTES[0],
+  commentaire: '',
 }
 
 const LOT_COLUMNS: ResizableColumn[] = [
-  { id: 'codeLot',  defaultWidth: 155, minWidth: 120 },
+  { id: 'codeLot',  defaultWidth: 175, minWidth: 140 },
   { id: 'flux',     defaultWidth: 110, minWidth: 90  },
   { id: 'type',     defaultWidth: 72,  minWidth: 55  },
   { id: 'article',  defaultWidth: 200, minWidth: 150 },
@@ -41,6 +46,12 @@ const LOT_COLUMNS: ResizableColumn[] = [
   { id: 'statut',   defaultWidth: 130, minWidth: 110 },
   { id: 'action',   defaultWidth: 95,  minWidth: 75  },
 ]
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string) {
+  return iso.split('T')[0]
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -84,10 +95,9 @@ function Field({ label, required, children }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CentreLiberationPage() {
-  const [lots, setLots] = useState<LotControle[]>(MOCK_LOTS_CONTROLE)
-  const [ncCount, setNcCount] = useState(MOCK_NON_CONFORMITES.length)
+  const [lots, setLots] = useState<QualityInspectionLot[]>(MOCK_QUALITY_INSPECTION_LOTS)
   const [search, setSearch] = useState('')
-  const [statutFilter, setStatutFilter] = useState<StatutLot | 'Tous'>('Tous')
+  const [statutFilter, setStatutFilter] = useState<StatutInspectionLot | 'Tous'>('Tous')
   const [fluxFilter, setFluxFilter] = useState<FluxLot | 'Tous'>('Tous')
   const [modalLotId, setModalLotId] = useState<string | null>(null)
   const [analyse, setAnalyse] = useState(EMPTY_ANALYSE)
@@ -101,9 +111,9 @@ export default function CentreLiberationPage() {
   )
 
   const stats = useMemo(() => {
-    const enControle  = lots.filter(l => l.statut === 'EnControle').length
-    const liberes     = lots.filter(l => l.statut === 'Libere').length
-    const nonConformes = lots.filter(l => l.statut === 'NonConforme').length
+    const enControle   = lots.filter(l => l.status === 'En contrôle').length
+    const liberes      = lots.filter(l => l.status === 'Libéré').length
+    const nonConformes = lots.filter(l => l.status === 'Rejeté').length
     const decided = liberes + nonConformes
     return { enControle, liberes, nonConformes, taux: decided > 0 ? Math.round((liberes / decided) * 100) : 100 }
   }, [lots])
@@ -111,11 +121,11 @@ export default function CentreLiberationPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return lots.filter(l => {
-      if (statutFilter !== 'Tous' && l.statut !== statutFilter) return false
+      if (statutFilter !== 'Tous' && l.status !== statutFilter) return false
       if (fluxFilter !== 'Tous' && l.flux !== fluxFilter) return false
       if (q) return (
-        l.codeLot.toLowerCase().includes(q) ||
-        l.article.toLowerCase().includes(q) ||
+        l.batchNumber.toLowerCase().includes(q) ||
+        l.articleDesignation.toLowerCase().includes(q) ||
         l.origine.toLowerCase().includes(q)
       )
       return true
@@ -130,19 +140,43 @@ export default function CentreLiberationPage() {
     setCaFile(null)
   }
 
-  const isAnalyseValid = !!analyse.pH.trim() && !!analyse.analyste
+  const hasLabValue = !!(
+    analyse.humidity_pct.trim() ||
+    analyse.ph.trim() ||
+    analyse.brix_degree.trim() ||
+    analyse.temperature_c.trim()
+  )
+  const isAnalyseValid = hasLabValue && !!analyse.analyste
 
   async function handleDecision(decision: 'Libere' | 'NonConforme') {
     if (!modalLot) return
     setSavingDecision(decision)
     await new Promise(r => setTimeout(r, 700))
-    setLots(prev => prev.map(l => l.id === modalLot.id ? { ...l, statut: decision } : l))
-    if (decision === 'NonConforme') setNcCount(prev => prev + 1)
+
+    const newStatus: StatutInspectionLot = decision === 'Libere' ? 'Libéré' : 'Rejeté'
+    const labResults: LaboratoryResults = {}
+    if (analyse.humidity_pct)  labResults.humidity_pct  = parseFloat(analyse.humidity_pct)
+    if (analyse.ph)             labResults.ph            = parseFloat(analyse.ph)
+    if (analyse.brix_degree)    labResults.brix_degree   = parseFloat(analyse.brix_degree)
+    if (analyse.temperature_c)  labResults.temperature_c = parseFloat(analyse.temperature_c)
+    const hasLab = Object.keys(labResults).length > 0
+
+    setLots(prev => prev.map(l => l.id === modalLot.id ? {
+      ...l,
+      status:            newStatus,
+      laboratoryResults: hasLab ? labResults : null,
+      decisionBy:        analyse.analyste,
+      decisionComments:  analyse.commentaire || null,
+      decisionAt:        new Date().toISOString(),
+    } : l))
+
     setSavingDecision(null)
     setModalLotId(null)
   }
 
-  const STATUT_FILTER_OPTIONS: Array<StatutLot | 'Tous'> = ['Tous', 'EnControle', 'Libere', 'NonConforme']
+  const STATUT_FILTER_OPTIONS: Array<StatutInspectionLot | 'Tous'> = [
+    'Tous', 'En contrôle', 'Libéré', 'Rejeté',
+  ]
   const FLUX_FILTER_OPTIONS: Array<FluxLot | 'Tous'> = ['Tous', 'Reception', 'Production']
 
   return (
@@ -180,7 +214,7 @@ export default function CentreLiberationPage() {
           iconColor="text-emerald-600"
         />
         <StatCard
-          label="Non-conformes"
+          label="Rejetés"
           value={stats.nonConformes}
           icon={XCircle}
           bgClass="bg-red-50"
@@ -203,7 +237,7 @@ export default function CentreLiberationPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="Code lot, article, origine…"
+            placeholder="N° lot, article, origine…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
@@ -230,7 +264,7 @@ export default function CentreLiberationPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {s === 'Tous' ? 'Tous' : STATUT_LOT_LABELS[s]}
+              {s === 'Tous' ? 'Tous' : STATUT_INSPECTION_LABELS[s]}
             </button>
           ))}
         </div>
@@ -266,7 +300,7 @@ export default function CentreLiberationPage() {
           <thead>
             <tr className="bg-muted/40 border-b">
               <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Code lot
+                N° lot
                 <ColumnResizer columnId="codeLot" onStart={startResize} />
               </th>
               <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
@@ -313,7 +347,7 @@ export default function CentreLiberationPage() {
             ) : filtered.map(lot => (
               <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/20">
                 <td className="px-4 py-3 font-mono text-xs font-semibold truncate">
-                  {lot.codeLot}
+                  {lot.batchNumber}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -325,23 +359,23 @@ export default function CentreLiberationPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[lot.typeArticle]}`}>
-                    {lot.typeArticle}
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[lot.articleType]}`}>
+                    {lot.articleType}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm truncate">{lot.article}</td>
+                <td className="px-4 py-3 text-sm truncate">{lot.articleDesignation}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground truncate">{lot.origine}</td>
-                <td className="px-4 py-3 text-sm">{lot.dateEntree}</td>
+                <td className="px-4 py-3 text-sm">{formatDate(lot.createdAt)}</td>
                 <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">
                   {lot.quantite} {lot.unite}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_LOT_COLORS[lot.statut]}`}>
-                    {STATUT_LOT_LABELS[lot.statut]}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_INSPECTION_COLORS[lot.status]}`}>
+                    {STATUT_INSPECTION_LABELS[lot.status]}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {lot.statut === 'EnControle' && (
+                  {lot.status === 'En contrôle' && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -367,7 +401,7 @@ export default function CentreLiberationPage() {
             data-slot="dialog-content"
             className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
           >
-            <div className="w-[min(560px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
+            <div className="w-[min(580px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
               {/* Header */}
               <div className="flex items-start justify-between p-5 border-b shrink-0">
@@ -379,7 +413,7 @@ export default function CentreLiberationPage() {
                     <p className="font-semibold text-base">Analyse de lot</p>
                     {modalLot && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {modalLot.codeLot} · {modalLot.article}
+                        {modalLot.batchNumber} · {modalLot.articleDesignation}
                       </p>
                     )}
                   </div>
@@ -397,42 +431,60 @@ export default function CentreLiberationPage() {
               {/* Body */}
               <div className="p-5 space-y-4 overflow-y-auto flex-1">
 
-                {/* pH · Brix · Température */}
-                <div className="grid grid-cols-3 gap-x-4">
-                  <Field label="pH" required>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="14"
-                      value={analyse.pH}
-                      onChange={e => setAnalyse(p => ({ ...p, pH: e.target.value }))}
-                      placeholder="ex : 3.5"
-                    />
-                  </Field>
-                  <Field label="Brix (°Bx)">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={analyse.brix}
-                      onChange={e => setAnalyse(p => ({ ...p, brix: e.target.value }))}
-                      placeholder="ex : 14.2"
-                    />
-                  </Field>
-                  <Field label="Température (°C)">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={analyse.temperature}
-                      onChange={e => setAnalyse(p => ({ ...p, temperature: e.target.value }))}
-                      placeholder="ex : 4.0"
-                    />
-                  </Field>
+                {/* Résultats laboratoire */}
+                <div>
+                  <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-3">
+                    Résultats laboratoire
+                    <span className="text-destructive ml-0.5">*</span>
+                    <span className="normal-case font-normal ml-1">(au moins un champ requis)</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <Field label="Humidité (%)">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={analyse.humidity_pct}
+                        onChange={e => setAnalyse(p => ({ ...p, humidity_pct: e.target.value }))}
+                        placeholder="ex : 12.5"
+                      />
+                    </Field>
+                    <Field label="pH">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="14"
+                        value={analyse.ph}
+                        onChange={e => setAnalyse(p => ({ ...p, ph: e.target.value }))}
+                        placeholder="ex : 3.7"
+                      />
+                    </Field>
+                    <Field label="Brix (°Bx)">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={analyse.brix_degree}
+                        onChange={e => setAnalyse(p => ({ ...p, brix_degree: e.target.value }))}
+                        placeholder="ex : 12.2"
+                      />
+                    </Field>
+                    <Field label="Température (°C)">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={analyse.temperature_c}
+                        onChange={e => setAnalyse(p => ({ ...p, temperature_c: e.target.value }))}
+                        placeholder="ex : 4.0"
+                      />
+                    </Field>
+                  </div>
                 </div>
 
                 {/* Analyste */}
-                <Field label="Analyste" required>
+                <Field label="Analyste responsable" required>
                   <select
                     value={analyse.analyste}
                     onChange={e => setAnalyse(p => ({ ...p, analyste: e.target.value }))}
@@ -469,7 +521,7 @@ export default function CentreLiberationPage() {
                   <Shield className="size-4 shrink-0 mt-0.5" />
                   <span>
                     La <strong className="text-foreground">libération</strong> déverrouille le lot pour le MRP et les ordres de fabrication.
-                    La <strong className="text-foreground">non-conformité</strong> crée automatiquement une fiche NC dans le registre.
+                    Le <strong className="text-foreground">rejet</strong> crée automatiquement une fiche NC dans le registre.
                   </span>
                 </div>
               </div>
@@ -492,7 +544,7 @@ export default function CentreLiberationPage() {
                 >
                   {savingDecision === 'NonConforme'
                     ? <><Loader2 className="size-4 animate-spin" />Traitement…</>
-                    : <><XCircle className="size-4" />Non-conforme</>
+                    : <><XCircle className="size-4" />Rejeter</>
                   }
                 </Button>
                 <Button

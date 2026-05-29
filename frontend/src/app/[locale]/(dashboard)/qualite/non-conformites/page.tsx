@@ -2,65 +2,75 @@
 
 import { useState, useMemo } from 'react'
 import {
-  AlertTriangle, Trash2, Wrench, ShieldAlert,
-  FileDown, X, Check, Loader2, Search,
+  AlertTriangle, Trash2, TruckIcon, ShieldAlert,
+  FileDown, X, Check, Loader2, Search, Banknote,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  NonConformite, MOCK_NON_CONFORMITES,
-  STATUT_NC_LABELS, STATUT_NC_COLORS,
-  ACTION_NC_LABELS, ACTION_NC_COLORS,
+  QualityNonConformite, MOCK_QUALITY_NON_CONFORMITES,
+  DEFECT_TYPE_LABELS,
+  DISPOSITION_ACTION_LABELS, DISPOSITION_ACTION_COLORS,
+  STATUT_QC_NC_LABELS, STATUT_QC_NC_COLORS,
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
-  StatutNC, ActionNC,
+  StatutQualiteNC, DispositionAction,
 } from '../_components/types'
 
 // ── PDF Generation ─────────────────────────────────────────────────────────────
 
-function downloadRapportNC(nc: NonConformite) {
+function downloadRapportNC(nc: QualityNonConformite) {
   const lines = [
     '══════════════════════════════════════════════════════',
-    '  RAPPORT D\'INCIDENT NON-CONFORMITÉ — BLUWA ERP',
+    '  RAPPORT D\'INCIDENT NON-CONFORMITE — BLUWA ERP',
     `  Généré le : ${new Date().toLocaleDateString('fr-FR')}`,
     '══════════════════════════════════════════════════════',
     '',
-    `N° NC              : ${nc.numero}`,
-    `Date de détection  : ${nc.date}`,
-    `Lot concerné       : ${nc.codeLot}`,
-    `Article            : ${nc.article} (${nc.typeArticle})`,
-    `Flux               : ${nc.flux === 'Reception' ? 'Réception fournisseur' : 'Production interne'}`,
-    `Origine            : ${nc.origine}`,
-    `Responsable QA     : ${nc.responsable}`,
+    `N° NC                : ${nc.ncNumber}`,
+    `Date de détection    : ${nc.createdAt.split('T')[0]}`,
+    `Lot concerné         : ${nc.batchNumber}`,
+    `Article              : ${nc.articleDesignation} (${nc.articleType})`,
+    `Flux                 : ${nc.flux === 'Reception' ? 'Réception fournisseur' : 'Production interne'}`,
+    `Origine              : ${nc.origine}`,
+    `Responsable QA       : ${nc.reportedBy}`,
     '',
-    'CAUSE DE NON-CONFORMITÉ :',
-    `  ${nc.cause}`,
+    'TYPE DE DEFAUT :',
+    `  ${DEFECT_TYPE_LABELS[nc.defectType]}`,
     '',
-    `Statut actuel      : ${STATUT_NC_LABELS[nc.statut]}`,
-    nc.actionCorrective
-      ? `Action corrective  : ${ACTION_NC_LABELS[nc.actionCorrective]} (${nc.dateAction})`
-      : 'Action corrective  : En attente de décision',
+    'DESCRIPTION :',
+    `  ${nc.description}`,
+    '',
+    `Statut actuel        : ${STATUT_QC_NC_LABELS[nc.status]}`,
+    `Action de disposition: ${DISPOSITION_ACTION_LABELS[nc.dispositionAction]}`,
+    nc.financialClaimXof
+      ? `Montant réclamé      : ${nc.financialClaimXof.toLocaleString('fr-FR')} FCFA`
+      : '',
+    nc.resolutionNotes
+      ? `\nNotes de résolution  : ${nc.resolutionNotes}`
+      : '',
     '',
     '──────────────────────────────────────────────────────',
     '  Document généré automatiquement par Bluwa ERP',
     '  Confidentialité : Usage interne uniquement',
-  ]
+  ].filter(l => l !== undefined)
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `rapport-nc-${nc.numero}.txt`
+  a.download = `rapport-nc-${nc.ncNumber}.txt`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-// ── Action options ─────────────────────────────────────────────────────────────
+// ── Disposition options (final decisions only — excludes UNDER_REVIEW) ─────────
 
-const ACTION_OPTIONS: Array<{
-  value: ActionNC
+const DISPOSITION_OPTIONS: Array<{
+  value: DispositionAction
   icon: React.ElementType
   label: string
   description: string
@@ -68,26 +78,26 @@ const ACTION_OPTIONS: Array<{
   iconClass: string
 }> = [
   {
-    value: 'Rebut',
+    value: 'DESTROYED',
     icon: Trash2,
-    label: 'Rebut',
+    label: 'Rebut / Destruction',
     description: 'Destruction définitive du lot non-conforme. Le stock est annulé.',
     colorClass: 'border-red-200 bg-red-50 hover:border-red-400',
     iconClass: 'text-red-600 bg-red-100',
   },
   {
-    value: 'Retravail',
-    icon: Wrench,
-    label: 'Retravail',
-    description: 'Reclassement ou retraitement du lot. Le lot est retravaillé sous contrôle.',
+    value: 'RETURN_TO_SUPPLIER',
+    icon: TruckIcon,
+    label: 'Retour fournisseur',
+    description: 'Renvoi du lot au fournisseur avec réclamation. Applicable pour les réceptions.',
     colorClass: 'border-amber-200 bg-amber-50 hover:border-amber-400',
     iconClass: 'text-amber-600 bg-amber-100',
   },
   {
-    value: 'Derogation',
+    value: 'ACCEPTED_WITH_DISCOUNT',
     icon: ShieldAlert,
     label: 'Dérogation',
-    description: "Utilisation autorisée sous conditions, validée par la direction qualité.",
+    description: 'Utilisation autorisée sous conditions, validée par la direction qualité.',
     colorClass: 'border-blue-200 bg-blue-50 hover:border-blue-400',
     iconClass: 'text-blue-600 bg-blue-100',
   },
@@ -119,30 +129,32 @@ function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function NonConformitesPage() {
-  const [ncs, setNcs] = useState<NonConformite[]>(MOCK_NON_CONFORMITES)
+  const [ncs, setNcs] = useState<QualityNonConformite[]>(MOCK_QUALITY_NON_CONFORMITES)
   const [search, setSearch] = useState('')
-  const [statutFilter, setStatutFilter] = useState<StatutNC | 'Tous'>('Tous')
+  const [statutFilter, setStatutFilter] = useState<StatutQualiteNC | 'Tous'>('Tous')
   const [modalNcId, setModalNcId] = useState<string | null>(null)
-  const [selectedAction, setSelectedAction] = useState<ActionNC | null>(null)
+  const [selectedAction, setSelectedAction] = useState<DispositionAction | null>(null)
+  const [financialClaim, setFinancialClaim] = useState('')
+  const [resolutionNotes, setResolutionNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
   const stats = useMemo(() => ({
     total:   ncs.length,
-    ouvert:  ncs.filter(n => n.statut === 'Ouvert').length,
-    enCours: ncs.filter(n => n.statut === 'EnCours').length,
+    ouvert:  ncs.filter(n => n.status === 'OPEN').length,
+    enCours: ncs.filter(n => n.status === 'IN_PROGRESS').length,
     tauxResolution: ncs.length > 0
-      ? Math.round((ncs.filter(n => n.statut === 'Clos').length / ncs.length) * 100)
+      ? Math.round((ncs.filter(n => n.status === 'CLOSED').length / ncs.length) * 100)
       : 0,
   }), [ncs])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return ncs.filter(n => {
-      if (statutFilter !== 'Tous' && n.statut !== statutFilter) return false
+      if (statutFilter !== 'Tous' && n.status !== statutFilter) return false
       if (q) return (
-        n.numero.toLowerCase().includes(q) ||
-        n.codeLot.toLowerCase().includes(q) ||
-        n.article.toLowerCase().includes(q)
+        n.ncNumber.toLowerCase().includes(q) ||
+        n.batchNumber.toLowerCase().includes(q) ||
+        n.articleDesignation.toLowerCase().includes(q)
       )
       return true
     })
@@ -153,6 +165,8 @@ export default function NonConformitesPage() {
   function openActionModal(id: string) {
     setModalNcId(id)
     setSelectedAction(null)
+    setFinancialClaim('')
+    setResolutionNotes('')
   }
 
   async function handleConfirm() {
@@ -161,14 +175,22 @@ export default function NonConformitesPage() {
     await new Promise(r => setTimeout(r, 600))
     setNcs(prev => prev.map(n =>
       n.id === modalNc.id
-        ? { ...n, statut: 'Clos', actionCorrective: selectedAction, dateAction: new Date().toISOString().split('T')[0] }
+        ? {
+            ...n,
+            status: 'CLOSED',
+            dispositionAction: selectedAction,
+            financialClaimXof: financialClaim ? parseFloat(financialClaim) : n.financialClaimXof,
+            resolutionNotes: resolutionNotes || null,
+            resolvedBy: 'Utilisateur courant',
+            resolvedAt: new Date().toISOString(),
+          }
         : n,
     ))
     setSaving(false)
     setModalNcId(null)
   }
 
-  const STATUT_OPTIONS: Array<StatutNC | 'Tous'> = ['Tous', 'Ouvert', 'EnCours', 'Clos']
+  const STATUT_OPTIONS: Array<StatutQualiteNC | 'Tous'> = ['Tous', 'OPEN', 'IN_PROGRESS', 'CLOSED']
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -181,7 +203,7 @@ export default function NonConformitesPage() {
         <div>
           <h1 className="text-xl font-semibold">Registre des Non-Conformités</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Suivi des incidents qualité et actions correctives
+            Suivi des incidents qualité et actions de disposition
           </p>
         </div>
       </div>
@@ -207,7 +229,7 @@ export default function NonConformitesPage() {
         <StatCard
           label="En cours"
           value={stats.enCours}
-          icon={Wrench}
+          icon={TruckIcon}
           bgClass="bg-amber-50"
           iconBg="bg-amber-100"
           iconColor="text-amber-600"
@@ -228,7 +250,7 @@ export default function NonConformitesPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="N° NC, code lot, article…"
+            placeholder="N° NC, lot, article…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
@@ -245,7 +267,7 @@ export default function NonConformitesPage() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {s === 'Tous' ? 'Tous' : STATUT_NC_LABELS[s]}
+              {s === 'Tous' ? 'Tous' : STATUT_QC_NC_LABELS[s]}
             </button>
           ))}
         </div>
@@ -259,14 +281,14 @@ export default function NonConformitesPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40">
-              <TableHead className="text-xs font-semibold tracking-wide w-[120px]">N° NC</TableHead>
-              <TableHead className="text-xs font-semibold tracking-wide w-[150px]">Code lot</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide w-[140px]">N° NC</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide w-[170px]">N° lot</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide w-[80px]">Type</TableHead>
-              <TableHead className="text-xs font-semibold tracking-wide w-[140px]">Article</TableHead>
-              <TableHead className="text-xs font-semibold tracking-wide">Cause</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide w-[150px]">Article</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide">Défaut / Description</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide w-[100px]">Date</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide w-[110px]">Statut</TableHead>
-              <TableHead className="text-xs font-semibold tracking-wide w-[130px]">Action corrective</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide w-[140px]">Disposition</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide w-[110px] text-right">Rapport</TableHead>
             </TableRow>
           </TableHeader>
@@ -279,33 +301,34 @@ export default function NonConformitesPage() {
               </TableRow>
             ) : filtered.map(nc => (
               <TableRow key={nc.id} className="hover:bg-muted/20">
-                <TableCell className="font-mono text-xs font-semibold">{nc.numero}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[140px]" title={nc.codeLot}>
-                  {nc.codeLot}
+                <TableCell className="font-mono text-xs font-semibold">{nc.ncNumber}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[160px]" title={nc.batchNumber}>
+                  {nc.batchNumber}
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[nc.typeArticle]}`}>
-                    {nc.typeArticle}
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[nc.articleType]}`}>
+                    {nc.articleType}
                   </span>
                 </TableCell>
-                <TableCell className="text-sm truncate max-w-[130px]" title={nc.article}>
-                  {nc.article}
+                <TableCell className="text-sm truncate max-w-[140px]" title={nc.articleDesignation}>
+                  {nc.articleDesignation}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground max-w-[220px] truncate" title={nc.cause}>
-                  {nc.cause}
+                <TableCell className="max-w-[240px]">
+                  <p className="text-xs font-medium text-foreground">{DEFECT_TYPE_LABELS[nc.defectType]}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5" title={nc.description}>{nc.description}</p>
                 </TableCell>
-                <TableCell className="text-sm">{nc.date}</TableCell>
+                <TableCell className="text-sm">{nc.createdAt.split('T')[0]}</TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_NC_COLORS[nc.statut]}`}>
-                    {STATUT_NC_LABELS[nc.statut]}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_QC_NC_COLORS[nc.status]}`}>
+                    {STATUT_QC_NC_LABELS[nc.status]}
                   </span>
                 </TableCell>
                 <TableCell>
-                  {nc.actionCorrective ? (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${ACTION_NC_COLORS[nc.actionCorrective]}`}>
-                      {ACTION_NC_LABELS[nc.actionCorrective]}
+                  {nc.dispositionAction !== 'UNDER_REVIEW' ? (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${DISPOSITION_ACTION_COLORS[nc.dispositionAction]}`}>
+                      {DISPOSITION_ACTION_LABELS[nc.dispositionAction]}
                     </span>
-                  ) : nc.statut !== 'Clos' ? (
+                  ) : nc.status !== 'CLOSED' ? (
                     <Button
                       size="sm"
                       variant="outline"
@@ -336,7 +359,7 @@ export default function NonConformitesPage() {
         </Table>
       </div>
 
-      {/* Action corrective modal */}
+      {/* Disposition modal */}
       <Dialog open={!!modalNcId} onOpenChange={v => !v && !saving && setModalNcId(null)}>
         <DialogPortal>
           <DialogOverlay />
@@ -344,7 +367,7 @@ export default function NonConformitesPage() {
             data-slot="dialog-content"
             className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
           >
-            <div className="w-[min(500px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
+            <div className="w-[min(520px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
               {/* Header */}
               <div className="flex items-start justify-between p-5 border-b shrink-0">
@@ -353,10 +376,10 @@ export default function NonConformitesPage() {
                     <AlertTriangle className="size-[18px] text-red-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-base">Action corrective</p>
+                    <p className="font-semibold text-base">Action de disposition</p>
                     {modalNc && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {modalNc.numero} · {modalNc.article}
+                        {modalNc.ncNumber} · {modalNc.articleDesignation}
                       </p>
                     )}
                   </div>
@@ -370,28 +393,29 @@ export default function NonConformitesPage() {
               <div className="p-5 space-y-3 overflow-y-auto flex-1">
                 {modalNc && (
                   <div className="rounded-lg bg-muted/40 px-4 py-3 text-xs space-y-1 mb-4">
-                    <p><span className="font-semibold">Lot : </span>{modalNc.codeLot}</p>
-                    <p><span className="font-semibold">Cause : </span>{modalNc.cause}</p>
-                    <p><span className="font-semibold">Responsable : </span>{modalNc.responsable}</p>
+                    <p><span className="font-semibold">Lot : </span>{modalNc.batchNumber}</p>
+                    <p><span className="font-semibold">Défaut : </span>{DEFECT_TYPE_LABELS[modalNc.defectType]}</p>
+                    <p className="text-muted-foreground">{modalNc.description}</p>
+                    <p><span className="font-semibold">Responsable : </span>{modalNc.reportedBy}</p>
                   </div>
                 )}
 
-                <p className="text-sm font-semibold">Choisir l&apos;action corrective :</p>
+                <p className="text-sm font-semibold">Choisir la disposition :</p>
 
-                {ACTION_OPTIONS.map(opt => (
+                {DISPOSITION_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => setSelectedAction(opt.value)}
                     className={`w-full flex items-start gap-4 rounded-xl border-2 p-4 text-left transition-colors ${
                       selectedAction === opt.value
-                        ? opt.colorClass.replace('hover:', '') + ' border-opacity-100'
+                        ? opt.colorClass.replace('hover:', '')
                         : 'border-input bg-background hover:border-muted-foreground/30'
                     } ${opt.colorClass}`}
                   >
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${opt.iconClass}`}>
                       <opt.icon className="size-4" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-semibold text-sm">{opt.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
                     </div>
@@ -400,6 +424,38 @@ export default function NonConformitesPage() {
                     )}
                   </button>
                 ))}
+
+                {/* Réclamation financière */}
+                {(selectedAction === 'RETURN_TO_SUPPLIER' || selectedAction === 'DESTROYED') && (
+                  <div className="space-y-1.5 mt-1">
+                    <Label className="text-xs font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-1.5">
+                      <Banknote className="size-3.5" />
+                      Montant réclamé (FCFA)
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={financialClaim}
+                      onChange={e => setFinancialClaim(e.target.value)}
+                      placeholder="ex : 120 000"
+                    />
+                  </div>
+                )}
+
+                {/* Notes de résolution */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+                    Notes de résolution
+                  </Label>
+                  <textarea
+                    value={resolutionNotes}
+                    onChange={e => setResolutionNotes(e.target.value)}
+                    placeholder="Détails de la décision, actions menées..."
+                    rows={2}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                  />
+                </div>
               </div>
 
               {/* Footer */}
@@ -413,7 +469,7 @@ export default function NonConformitesPage() {
                 >
                   {saving
                     ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
-                    : 'Confirmer l\'action'
+                    : 'Confirmer la disposition'
                   }
                 </Button>
               </div>
