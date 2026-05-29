@@ -37,7 +37,7 @@ type Tab = 'atp' | 'horizon' | 'pic' | 'recommandations'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'atp',             label: '① ATP · M+0 & BOM'    },
   { key: 'horizon',         label: '② Horizon 6 mois'      },
-  { key: 'pic',             label: '③ PIC · 12 mois'       },
+  { key: 'pic',             label: "③ Campagne d'appro"      },
   { key: 'recommandations', label: '④ Recommandations'     },
 ]
 
@@ -305,7 +305,7 @@ export default function MrpPage() {
           icon={AlertTriangle}
         />
         <StatCard
-          label="PIC · Prévision annuelle"
+          label="Campagne · Prévision annuelle"
           value={formatNumber(stats.totalAnnuel, locale)}
           sub="btl · toutes saveurs · 12 mois"
           bgClass="bg-violet-50 dark:bg-violet-950/30"
@@ -661,7 +661,7 @@ export default function MrpPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ③ PIC MACRO · 12 MOIS
+          ③ CAMPAGNE D'APPROVISIONNEMENT · 12 MOIS
       ═════════════════════════════════════════════════════════════════════= */}
       {tab === 'pic' && (
         <div className="space-y-6">
@@ -669,7 +669,7 @@ export default function MrpPage() {
             <div className="px-6 py-4 border-b">
               <p className="font-semibold flex items-center gap-2">
                 <TrendingUp className="size-4 text-muted-foreground shrink-0" />
-                Plan Industriel et Commercial (PIC) · Prévisions annuelles
+                Campagne d'approvisionnement · Prévisions annuelles
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Agrégation macro sur 12 mois. Dimensionnement campagne agricole et capacités de production.
