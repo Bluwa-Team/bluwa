@@ -367,13 +367,6 @@ export interface GenealogieLien {
   statut: StatutLot
 }
 
-export interface ControleCCP {
-  nom: string
-  valeur: string        // valeur mesurée affichée (ex : "82°C / 25s")
-  spec: string          // plage de conformité (ex : "≥ 82°C / ≥ 20s")
-  conforme: boolean
-}
-
 export interface DestinationAval {
   destination: string
   dateLivraison: string | null  // null = stock non encore expédié
@@ -390,7 +383,6 @@ export interface GenealogiePF {
   unite: string
   statut: StatutLot
   ingredients: GenealogieLien[]
-  ccps?: ControleCCP[]
   destinations?: DestinationAval[]
 }
 
@@ -506,11 +498,6 @@ export const MOCK_GENEALOGIE: GenealogiePF[] = [
       { codeLot: 'LOT-AC-2026-0016', article: 'Bouchons vissants',        typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2026-05-15', statut: 'Libere'     },
       { codeLot: 'LOT-AC-2026-0017', article: 'Etiquettes autocollantes', typeArticle: 'AC', qteUtilisee: 240, unite: 'u',  fournisseur: 'ImpriPrint Dakar',       dateReception: '2026-05-18', statut: 'Libere'     },
     ],
-    ccps: [
-      { nom: 'Pasteurisation', valeur: '82°C / 25s', spec: '≥ 82°C / ≥ 20s', conforme: true  },
-      { nom: 'pH final',       valeur: '4.7',         spec: '3.5 – 4.5',       conforme: false },
-      { nom: 'Brix',           valeur: '12.5°Bx',     spec: '11 – 13°Bx',      conforme: true  },
-    ],
     destinations: [
       { destination: 'Super Marché Hayat', dateLivraison: '2026-05-28', quantite: 120, unite: 'btl' },
       { destination: 'Boulangerie Etoile', dateLivraison: '2026-05-28', quantite:  60, unite: 'btl' },
@@ -531,11 +518,6 @@ export const MOCK_GENEALOGIE: GenealogiePF[] = [
       { codeLot: 'LOT-MP-2026-0025', article: 'Eau purifiée',      typeArticle: 'MP', qteUtilisee: 120, unite: 'L',  fournisseur: 'Forage interne',         dateReception: '2026-05-23', statut: 'Libere'     },
       { codeLot: 'LOT-AC-2026-0018', article: 'Bouteilles 1L PET', typeArticle: 'AC', qteUtilisee: 120, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2026-05-23', statut: 'EnControle' },
       { codeLot: 'LOT-AC-2026-0016', article: 'Bouchons vissants', typeArticle: 'AC', qteUtilisee: 120, unite: 'u',  fournisseur: 'PlastiSénégal',          dateReception: '2026-05-15', statut: 'Libere'     },
-    ],
-    ccps: [
-      { nom: 'Pasteurisation', valeur: '84°C / 22s', spec: '≥ 82°C / ≥ 20s', conforme: true },
-      { nom: 'pH final',       valeur: '3.8',         spec: '3.5 – 4.5',       conforme: true },
-      { nom: 'Brix',           valeur: '12.2°Bx',     spec: '11 – 13°Bx',      conforme: true },
     ],
     destinations: [
       { destination: 'Epicerie Centrale Abidjan', dateLivraison: '2026-05-25', quantite: 60, unite: 'btl' },

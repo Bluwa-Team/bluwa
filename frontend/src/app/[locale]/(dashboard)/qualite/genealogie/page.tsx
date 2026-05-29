@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { GitBranch, Search, FileDown, Package, Box, CornerDownRight, FlaskConical, TruckIcon } from 'lucide-react'
+import { GitBranch, Search, FileDown, Package, Box, CornerDownRight, TruckIcon } from 'lucide-react'
 import { HelpPopover } from '@/components/ui/help-popover'
 import { Button } from '@/components/ui/button'
 import {
   MOCK_GENEALOGIE, GenealogiePF, GenealogieLien,
   STATUT_LOT_LABELS, STATUT_LOT_COLORS, TYPE_ARTICLE_COLORS,
-  ControleCCP, DestinationAval,
+  DestinationAval,
 } from '../_components/types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -69,17 +69,6 @@ function downloadDossierPDF(result: SearchResult) {
       lines.push(`       Fournisseur : ${ing.fournisseur} (réception ${ing.dateReception})`)
       lines.push(`       Statut lot  : ${STATUT_LOT_LABELS[ing.statut]}`)
       lines.push('')
-    }
-    if (entry.ccps && entry.ccps.length > 0) {
-      lines.push('')
-      lines.push(`CONTRÔLES CCP DE PRODUCTION (${entry.ccps.length} points) :`)
-      lines.push('─'.repeat(54))
-      for (const ccp of entry.ccps) {
-        const status = ccp.conforme ? '✓ CONFORME' : '⚠ HORS SPEC'
-        lines.push(`  ${ccp.nom.padEnd(20)} ${ccp.valeur.padEnd(14)} Spec : ${ccp.spec}`)
-        lines.push(`  ${''.padEnd(20)} ${status}`)
-        lines.push('')
-      }
     }
     if (entry.destinations && entry.destinations.length > 0) {
       lines.push('')
@@ -292,45 +281,6 @@ function PFResult({
           ))}
         </div>
       </div>
-
-      {/* CCP Controls */}
-      {entry.ccps && entry.ccps.length > 0 && (
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="px-4 py-3 bg-muted/40 border-b flex items-center gap-2">
-            <FlaskConical className="size-3.5 text-muted-foreground" />
-            <p className="text-sm font-semibold">
-              Contrôles CCP de production
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {entry.ccps.filter(c => !c.conforme).length > 0
-                  ? <span className="text-red-600 font-medium">{entry.ccps.filter(c => !c.conforme).length} hors spec</span>
-                  : 'tous conformes'}
-              </span>
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x">
-            {entry.ccps.map((ccp, i) => (
-              <div
-                key={i}
-                className={`relative p-4 flex flex-col gap-2 overflow-hidden ${!ccp.conforme ? 'bg-red-50/40' : ''}`}
-              >
-                {/* colored left accent */}
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${ccp.conforme ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground pl-2">
-                  {ccp.nom}
-                </p>
-                <p className="text-2xl font-bold tabular-nums pl-2">{ccp.valeur}</p>
-                <div className="flex items-center justify-between pl-2">
-                  <span className="text-xs text-muted-foreground">Spec : {ccp.spec}</span>
-                  {ccp.conforme
-                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">✓ Conforme</span>
-                    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">⚠ Hors spec</span>
-                  }
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* AVAL — Destinations */}
       {entry.destinations && entry.destinations.length > 0 && (

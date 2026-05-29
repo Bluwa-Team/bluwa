@@ -180,6 +180,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     tips: [
       '"Déclarer production" : saisissez la quantité produite depuis le début du poste.',
       '"Signaler arrêt" : sélectionnez le motif — cet arrêt est enregistré dans le journal.',
+      '"Clôturer OF" : enregistre les rebuts et génère le lot PF en quarantaine pour contrôle qualité.',
       'Le TRS (Taux de Rendement Synthétique) = temps utile / temps ouvert.',
       'Le journal MES est l\'enregistrement officiel pour les rapports de production.',
     ],
@@ -238,7 +239,6 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
       { term: 'En contrôle', def: 'Quarantaine — lot reçu, en attente de décision qualité' },
       { term: 'Libéré',      def: 'Lot conforme, disponible pour utilisation ou expédition' },
       { term: 'Rejeté',      def: 'Lot non conforme — bloqué, action corrective requise' },
-      { term: 'CCP',         def: 'Critical Control Point — point de contrôle critique HACCP' },
     ],
   },
 

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   Activity, StopCircle, Play, Plus, CheckCircle2, PlayCircle,
   Gauge, Clock, Factory, Package, AlertTriangle, X, MonitorPlay,
-  ChevronRight, Hourglass, Trash2, ShieldAlert, FlaskConical,
+  ChevronRight, Hourglass, Trash2,
   PackageSearch, RotateCcw, Loader2, Check, Lock,
 } from 'lucide-react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
@@ -25,23 +25,6 @@ import {
 } from '../_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
 
-// ── Constantes CCP / HACCP ────────────────────────────────────────────────────
-
-type CCPKey = 'pH' | 'tempPast' | 'brix' | 'tempRefr'
-type CCPForm = Record<CCPKey, string>
-
-const EMPTY_CCP: CCPForm = { pH: '', tempPast: '', brix: '', tempRefr: '' }
-
-const CCP_SPECS: Array<{
-  key: CCPKey; label: string; unit: string; spec: string; placeholder: string
-  validate: (n: number) => boolean
-}> = [
-  { key: 'pH',       label: 'pH',                      unit: '',   spec: '2.8 – 3.8',    placeholder: '3.2',  validate: (n) => n >= 2.8 && n <= 3.8 },
-  { key: 'tempPast', label: 'Temp. pasteurisation',    unit: '°C', spec: '≥ 85 °C',      placeholder: '90',   validate: (n) => n >= 85              },
-  { key: 'brix',     label: 'Brix',                    unit: '°Bx',spec: '12.0 – 16.0',  placeholder: '14.5', validate: (n) => n >= 12 && n <= 16   },
-  { key: 'tempRefr', label: 'Temp. refroidissement',   unit: '°C', spec: '≤ 25 °C',      placeholder: '20',   validate: (n) => n <= 25              },
-]
-
 // ── Constantes Rebuts ─────────────────────────────────────────────────────────
 
 type RebutMotif = 'CasseMecanique' | 'DefautQualite' | 'Deversement' | 'ControlNC' | 'Autre'
@@ -51,7 +34,7 @@ const REBUT_MOTIFS: Record<RebutMotif, string> = {
   CasseMecanique: 'Casse mécanique (embouteilleuse)',
   DefautQualite:  'Défaut qualité (colmatage / fuite)',
   Deversement:    'Déversement accidentel',
-  ControlNC:      'Lot rejeté (CCP non conforme)',
+  ControlNC:      'Lot rejeté (non conforme qualité)',
   Autre:          'Autre',
 }
 
@@ -97,17 +80,6 @@ function fmtDurationH(hours: number): string {
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
   return `${h}h${String(m).padStart(2, '0')}`
-}
-
-function validateCCPField(spec: typeof CCP_SPECS[0], value: string): boolean | null {
-  if (!value.trim()) return null
-  const n = parseFloat(value)
-  if (isNaN(n)) return false
-  return spec.validate(n)
-}
-
-function allCCPValid(form: CCPForm): boolean {
-  return CCP_SPECS.every((s) => validateCCPField(s, form[s.key]) === true)
 }
 
 function generateLotNumber(of: OrdreFabrication): string {
@@ -229,9 +201,8 @@ export default function MESPage() {
   const [rebutForm, setRebutForm] = useState(EMPTY_REBUT)
   const [savingRebut, setSavingRebut] = useState(false)
 
-  // Clôture OF modal (contient CCP + récap + lot)
+  // Clôture OF modal (récap + lot)
   const [clotureOfId, setClotureOfId] = useState<string | null>(null)
-  const [clotureForm, setClotureForm] = useState<CCPForm>(EMPTY_CCP)
   const [cloturant, setCloturant] = useState(false)
 
   // Lots en quarantaine créés cette session
@@ -417,7 +388,7 @@ export default function MESPage() {
   async function handleCloture() {
     if (!clotureOfId) return
     const of = ofs.find((o) => o.id === clotureOfId)
-    if (!of || !allCCPValid(clotureForm)) return
+    if (!of) return
     setCloturant(true)
     await new Promise((r) => setTimeout(r, 800))
     const heure = nowTime()
@@ -464,7 +435,6 @@ export default function MESPage() {
 
     setCloturant(false)
     setClotureOfId(null)
-    setClotureForm(EMPTY_CCP)
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -484,7 +454,7 @@ export default function MESPage() {
             </span>
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Déclarations · Rebuts · Contrôles CCP/HACCP · Clôture &amp; Lot Quarantaine
+            Déclarations · Rebuts · Clôture &amp; Lot Quarantaine
           </p>
         </div>
         {now && (
@@ -671,9 +641,8 @@ export default function MESPage() {
                     </div>
                   </div>
 
-                  {/* ── Bandeaux Rebuts + CCP ── */}
-                  <div className="mx-5 mb-3 grid grid-cols-2 gap-2">
-                    {/* Rebuts */}
+                  {/* ── Bandeau Rebuts ── */}
+                  <div className="mx-5 mb-3">
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${
                       hasRebuts
                         ? 'bg-red-50 border-red-200 text-red-700'
@@ -686,12 +655,6 @@ export default function MESPage() {
                           : 'Aucun rebut déclaré'
                         }
                       </span>
-                    </div>
-
-                    {/* CCP */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/30 border-border/40 text-xs text-muted-foreground">
-                      <ShieldAlert className="size-3.5 shrink-0 text-amber-500" />
-                      <span>CCP HACCP · requis à la clôture</span>
                     </div>
                   </div>
 
@@ -762,7 +725,7 @@ export default function MESPage() {
                       size="sm"
                       variant="outline"
                       className="gap-1.5 ml-auto border-violet-200 text-violet-700 hover:bg-violet-50"
-                      onClick={() => { setClotureOfId(of.id); setClotureForm(EMPTY_CCP) }}
+                      onClick={() => { setClotureOfId(of.id) }}
                     >
                       <PackageSearch className="size-3.5" />
                       Clôturer l&apos;OF
@@ -1197,10 +1160,9 @@ export default function MESPage() {
         const cumul = getRebutCumul(of.id)
         const rendement = of.qty > 0 ? Math.round((of.realise / of.qty) * 100) : 0
         const lotPreview = generateLotNumber(of)
-        const ccpOk = allCCPValid(clotureForm)
 
         return (
-          <Dialog open={!!clotureOfId} onOpenChange={(v) => { if (!v && !cloturant) { setClotureOfId(null); setClotureForm(EMPTY_CCP) } }}>
+          <Dialog open={!!clotureOfId} onOpenChange={(v) => { if (!v && !cloturant) { setClotureOfId(null) } }}>
             <DialogPortal>
               <DialogOverlay />
               <DialogPrimitive.Popup
@@ -1220,7 +1182,7 @@ export default function MESPage() {
                         <p className="text-xs text-muted-foreground font-mono">{of.numero} · {of.produitFini}</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon-sm" onClick={() => { setClotureOfId(null); setClotureForm(EMPTY_CCP) }} disabled={cloturant}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => { setClotureOfId(null) }} disabled={cloturant}>
                       <X className="size-4" />
                     </Button>
                   </div>
@@ -1228,72 +1190,10 @@ export default function MESPage() {
                   {/* Body */}
                   <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
 
-                    {/* ① CCP / HACCP */}
+                    {/* ① Rebuts */}
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0">①</span>
-                        <p className="font-semibold text-sm flex items-center gap-2">
-                          Contrôles CCP / HACCP
-                          <span className="text-[11px] font-normal text-destructive">— Obligatoire</span>
-                        </p>
-                        {ccpOk && (
-                          <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            <Check className="size-3" />
-                            Validés
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {CCP_SPECS.map((spec) => {
-                          const val = clotureForm[spec.key]
-                          const status = validateCCPField(spec, val)
-                          return (
-                            <div key={spec.key} className="space-y-1">
-                              <div className="flex items-center justify-between">
-                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                  {spec.label}{spec.unit && ` (${spec.unit})`}
-                                  <span className="text-destructive ml-0.5">*</span>
-                                </label>
-                                {status === true  && <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5"><Check className="size-3" />OK</span>}
-                                {status === false && <span className="text-xs font-semibold text-red-600 flex items-center gap-0.5"><X className="size-3" />Hors spec</span>}
-                                {status === null  && <span className="text-xs text-muted-foreground">{spec.spec}</span>}
-                              </div>
-                              <div className="relative">
-                                <Input
-                                  type="number" step="0.01"
-                                  value={val}
-                                  onChange={(e) => setClotureForm((p) => ({ ...p, [spec.key]: e.target.value }))}
-                                  placeholder={spec.placeholder}
-                                  className={
-                                    status === true  ? 'border-emerald-400 focus-visible:ring-emerald-300' :
-                                    status === false ? 'border-red-400 focus-visible:ring-red-300' : ''
-                                  }
-                                />
-                                {status !== null && (
-                                  <span className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-sm ${status ? 'text-emerald-500' : 'text-red-500'}`}>
-                                    {status ? '✓' : '✗'}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[10px] text-muted-foreground">Spec : {spec.spec}</p>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {!ccpOk && (
-                        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-                          <ShieldAlert className="size-3.5 shrink-0 mt-0.5" />
-                          Tous les contrôles CCP doivent être dans les spécifications avant de pouvoir clôturer l&apos;OF.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ② Rebuts */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0">②</span>
                         <p className="font-semibold text-sm">Rebuts déclarés sur cet OF</p>
                       </div>
                       {(cumul.bouteilles > 0 || cumul.litres > 0) ? (
@@ -1316,10 +1216,10 @@ export default function MESPage() {
                       )}
                     </div>
 
-                    {/* ③ Récapitulatif & Lot */}
+                    {/* ② Récapitulatif & Lot */}
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0">③</span>
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0">②</span>
                         <p className="font-semibold text-sm">Récapitulatif &amp; Lot généré</p>
                       </div>
 
@@ -1342,23 +1242,17 @@ export default function MESPage() {
                         <div className="border-t px-4 py-4 space-y-2">
                           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Lot PF généré à la clôture</p>
                           <div className="flex items-center gap-3">
-                            <span className={`font-mono text-base font-bold tracking-wide ${ccpOk ? 'text-violet-700' : 'text-muted-foreground/50'}`}>
+                            <span className="font-mono text-base font-bold tracking-wide text-violet-700">
                               {lotPreview}
                             </span>
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                              ccpOk
-                                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                : 'bg-muted text-muted-foreground border-border'
-                            }`}>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-amber-100 text-amber-800 border-amber-300">
                               <Lock className="size-3" />
-                              {ccpOk ? 'Quarantaine · En attente contrôle qualité' : 'En attente validation CCP'}
+                              Quarantaine · En attente contrôle qualité
                             </span>
                           </div>
-                          {ccpOk && (
-                            <p className="text-xs text-muted-foreground">
-                              Ce lot sera automatiquement transféré vers le <strong className="text-foreground">Centre de Libération</strong> pour analyse qualité avant mise en stock disponible.
-                            </p>
-                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Ce lot sera automatiquement transféré vers le <strong className="text-foreground">Centre de Libération</strong> pour analyse qualité avant mise en stock disponible.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1366,18 +1260,12 @@ export default function MESPage() {
 
                   {/* Footer */}
                   <div className="flex items-center gap-2 px-5 py-4 border-t shrink-0 bg-muted/10">
-                    <Button variant="outline" onClick={() => { setClotureOfId(null); setClotureForm(EMPTY_CCP) }} disabled={cloturant}>
+                    <Button variant="outline" onClick={() => { setClotureOfId(null) }} disabled={cloturant}>
                       Annuler
                     </Button>
-                    {!ccpOk && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5 ml-2">
-                        <Lock className="size-3.5 text-amber-500" />
-                        Complétez les contrôles CCP pour débloquer la clôture
-                      </span>
-                    )}
                     <Button
                       onClick={handleCloture}
-                      disabled={!ccpOk || cloturant}
+                      disabled={cloturant}
                       className="ml-auto gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
                     >
                       {cloturant
