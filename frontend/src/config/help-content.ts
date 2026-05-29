@@ -69,14 +69,9 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     description: 'Gestion des commandes fournisseurs (BC/BA), des stratégies MRP par article et des demandes d\'achat générées par le moteur de calcul.',
     tips: [
       'Onglet "Commandes" : créez un BC (fournisseur formel) ou un BA (marché informel).',
-      'Onglet "Stratégie" : définissez le type MRP, le stock de sécurité et le point de commande.',
+      'Onglet "Stratégie" : définissez la politique d\'approvisionnement, le stock de sécurité et le point de commande.',
       'Les "Demandes d\'achat" sont générées automatiquement par le MRP — validez-les en BC/BA.',
       'Un BC au statut "Partiel" signifie qu\'une réception a été créée mais pas clôturée.',
-    ],
-    glossary: [
-      { term: 'PD', def: 'MRP Planification — piloté par les prévisions ou commandes fermes' },
-      { term: 'VB', def: 'MRP Point de commande — déclenché quand le stock passe sous le seuil' },
-      { term: 'ND', def: 'Pas de MRP — approvisionnement manuel uniquement' },
     ],
   },
 
