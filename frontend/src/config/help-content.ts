@@ -140,10 +140,10 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     icon:        '🧮',
     description: 'Moteur de calcul des besoins nets : analyse les commandes, les prévisions et les stocks pour recommander les achats et fabrications à lancer.',
     tips: [
-      'Tab ① Besoins nets : besoin net = max(commandes, prévisions) − stock − en-cours.',
-      'Tab ② Composants 6 mois : explosion BOM pour chaque MP/AC par mois.',
-      'Tab ③ OP planifiés : Ordres de Production projetés sur l\'horizon.',
-      'Tab ④ Recommandations : validez (→ DA) ou ignorez chaque recommandation générée.',
+      'Tab ① ATP · M+0 (Responsable planning, Chef de production) : besoin net = max(commandes, prévisions) − stock − en-cours.',
+      'Tab ② Horizon 6 mois (Approvisionneur) : projection mensuelle des besoins MP/AC pour planifier les commandes à passer.',
+      "Tab ③ Campagne d'appro (Directeur achats, Gérant) : couverture annuelle des MP pour négocier les contrats fournisseurs.",
+      'Tab ④ Recommandations (Approvisionneur, Planificateur) : valider (→ DA) ou ignorer chaque suggestion du moteur MRP.',
       'Les recommandations urgentes (< 7j) apparaissent en rouge avec un countdown.',
     ],
     glossary: [
