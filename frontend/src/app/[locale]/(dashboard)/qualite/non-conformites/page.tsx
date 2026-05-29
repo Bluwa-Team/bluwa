@@ -21,6 +21,7 @@ import {
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
   StatutQualiteNC, DispositionAction,
 } from '../_components/types'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 // ── PDF Generation ─────────────────────────────────────────────────────────────
 
@@ -201,7 +202,10 @@ export default function NonConformitesPage() {
           <AlertTriangle className="size-5 text-red-600" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Registre des Non-Conformités</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">Registre des Non-Conformités</h1>
+            <HelpPopover section="nonConformites" />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Suivi des incidents qualité et actions de disposition
           </p>

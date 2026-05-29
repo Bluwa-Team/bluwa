@@ -24,6 +24,7 @@ import {
   convertRecommendation, ignoreRecommendation,
 } from '@/lib/actions/mrp'
 import type { MrpRecommendationRow, MrpRun, MrpRecommendationStatus } from '@/types/erp'
+import { HelpPopover } from '@/components/ui/help-popover'
 import {
   MRP_ACTION_LABELS, MRP_ACTION_COLORS,
   MRP_REC_STATUS_LABELS, MRP_REC_STATUS_COLORS,
@@ -265,7 +266,10 @@ export default function MrpPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">MRP · Planification</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">MRP · Planification</h1>
+          <HelpPopover section="mrp" />
+        </div>
         <p className="text-muted-foreground text-sm mt-1">
           Stock + Commandes + Prévisions → Ordres Planifiés (OP) → Production &amp; Approvisionnement
         </p>

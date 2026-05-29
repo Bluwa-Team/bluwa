@@ -21,6 +21,7 @@ import {
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
   StatutInspectionLot, FluxLot,
 } from './_components/types'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -188,7 +189,10 @@ export default function CentreLiberationPage() {
           <FlaskConical className="size-5 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Centre de Libération</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">Centre de Libération</h1>
+            <HelpPopover section="qualite" />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Validation et libération des lots en quarantaine
           </p>

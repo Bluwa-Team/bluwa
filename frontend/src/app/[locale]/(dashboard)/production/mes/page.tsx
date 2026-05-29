@@ -23,6 +23,7 @@ import {
   SessionMES, EvenementMES, TypeEvenementMES, MOCK_SESSIONS_MES,
   MOCK_JOURNAL_MES, LEAD_TIME_H,
 } from '../_components/types'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 // ── Constantes CCP / HACCP ────────────────────────────────────────────────────
 
@@ -476,6 +477,7 @@ export default function MESPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">Suivi de fabrication (MES)</h1>
+            <HelpPopover section="mes" />
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               En direct

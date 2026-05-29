@@ -23,6 +23,7 @@ import {
   saveInventoryCounts,
   postInventoryDocument,
 } from '@/lib/actions/inventaire'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -371,7 +372,10 @@ export default function InventairePage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inventaires</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Inventaires</h1>
+            <HelpPopover section="inventaire" />
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             Comptage physique · Écarts imputés en stock{' '}
             <code className="font-mono text-xs bg-muted px-1 rounded">INV_ADJ</code>

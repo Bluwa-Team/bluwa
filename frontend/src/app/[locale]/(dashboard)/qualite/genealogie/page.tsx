@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { GitBranch, Search, FileDown, Package, Box, CornerDownRight, FlaskConical, TruckIcon } from 'lucide-react'
+import { HelpPopover } from '@/components/ui/help-popover'
 import { Button } from '@/components/ui/button'
 import {
   MOCK_GENEALOGIE, GenealogiePF, GenealogieLien,
@@ -149,7 +150,10 @@ export default function GenealogiePage() {
           <GitBranch className="size-5 text-violet-600" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Généalogie & Traçabilité</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">Généalogie & Traçabilité</h1>
+            <HelpPopover section="genealogie" />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Recherche bidirectionnelle : lot PF → ingrédients · lot MP → produits finis
           </p>

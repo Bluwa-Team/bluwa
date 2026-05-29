@@ -20,6 +20,7 @@ import {
 } from './_components/types'
 import { getLotStocks } from '@/lib/actions/stocks'
 import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
 
@@ -183,7 +184,10 @@ export default function StocksPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Stocks</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Stocks</h1>
+            <HelpPopover section="stocks" />
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             Gestion par Code/SKU ou Désignation · Liaison Commande → Réception → Lot · PMP · FIFO/FEFO
           </p>

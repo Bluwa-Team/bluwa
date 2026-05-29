@@ -37,6 +37,7 @@ import {
   STATUT_OF_NEXT,
   MOCK_OFS,
 } from './_components/types'
+import { HelpPopover } from '@/components/ui/help-popover'
 import { OFModal } from './_components/of-modal'
 
 // ── Colonnes tableau ─────────────────────────────────────────────────────────
@@ -240,7 +241,10 @@ export default function ProductionPage() {
       {/* ── En-tête ────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Ordres de Fabrication</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Ordres de Fabrication</h1>
+            <HelpPopover section="production" />
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             Planification · Lancement · Traçabilité lot · Contrôle qualité
           </p>

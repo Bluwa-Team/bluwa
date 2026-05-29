@@ -22,6 +22,7 @@ import { LabelPrintModal }   from './_components/label-print-modal'
 import type { BCHeader, BCItem } from '../approvisionnement/_components/types'
 import { getGoodsReceipts, createGoodsReceipt } from '@/lib/actions/reception'
 import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
+import { HelpPopover } from '@/components/ui/help-popover'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
   Conforme: <Check className="size-3" />,
@@ -194,7 +195,10 @@ export default function ReceptionPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Réceptions fournisseurs</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Réceptions fournisseurs</h1>
+            <HelpPopover section="reception" />
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             BA formels &amp; informels · Photos marchandises · Scan code-barres / DataMatrix
           </p>

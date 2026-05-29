@@ -21,6 +21,7 @@ import {
 } from './_components/types'
 import { CommandeModal }       from './_components/commande-modal'
 import { CommandeDetailModal } from './_components/commande-detail-modal'
+import { HelpPopover }         from '@/components/ui/help-popover'
 import {
   type PurchaseRequisitionRow, type StatutDA,
   STATUT_DA_LABELS, STATUT_DA_COLORS,
@@ -270,7 +271,10 @@ export default function ApprovisionnementPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Approvisionnement</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Approvisionnement</h1>
+            <HelpPopover section="approvisionnement" />
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
             Stratégie de stock dynamique · Suivi des commandes fournisseurs
           </p>

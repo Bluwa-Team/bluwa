@@ -11,6 +11,7 @@ import {
   updateWorkCenter,
 } from '@/lib/actions/work-centers'
 import { WorkCenterModal } from './_components/work-center-modal'
+import { HelpPopover }     from '@/components/ui/help-popover'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -92,7 +93,10 @@ export default function PostesDeChargePage() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">Postes de charge</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">Postes de charge</h1>
+            <HelpPopover section="postesDeCharge" />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Lignes de production, équipements et coûts horaires
           </p>
