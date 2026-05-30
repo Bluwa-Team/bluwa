@@ -1,7 +1,7 @@
 import { Mail, MessageSquare } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Contact  Bluwa Academy' }
+export const metadata: Metadata = { title: 'Contact · Bluwa Academy' }
 
 export default function ContactPage() {
   return (

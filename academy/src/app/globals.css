@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme inline {
-  --font-sans: 'Figtree', system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, sans-serif;
 }
 
 :root {
@@ -21,11 +20,11 @@
 }
 
 html {
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
 }
 
 body {
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: var(--font-figtree), system-ui, sans-serif;
   background: var(--background);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;

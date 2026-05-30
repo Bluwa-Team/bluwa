@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Database, CalendarClock, Boxes, ShieldCheck, ChevronRight } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Modules de formation  Bluwa Academy' }
+export const metadata: Metadata = { title: 'Modules de formation · Bluwa Academy' }
 
 const modules = [
   {

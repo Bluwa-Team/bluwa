@@ -2,7 +2,7 @@ import { ShieldCheck } from 'lucide-react'
 import { ModulePage } from '@/components/ModulePage'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Module 04  HACCP · Bluwa Academy' }
+export const metadata: Metadata = { title: 'Module 04 · HACCP · Bluwa Academy' }
 
 export default function HACCPPage() {
   return (
@@ -26,7 +26,7 @@ export default function HACCPPage() {
           content: (
             <ol className="space-y-2">
               {[
-                'Analyse des dangers  identifier les risques biologiques, chimiques et physiques.',
+                'Analyse des dangers — identifier les risques biologiques, chimiques et physiques.',
                 'Détermination des CCP (Points Critiques de Contrôle).',
                 'Établissement des limites critiques pour chaque CCP.',
                 'Mise en place d\'un système de surveillance.',

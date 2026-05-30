@@ -10,7 +10,7 @@ const figtree = Figtree({
 })
 
 export const metadata: Metadata = {
-  title: 'Bluwa Academy  Formations agroalimentaires',
+  title: 'Bluwa Academy · Formations agroalimentaires',
   description:
     'Maîtrisez vos opérations agroalimentaires avec les certifications Bluwa Academy. MDM, MRP2, HACCP, WM et CBSCP.',
 }

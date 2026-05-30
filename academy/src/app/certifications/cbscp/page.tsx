@@ -2,14 +2,14 @@ import Link from 'next/link'
 import { ChevronLeft, Award, CheckCircle2 } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'CBSCP  Certified Bluwa Supply Chain Professional' }
+export const metadata: Metadata = { title: 'CBSCP · Certified Bluwa Supply Chain Professional' }
 
 const competencies = [
   'Maîtrise complète du module MDM et des référentiels industriels',
-  'Planification avancée MRP2  PDP, MRP1, gestion des capacités',
-  'Gestion des stocks WM  FEFO, traçabilité et valorisation financière',
-  'Qualité & HACCP  analyse des dangers, CCP et conformité réglementaire',
-  'Arbitrage supply chain  coûts, délais, qualité et service client',
+  'Planification avancée MRP2 — PDP, MRP1, gestion des capacités',
+  'Gestion des stocks WM — FEFO, traçabilité et valorisation financière',
+  'Qualité & HACCP — analyse des dangers, CCP et conformité réglementaire',
+  'Arbitrage supply chain — coûts, délais, qualité et service client',
   'Pilotage des indicateurs de performance (TRS, rotation, marge BOM)',
   'Interfaces avec les autorités sanitaires et les laboratoires nationaux',
 ]
@@ -58,7 +58,7 @@ export default function CBSCPPage() {
           </ul>
         </div>
 
-        {/* Prérequis */}
+        {/* Compétences validées */}
         <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5">
           <p className="font-semibold text-slate-800 mb-3 text-sm">Compétences validées</p>
           <ul className="space-y-2">
@@ -76,10 +76,10 @@ export default function CBSCPPage() {
         <p className="font-semibold text-slate-800 mb-2">Modules requis pour le CBSCP</p>
         <div className="grid sm:grid-cols-2 gap-2 mt-3">
           {[
-            ['/modules/fondations-mdm', 'Module 01  Fondations & MDM'],
-            ['/modules/planification-mrp2', 'Module 02  Planification MRP2'],
-            ['/modules/stocks-qualite', 'Module 03  Stocks & Qualité WM'],
-            ['/modules/haccp', 'Module 04  HACCP & Sécurité sanitaire'],
+            ['/modules/fondations-mdm', 'Module 01 · Fondations & MDM'],
+            ['/modules/planification-mrp2', 'Module 02 · Planification MRP2'],
+            ['/modules/stocks-qualite', 'Module 03 · Stocks & Qualité WM'],
+            ['/modules/haccp', 'Module 04 · HACCP & Sécurité sanitaire'],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="text-indigo-600 hover:underline flex items-center gap-1">
               → {label}

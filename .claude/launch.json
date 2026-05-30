@@ -9,9 +9,10 @@
     },
     {
       "name": "academy",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev"],
       "port": 3003,
+      "autoPort": false,
       "cwd": "academy"
     }
   ]

@@ -2,7 +2,7 @@ import { CalendarClock } from 'lucide-react'
 import { ModulePage } from '@/components/ModulePage'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Module 02  Planification MRP2 · Bluwa Academy' }
+export const metadata: Metadata = { title: 'Module 02 · Planification MRP2 · Bluwa Academy' }
 
 const steps = [
   { label: 'Prévisions de ventes', desc: 'Base de la demande future, consolidée dans le PIC/MPS/S&OP.' },
@@ -49,7 +49,7 @@ export default function PlanificationMRP2Page() {
           ),
         },
         {
-          title: 'TRS  Taux de Rendement Synthétique',
+          title: 'TRS — Taux de Rendement Synthétique',
           content: (
             <div className="space-y-3">
               <p>Le TRS mesure l'efficacité réelle d'un équipement en intégrant trois types de pertes :</p>
@@ -72,7 +72,7 @@ export default function PlanificationMRP2Page() {
           ),
         },
         {
-          title: 'Spécificité régionale  Aléas locaux',
+          title: 'Spécificité régionale — Aléas locaux',
           content: (
             <ul className="space-y-2">
               <li>• <strong>Coupures électriques</strong> : intégrer des créneaux de secours dans le PDP, prévoir des groupes électrogènes.</li>

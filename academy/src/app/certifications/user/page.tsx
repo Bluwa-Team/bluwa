@@ -2,11 +2,11 @@ import Link from 'next/link'
 import { ChevronLeft, CheckCircle2, Users } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Certification Utilisateurs Bluwa  Academy' }
+export const metadata: Metadata = { title: 'Certification Utilisateurs · Bluwa Academy' }
 
 const roles = [
   {
-    title: 'User  Opérateurs',
+    title: 'User — Opérateurs',
     items: [
       'Utilisation quotidienne de Bluwa pour la saisie et le suivi',
       'Écrans de réception, fabrication, transformation et expédition',
@@ -15,7 +15,7 @@ const roles = [
     ],
   },
   {
-    title: 'Admin  Configuration',
+    title: 'Admin — Configuration',
     items: [
       'Paramétrage des référentiels et structures d\'entrepôt',
       'Gestion des profils utilisateurs et des droits d\'accès',
@@ -24,7 +24,7 @@ const roles = [
     ],
   },
   {
-    title: 'Manager  Tableaux de bord & arbitrages',
+    title: 'Manager — Tableaux de bord & arbitrages',
     items: [
       'Interfaces décisionnelles et rapports de performance',
       'Pilotage des coûts, volumes et qualité',
@@ -73,8 +73,8 @@ export default function UserCertPage() {
       <div className="mt-8 bg-slate-50 rounded-xl p-5 text-sm text-slate-600">
         <p className="font-semibold text-slate-800 mb-1">Modules associés</p>
         <div className="flex flex-wrap gap-2 mt-2">
-          <Link href="/modules/fondations-mdm" className="text-blue-600 hover:underline">→ Module 01  Fondations & MDM</Link>
-          <Link href="/modules/stocks-qualite" className="text-blue-600 hover:underline">→ Module 03  Stocks & WM</Link>
+          <Link href="/modules/fondations-mdm" className="text-blue-600 hover:underline">→ Module 01 · Fondations & MDM</Link>
+          <Link href="/modules/stocks-qualite" className="text-blue-600 hover:underline">→ Module 03 · Stocks & WM</Link>
         </div>
       </div>
     </div>

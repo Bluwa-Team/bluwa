@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft, CheckCircle2, TrendingUp } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Certification Compétences Métier  Bluwa Academy' }
+export const metadata: Metadata = { title: 'Certification Compétences Métier · Bluwa Academy' }
 
 const domains = [
   {

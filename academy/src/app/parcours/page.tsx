@@ -3,7 +3,7 @@ import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Parcours de certification  Bluwa Academy',
+  title: 'Parcours de certification · Bluwa Academy',
 }
 
 const levels = [
@@ -14,7 +14,7 @@ const levels = [
     ring: 'ring-blue-200',
     certs: [
       {
-        title: 'User  Opérateurs',
+        title: 'User — Opérateurs',
         items: [
           'Utilisation quotidienne de Bluwa',
           'Saisie des réceptions, fabrications et expéditions',
@@ -22,7 +22,7 @@ const levels = [
         ],
       },
       {
-        title: 'Admin  Configuration',
+        title: 'Admin — Configuration',
         items: [
           'Paramétrage des référentiels',
           'Gestion des droits d\'accès',
@@ -30,7 +30,7 @@ const levels = [
         ],
       },
       {
-        title: 'Manager  Tableaux de bord',
+        title: 'Manager — Tableaux de bord',
         items: [
           'Interfaces décisionnelles et rapports',
           'Pilotage des coûts et des volumes',
@@ -72,7 +72,7 @@ const levels = [
     ring: 'ring-indigo-200',
     certs: [
       {
-        title: 'CBSCP  Certified Bluwa Supply Chain Professional',
+        title: 'CBSCP — Certified Bluwa Supply Chain Professional',
         items: [
           'Validation complète MDM, planification, stockage',
           'Qualité et conformité sectorielle',

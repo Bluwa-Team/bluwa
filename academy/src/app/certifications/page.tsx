@@ -2,28 +2,28 @@ import Link from 'next/link'
 import { ChevronRight, Award } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Certifications  Bluwa Academy' }
+export const metadata: Metadata = { title: 'Certifications · Bluwa Academy' }
 
 const certs = [
   {
     href: '/certifications/user',
     level: 'Niveau 1',
     title: 'Utilisateurs Bluwa',
-    desc: 'Opérateurs, Administrateurs, Managers  maîtrise des outils quotidiens.',
+    desc: 'Opérateurs, Administrateurs, Managers — maîtrise des outils quotidiens.',
     color: 'bg-blue-600',
   },
   {
     href: '/certifications/metier',
     level: 'Niveau 2',
     title: 'Compétences métier',
-    desc: 'Stocks FEFO, Planification, HACCP, Marge BOM  expertise sectorielle.',
+    desc: 'Stocks FEFO, Planification, HACCP, Marge BOM — expertise sectorielle.',
     color: 'bg-amber-500',
   },
   {
     href: '/certifications/cbscp',
     level: 'Niveau 3',
     title: 'CBSCP',
-    desc: 'Certified Bluwa Supply Chain Professional  la certification élite.',
+    desc: 'Certified Bluwa Supply Chain Professional — la certification élite.',
     color: 'bg-indigo-600',
   },
 ]

@@ -2,7 +2,7 @@ import { Database } from 'lucide-react'
 import { ModulePage } from '@/components/ModulePage'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Module 01  Fondations & MDM · Bluwa Academy' }
+export const metadata: Metadata = { title: 'Module 01 · Fondations & MDM · Bluwa Academy' }
 
 export default function FondationsMDMPage() {
   return (
@@ -22,7 +22,7 @@ export default function FondationsMDMPage() {
       ]}
       sections={[
         {
-          title: 'Règle de codification  Format TYPE-XXXX',
+          title: 'Règle de codification — Format TYPE-XXXX',
           content: (
             <div className="space-y-3">
               <p>Tous les articles Bluwa suivent un format standardisé :</p>

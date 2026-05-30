@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { LifeBuoy, Smartphone, Monitor, BookOpen } from 'lucide-react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Aide  Bluwa Academy' }
+export const metadata: Metadata = { title: 'Aide · Bluwa Academy' }
 
 export default function AidePage() {
   return (

@@ -2,7 +2,7 @@ import { Boxes } from 'lucide-react'
 import { ModulePage } from '@/components/ModulePage'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Module 03  Stocks & Qualité WM · Bluwa Academy' }
+export const metadata: Metadata = { title: 'Module 03 · Stocks & Qualité WM · Bluwa Academy' }
 
 const execSteps = [
   { label: 'OF validé / créé', desc: 'Génération du bon de sortie des composants.' },
@@ -49,7 +49,7 @@ export default function StocksQualitePage() {
           ),
         },
         {
-          title: 'Phase exécution terrain  Séquence OF',
+          title: 'Phase exécution terrain — Séquence OF',
           content: (
             <ol className="space-y-3">
               {execSteps.map((s, i) => (
@@ -70,7 +70,7 @@ export default function StocksQualitePage() {
           title: 'Principes de contrôle qualité',
           content: (
             <ul className="space-y-2">
-              <li>• Le <strong>statut qualité</strong> bloque ou autorise l'usage d'un lot  indépendant du statut logistique.</li>
+              <li>• Le <strong>statut qualité</strong> bloque ou autorise l'usage d'un lot — indépendant du statut logistique.</li>
               <li>• Prélèvement d'échantillon déclenché <strong>automatiquement</strong> à la réception MP ou à la clôture d'un OF.</li>
               <li>• Les deux dimensions (qualité + logistique) sont gérées séparément mais affichées ensemble.</li>
               <li>• En cas de rejet : destruction du lot <strong>ou</strong> retour fournisseur avec flux litige achat.</li>
