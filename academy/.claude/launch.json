@@ -2,17 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "merchant",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3002
-    },
-    {
       "name": "academy",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
-      "cwd": "academy"
+      "autoPort": true
     }
   ]
 }
