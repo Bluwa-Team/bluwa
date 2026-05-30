@@ -12,6 +12,59 @@ import {
   addPipelineComment,
 } from '@/lib/db-client'
 
+// ── Checklists prédéfinies par étape (guide d'onboarding Bluwa) ───────────────
+export const STAGE_CHECKLISTS: Record<OnboardingStage, string[]> = {
+  prospect: [
+    'Call de cadrage planifié',
+    'Processus actuels documentés',
+    'Douleurs principales identifiées (3 max)',
+    'Modules prioritaires définis',
+    'Liste utilisateurs collectée (noms + rôles)',
+    'Fichiers Excel existants récupérés',
+    'Fiche de cadrage rédigée',
+  ],
+  demo: [
+    'Environnement démo préparé',
+    'Démo réalisée (modules prioritaires)',
+    'Questions / objections notées',
+    'Proposition commerciale envoyée',
+    'Retour client reçu',
+    'Décision go/no-go confirmée',
+  ],
+  trial: [
+    'Accès trial créé',
+    'MDM configuré (articles, fournisseurs)',
+    'Première réception enregistrée',
+    'Feedback J+7 collecté',
+    'Équipe terrain autonome',
+    'Décision passage en configuration',
+  ],
+  configuration: [
+    'Sites créés',
+    'Utilisateurs invités et rôles assignés',
+    'Articles MDM importés',
+    'Fournisseurs et clients créés',
+    'BOM / nomenclatures saisies',
+    'Tests de validation effectués',
+  ],
+  formation: [
+    'Formation stocks & achats (J1)',
+    'Formation ventes (J2)',
+    'Formation GPAO (J3)',
+    'Formation qualité HACCP (si applicable)',
+    'Quiz de validation utilisateurs',
+    'Documentation remise au client',
+  ],
+  golive: [
+    'Go-live effectué',
+    'Utilisation en parallèle avec Excel',
+    'Premier OF en production réelle',
+    'Abonnement payant activé',
+    'Bilan J+15 réalisé',
+    'Bilan M1 planifié',
+  ],
+}
+
 const STAGES: { key: OnboardingStage; label: string; color: string; bg: string; dot: string }[] = [
   { key: 'prospect',      label: 'Prospect',    color: 'text-gray-600',    bg: 'bg-gray-50',    dot: 'bg-gray-400' },
   { key: 'demo',          label: 'Démo',         color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
@@ -151,13 +204,18 @@ export function OnboardingBoard({ initialItems }: Props) {
     await advancePipelineStage(itemId, nextStage)
 
     const now = new Date().toISOString()
+    const newChecklist = STAGE_CHECKLISTS[nextStage].map((label, i) => ({
+      id: `${itemId}-${nextStage}-${i}`,
+      label,
+      done: false,
+    }))
     setItems((prev) =>
       prev.map((it) =>
-        it.id !== itemId ? it : { ...it, stage: nextStage, stage_entered_at: now }
+        it.id !== itemId ? it : { ...it, stage: nextStage, stage_entered_at: now, checklist: newChecklist }
       )
     )
     setSelected((prev) =>
-      !prev || prev.id !== itemId ? prev : { ...prev, stage: nextStage, stage_entered_at: now }
+      !prev || prev.id !== itemId ? prev : { ...prev, stage: nextStage, stage_entered_at: now, checklist: newChecklist }
     )
   }
 

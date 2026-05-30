@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { OnboardingItem, OnboardingStage } from '@/types/merchant'
 import {
   X, MapPin, User, AlertTriangle, CheckCircle2,
-  Circle, ChevronRight, Flag, Send, MessageSquare,
+  Circle, ChevronRight, Flag, Send, MessageSquare, Download,
 } from 'lucide-react'
 
 const STAGES: { key: OnboardingStage; label: string }[] = [
@@ -21,10 +21,102 @@ const STAGE_INDEX: Record<OnboardingStage, number> = {
   prospect: 0, demo: 1, trial: 2, configuration: 3, formation: 4, golive: 5,
 }
 
-function daysInStage(dateStr: string): number {
+function daysAgo(dateStr: string): number {
   const entered = new Date(dateStr)
-  const now = new Date('2026-05-29')
+  const now = new Date()
   return Math.floor((now.getTime() - entered.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function daysInStage(dateStr: string): number {
+  return daysAgo(dateStr)
+}
+
+// ── Alertes intelligentes tirées du guide d'onboarding Bluwa ─────────────────
+interface SmartAlert { type: 'warning' | 'danger'; message: string }
+
+function getSmartAlerts(item: OnboardingItem): SmartAlert[] {
+  const alerts: SmartAlert[] = []
+  const days = daysInStage(item.stage_entered_at)
+
+  // Erreur 2 — Laisser le client seul (> 14j sans commentaire)
+  const lastCommentDate = item.comments.length > 0
+    ? item.comments[item.comments.length - 1].created_at
+    : item.stage_entered_at
+  const daysSinceContact = daysAgo(lastCommentDate)
+  if (daysSinceContact > 14 && item.stage !== 'golive') {
+    alerts.push({ type: 'danger', message: `Aucun contact depuis ${daysSinceContact} jours — risque d'abandon` })
+  }
+
+  // Erreur 1 — Former trop vite (formation démarrée < 7j après création)
+  if (item.stage === 'formation') {
+    const totalDays = daysAgo(item.created_at)
+    if (totalDays < 21) {
+      alerts.push({ type: 'warning', message: 'Formation démarrée rapidement — vérifiez que la config est complète avant de former' })
+    }
+  }
+
+  // Erreur 3 — Bilan M1 manquant (golive > 30j sans bilan)
+  if (item.stage === 'golive' && days > 30) {
+    const bilanDone = item.checklist.find(c => c.label.toLowerCase().includes('bilan m1') || c.label.toLowerCase().includes('bilan j+15'))?.done
+    if (!bilanDone) {
+      alerts.push({ type: 'danger', message: `Go-live depuis ${days} jours — bilan M1 non réalisé` })
+    }
+  }
+
+  // Étape trop longue
+  if (days > 14 && item.stage !== 'golive') {
+    alerts.push({ type: 'warning', message: `${days} jours dans cette étape — à débloquer ou faire avancer` })
+  }
+
+  return alerts
+}
+
+// ── Export fiche client ───────────────────────────────────────────────────────
+function exportFicheClient(item: OnboardingItem, currentStageLabel: string) {
+  const done = item.checklist.filter(c => c.done).length
+  const pct = item.checklist.length > 0 ? Math.round((done / item.checklist.length) * 100) : 0
+  const lines: string[] = []
+
+  lines.push(`FICHE ONBOARDING — ${item.org_name}`)
+  lines.push('='.repeat(50))
+  lines.push('')
+  lines.push(`Pays          : ${item.country ?? '—'}`)
+  lines.push(`Plan visé     : ${item.plan_target ?? '—'}`)
+  lines.push(`Assigné à     : ${item.assigned_to ?? '—'}`)
+  lines.push(`Étape actuelle: ${currentStageLabel}`)
+  lines.push(`Progression   : ${done}/${item.checklist.length} (${pct}%)`)
+  lines.push('')
+
+  lines.push('CHECKLIST')
+  lines.push('-'.repeat(30))
+  item.checklist.forEach(c => {
+    lines.push(`[${c.done ? 'x' : ' '}] ${c.label}`)
+  })
+  lines.push('')
+
+  if (item.notes) {
+    lines.push('NOTES')
+    lines.push('-'.repeat(30))
+    lines.push(item.notes)
+    lines.push('')
+  }
+
+  if (item.comments.length > 0) {
+    lines.push('HISTORIQUE COMMENTAIRES')
+    lines.push('-'.repeat(30))
+    item.comments.forEach(c => {
+      const d = new Date(c.created_at).toLocaleDateString('fr-FR')
+      lines.push(`[${d}] ${c.author.split('@')[0]} : ${c.content}`)
+    })
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `bluwa-onboarding-${item.org_name.toLowerCase().replace(/\s+/g, '-')}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function formatCommentDate(iso: string): string {
@@ -70,6 +162,7 @@ export function OnboardingDetailDrawer({
   const pct = item.checklist.length > 0 ? (done / item.checklist.length) * 100 : 0
   const currentIdx = STAGE_INDEX[item.stage]
   const canAdvance = item.stage !== 'golive' && !item.blocked
+  const smartAlerts = getSmartAlerts(item)
 
   function submitComment() {
     const trimmed = commentText.trim()
@@ -158,6 +251,29 @@ export function OnboardingDetailDrawer({
                 <p className="text-xs font-medium text-red-700 mb-0.5">Bloqué</p>
                 <p className="text-xs text-red-600 leading-snug">{item.blocked_reason}</p>
               </div>
+            </div>
+          )}
+
+          {/* Alertes intelligentes */}
+          {smartAlerts.length > 0 && (
+            <div className="space-y-2">
+              {smartAlerts.map((alert, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-2 rounded-lg px-3 py-2.5 border ${
+                    alert.type === 'danger'
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-amber-50 border-amber-200'
+                  }`}
+                >
+                  <AlertTriangle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
+                    alert.type === 'danger' ? 'text-red-500' : 'text-amber-500'
+                  }`} />
+                  <p className={`text-xs leading-snug ${
+                    alert.type === 'danger' ? 'text-red-700' : 'text-amber-700'
+                  }`}>{alert.message}</p>
+                </div>
+              ))}
             </div>
           )}
 
@@ -272,17 +388,27 @@ export function OnboardingDetailDrawer({
               <ChevronRight className="w-4 h-4" />
             </button>
           )}
-          <button
-            onClick={() => onToggleBlocked(item.id)}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border ${
-              item.blocked
-                ? 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                : 'border-red-200 text-red-600 hover:bg-red-50'
-            }`}
-          >
-            <Flag className="w-4 h-4" />
-            {item.blocked ? 'Débloquer' : 'Marquer comme bloqué'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onToggleBlocked(item.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border ${
+                item.blocked
+                  ? 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  : 'border-red-200 text-red-600 hover:bg-red-50'
+              }`}
+            >
+              <Flag className="w-4 h-4" />
+              {item.blocked ? 'Débloquer' : 'Bloqué'}
+            </button>
+            <button
+              onClick={() => exportFicheClient(item, STAGES[currentIdx].label)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50"
+              title="Exporter la fiche client"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
         </div>
       </div>
     </>,

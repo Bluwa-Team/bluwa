@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/modal'
 import { Loader2, CheckCircle2 } from 'lucide-react'
+import { STAGE_CHECKLISTS } from '../OnboardingBoard'
 
 const COUNTRIES = ['Sénégal', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Guinée', 'Mauritanie', 'Niger', 'Togo', 'Bénin', 'Cameroun']
 
@@ -47,7 +48,7 @@ export function NewProspectModal({ open, onClose }: Props) {
             <CheckCircle2 className="w-6 h-6 text-emerald-600" />
           </div>
           <p className="font-medium text-gray-900">Prospect ajouté</p>
-          <p className="text-sm text-gray-500 mt-1">{form.org_name} → colonne Prospect</p>
+          <p className="text-sm text-gray-500 mt-1">{form.org_name} → colonne Prospect avec {STAGE_CHECKLISTS.prospect.length} étapes de cadrage</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
