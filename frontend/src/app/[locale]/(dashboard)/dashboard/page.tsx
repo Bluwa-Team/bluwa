@@ -1,14 +1,22 @@
 'use client'
 
-import { ArrowRight, CircleDot } from 'lucide-react'
+import React from 'react'
+import { ArrowRight, TrendingUp, TrendingDown, BarChart3, Factory, Boxes, AlertTriangle, Clock, Info, CheckCircle2, Layers, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, CartesianGrid,
+  PieChart, Pie, Cell, Label,
 } from 'recharts'
-
-const TODAY = '2026-05-26'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, CardAction } from '@/components/ui/card'
+import { Alert } from '@/components/ui/alert'
+import { PeriodPicker, type PeriodValue } from '@/components/ui/period-picker'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart'
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -17,13 +25,10 @@ const KPI_DATA = {
   caVsM1:        +5,
   margeBrutePct: 35.0,
   margeBruteVal: 2_240_000,
-  ebitdaPct:     13.1,
-  ebitdaVal:     840_000,
   trs:           76,
   trsDisp:       88,
   trsPerf:       92,
   trsQual:       94,
-  otif:          91,
   valeurStock:   8_400_000,
 }
 
@@ -36,89 +41,224 @@ const CA_MARGE_DATA = [
   { mois: 'Mai', ca: 6_400_000, cout: 4_160_000 },
 ]
 
+const caMargeChartConfig: ChartConfig = {
+  ca:   { label: 'CA',              color: 'var(--chart-1)' },
+  cout: { label: 'Coût production', color: 'var(--chart-2)' },
+}
+
 const MIX_VENTES = [
-  { name: 'Originale',   value: 42, color: '#2563eb' },
-  { name: 'Vanille',     value: 28, color: '#f97316' },
-  { name: 'Gingembre',   value: 16, color: '#ef4444' },
-  { name: 'Menthe',      value: 8,  color: '#22c55e' },
-  { name: 'Citronnelle', value: 6,  color: '#93c5fd' },
+  { name: 'Originale',   value: 42, color: 'var(--chart-1)' },
+  { name: 'Vanille',     value: 28, color: 'var(--chart-2)' },
+  { name: 'Gingembre',   value: 16, color: 'var(--chart-3)' },
+  { name: 'Menthe',      value: 8,  color: 'var(--chart-4)' },
+  { name: 'Citronnelle', value: 6,  color: 'var(--chart-5)' },
 ]
 
-const MARGE_INSIGHT = {
-  ecartMoyen:     +4.2,
-  ecartTendance:  'up' as const,
-  produitDéviant: 'Vanille',
-  ecartProduit:   +6.8,
-  commentaire:    'Surconsommation MP & rebuts ligne C.',
+const mixChartConfig: ChartConfig = {
+  Originale:   { label: 'Originale',   color: 'var(--chart-1)' },
+  Vanille:     { label: 'Vanille',     color: 'var(--chart-2)' },
+  Gingembre:   { label: 'Gingembre',   color: 'var(--chart-3)' },
+  Menthe:      { label: 'Menthe',      color: 'var(--chart-4)' },
+  Citronnelle: { label: 'Citronnelle', color: 'var(--chart-5)' },
 }
+
+const MARGE_PRODUITS = [
+  { produit: 'Vanille',   ecart: +6.8, tendance: 'up'   as const, cause: 'Surconsommation MP · rebuts ligne C.' },
+  { produit: 'Gingembre', ecart: -2.1, tendance: 'down' as const, cause: 'Rendement matière amélioré · lot G-114.' },
+  { produit: 'Originale', ecart: +1.5, tendance: 'up'   as const, cause: 'Légère dérive coût eau · sous investigation.' },
+]
 
 type AlertePrio = {
   id:     string
   niveau: 'rouge' | 'jaune' | 'bleu' | 'vert'
-  emoji:  string
   titre:  string
   detail: string
   lien?:  string
 }
 
 const ALERTES_PRIORITAIRES: AlertePrio[] = [
-  { id: 'a1', niveau: 'rouge', emoji: '⚠️', titre: 'Gousses de vanille — 3 kg restants',     detail: 'Sous stock de sécurité · OF Vanille à risque sous 5j',         lien: '/stocks'           },
-  { id: 'a2', niveau: 'jaune', emoji: '⏳', titre: 'Lot LOT-PFORI-039 — DLC dans 8j',        detail: '142 bouteilles · à prioriser sur ventes Dakar',                lien: '/stocks'           },
-  { id: 'a3', niveau: 'bleu',  emoji: '🧑‍💼', titre: 'MRP : 4 composants à commander',         detail: 'Calcul à partir des OF planifiés · Voir suggestions',           lien: '/approvisionnement'},
-  { id: 'a4', niveau: 'vert',  emoji: '✅', titre: 'Bouteilles 1L — réception confirmée',    detail: '2 400 u reçues · Verrerie Dakar · Lot OK',                     lien: '/reception'        },
+  { id: 'a1', niveau: 'rouge', titre: 'Gousses de vanille : 3 kg restants',   detail: 'Sous stock de sécurité · OF Vanille à risque sous 5j', lien: '/stocks'            },
+  { id: 'a2', niveau: 'jaune', titre: 'Lot LOT-PFORI-039 · DLC dans 8j',      detail: '142 bouteilles · à prioriser sur ventes Dakar',        lien: '/stocks'            },
+  { id: 'a3', niveau: 'bleu',  titre: 'MRP : 4 composants à commander',       detail: 'Calcul à partir des OF planifiés · Voir suggestions',   lien: '/approvisionnement' },
+  { id: 'a4', niveau: 'vert',  titre: 'Bouteilles 1L · réception confirmée',  detail: '2 400 u reçues · Verrerie Dakar · Lot OK',              lien: '/reception'         },
 ]
 
-const ALERTE_STYLES: Record<AlertePrio['niveau'], { bg: string; border: string; titleColor: string }> = {
-  rouge: { bg: 'bg-red-50',    border: 'border-red-200',    titleColor: 'text-red-800'    },
-  jaune: { bg: 'bg-amber-50',  border: 'border-amber-200',  titleColor: 'text-amber-800'  },
-  bleu:  { bg: 'bg-blue-50',   border: 'border-blue-200',   titleColor: 'text-blue-800'   },
-  vert:  { bg: 'bg-emerald-50',border: 'border-emerald-200',titleColor: 'text-emerald-800'},
+const ALERTE_CONFIG: Record<AlertePrio['niveau'], {
+  icon: React.ElementType
+  variant: 'destructive' | 'warning' | 'info' | 'success'
+}> = {
+  rouge: { icon: AlertTriangle, variant: 'destructive' },
+  jaune: { icon: Clock,         variant: 'warning'     },
+  bleu:  { icon: Info,          variant: 'info'        },
+  vert:  { icon: CheckCircle2,  variant: 'success'     },
 }
 
-const PL_DATA = {
-  ca:           6_400_000,
-  coutProd:     4_160_000,
-  margebrute:   2_240_000,
-  chargesFixes: 1_400_000,
-  ebitda:         840_000,
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtM(v: number) {
   return `${(v / 1_000_000).toFixed(2).replace('.', ',')}M`
 }
-function fmtYAxis(v: number) {
-  return `${(v / 1_000_000).toFixed(0)}M`
-}
 
-// ── KPI card direction ────────────────────────────────────────────────────────
+// ── KPI card ──────────────────────────────────────────────────────────────────
 
-function KpiDir({ label, value, sub, accentClass }: {
-  label: string; value: string; sub: string; accentClass: string
+function KpiDir({ label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon }: {
+  label: string
+  value: string
+  sub: string
+  bgClass: string
+  iconBgClass: string
+  iconColorClass: string
+  icon: React.ElementType
 }) {
   return (
-    <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
-      <div className={`h-1 w-full ${accentClass}`} />
-      <div className="p-4 flex flex-col gap-1 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+    <div className={`rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgClass}`}>
+          <Icon className={`size-4 ${iconColorClass}`} />
+        </div>
+        <span className="text-sm font-semibold">{label}</span>
+      </div>
+      <div className="bg-white dark:bg-background rounded-lg px-3 py-2.5 shadow-sm">
         <p className="text-2xl font-bold tracking-tight leading-none">{value}</p>
-        <p className="text-xs text-muted-foreground leading-snug">{sub}</p>
+        <p className="text-xs text-muted-foreground mt-1 leading-tight">{sub}</p>
       </div>
     </div>
   )
 }
 
-// ── Custom tooltip ────────────────────────────────────────────────────────────
+// ── Marge produit card ────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
+function MargeCard({ produit, ecart, tendance, cause }: typeof MARGE_PRODUITS[0]) {
+  const bad = ecart > 0
+  const strong = Math.abs(ecart) >= 4
+
+  const palette = bad
+    ? { text: 'text-red-600 dark:text-red-400', bar: strong ? 'bg-red-500' : 'bg-red-300', badge: 'bg-red-100 dark:bg-red-900/40', icon: 'text-red-600 dark:text-red-400', strip: strong ? 'bg-red-500' : 'bg-red-400' }
+    : { text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500', badge: 'bg-emerald-100 dark:bg-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400', strip: 'bg-emerald-500' }
+
+  const Icon = tendance === 'up' ? TrendingUp : TrendingDown
+  const barWidth = `${Math.min(Math.abs(ecart) * 12, 100)}%`
+
+  const bgClass = bad
+    ? strong
+      ? 'bg-gradient-to-br from-red-50 to-white dark:from-red-950/30 dark:to-card'
+      : 'bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-card'
+    : 'bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card'
+
   return (
-    <div className="bg-card border rounded-lg shadow-lg px-3 py-2 text-xs">
-      <p className="font-semibold mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }}>{p.name} : {fmtM(p.value)} FCFA</p>
+    <Card className={`border-0 ring-0 shadow-none rounded-xl py-0 gap-0 ${bgClass}`}>
+      <CardContent className="p-3 flex flex-col gap-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold leading-none">{produit}</p>
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${palette.badge}`}>
+            <Icon className={`size-[14px] ${palette.icon}`} />
+          </div>
+        </div>
+
+        {/* Écart */}
+        <div>
+          <p className={`text-2xl font-black tracking-tight leading-none ${palette.text}`}>
+            {ecart > 0 ? '+' : ''}{ecart}%
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">écart vs coût cible</p>
+        </div>
+
+        {/* Barre de sévérité */}
+        <div className="h-1 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full ${palette.bar}`} style={{ width: barWidth }} />
+        </div>
+
+        {/* Cause */}
+        <p className="text-[11px] text-muted-foreground truncate" title={cause}>{cause}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── TRS gauge (SVG pur, semi-circulaire) ─────────────────────────────────────
+
+const TRS_SEGMENTS = [
+  { from: 0,  to: 60,  color: '#ef4444' },  // rouge
+  { from: 60, to: 70,  color: '#f97316' },  // orange
+  { from: 70, to: 80,  color: '#eab308' },  // jaune
+  { from: 80, to: 90,  color: '#3b82f6' },  // bleu
+  { from: 90, to: 100, color: '#22c55e' },  // vert
+]
+
+function TrsGauge({ value }: { value: number }) {
+  const cx = 50, cy = 50, r = 42, sw = 7
+
+  // Conversion valeur (0-100) → coordonnées sur le demi-cercle
+  // 0% = gauche (angle π), 100% = droite (angle 0)
+  const pt = (v: number) => ({
+    x: cx - r * Math.cos((v / 100) * Math.PI),
+    y: cy - r * Math.sin((v / 100) * Math.PI),
+  })
+
+  const arc = (v1: number, v2: number) => {
+    const s = pt(v1), e = pt(v2)
+    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 0 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`
+  }
+
+  // Aiguille
+  const angle = Math.PI * (1 - value / 100)
+  const nl = r - sw - 1
+  const nx = (cx + nl * Math.cos(angle)).toFixed(2)
+  const ny = (cy - nl * Math.sin(angle)).toFixed(2)
+
+  return (
+    <svg viewBox="0 0 100 56" className="w-full h-full overflow-visible" aria-label={`TRS ${value}%`}>
+      {/* Fond gris */}
+      <path d={arc(0, 100)} fill="none" stroke="#e5e7eb" strokeWidth={sw} strokeLinecap="butt" />
+      {/* Segments colorés avec léger espacement */}
+      {TRS_SEGMENTS.map((seg, i) => (
+        <path
+          key={seg.from}
+          d={arc(
+            seg.from + (i > 0 ? 1 : 0),
+            seg.to - (i < TRS_SEGMENTS.length - 1 ? 1 : 0),
+          )}
+          fill="none"
+          stroke={seg.color}
+          strokeWidth={sw}
+          strokeLinecap={i === 0 || i === TRS_SEGMENTS.length - 1 ? 'round' : 'butt'}
+        />
       ))}
+      {/* Aiguille */}
+      <line x1={cx} y1={cy} x2={nx} y2={ny}
+        stroke="#1f2937" strokeWidth={1.5} strokeLinecap="round" />
+      {/* Pivot */}
+      <circle cx={cx} cy={cy} r={3.5} fill="white" stroke="#1f2937" strokeWidth={1.5} />
+    </svg>
+  )
+}
+
+// ── TRS KPI card ──────────────────────────────────────────────────────────────
+
+function TrsKpiCard() {
+  return (
+    <div className="rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default bg-teal-50 dark:bg-teal-950/30">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-100 dark:bg-teal-900/50">
+          <Factory className="size-4 text-teal-600 dark:text-teal-400" />
+        </div>
+        <span className="text-sm font-semibold">TRS atelier</span>
+      </div>
+      <div className="bg-white dark:bg-background rounded-lg px-3 py-2.5 shadow-sm flex items-center gap-2">
+        {/* Texte */}
+        <div className="flex-1 min-w-0">
+          <p className="text-2xl font-bold tracking-tight leading-none">{KPI_DATA.trs}%</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-tight truncate">
+            Disp {KPI_DATA.trsDisp} · Perf {KPI_DATA.trsPerf} · Qual {KPI_DATA.trsQual}
+          </p>
+        </div>
+        {/* Jauge */}
+        <div className="w-[72px] h-[42px] shrink-0">
+          <TrsGauge value={KPI_DATA.trs} />
+        </div>
+      </div>
     </div>
   )
 }
@@ -127,181 +267,195 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function DashboardPage() {
   const locale = useLocale()
-
-  const formattedDate = new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  }).format(new Date(TODAY))
+  const [periodeCA, setPeriodeCA] = React.useState<PeriodValue>({ preset: '6m' })
+  const [periodeStock, setPeriodeStock] = React.useState<PeriodValue>({ preset: '6m' })
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4">
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tableau de bord</h1>
-          <p className="text-muted-foreground text-sm mt-1 capitalize">{formattedDate}</p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border">
-          <CircleDot className="size-3 text-emerald-500" />
-          Données simulées
-        </div>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">Tableau de bord</h1>
 
       {/* ── KPI strip ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiDir label="CA du mois"      value={fmtM(KPI_DATA.caMois)}                     sub={`FCFA · ${KPI_DATA.caVsM1 > 0 ? '+' : ''}${KPI_DATA.caVsM1}% vs M-1`}          accentClass="bg-blue-500"    />
-        <KpiDir label="Marge brute"     value={`${KPI_DATA.margeBrutePct.toFixed(1)}%`}   sub={`${fmtM(KPI_DATA.margeBruteVal)} FCFA`}                                          accentClass="bg-emerald-500" />
-        <KpiDir label="EBITDA prév."    value={`${KPI_DATA.ebitdaPct.toFixed(1)}%`}       sub={`${fmtM(KPI_DATA.ebitdaVal)} FCFA`}                                              accentClass="bg-orange-500"  />
-        <KpiDir label="TRS atelier"     value={`${KPI_DATA.trs}%`}                        sub={`Disp ${KPI_DATA.trsDisp} · Perf ${KPI_DATA.trsPerf} · Qual ${KPI_DATA.trsQual}`} accentClass="bg-teal-500"  />
-        <KpiDir label="OTIF livraisons" value={`${KPI_DATA.otif}%`}                       sub="On-Time In-Full · 30j"                                                            accentClass="bg-amber-500"  />
-        <KpiDir label="Valeur stock"    value={fmtM(KPI_DATA.valeurStock)}                sub="FCFA · MP+PF+AC"                                                                  accentClass="bg-violet-500" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+        <KpiDir
+          label="CA du mois"
+          value={fmtM(KPI_DATA.caMois)}
+          sub={`FCFA · ${KPI_DATA.caVsM1 > 0 ? '+' : ''}${KPI_DATA.caVsM1}% vs M-1`}
+          bgClass="bg-blue-50 dark:bg-blue-950/30"
+          iconBgClass="bg-blue-100 dark:bg-blue-900/50"
+          iconColorClass="text-blue-600 dark:text-blue-400"
+          icon={TrendingUp}
+        />
+        <KpiDir
+          label="Marge brute"
+          value={`${KPI_DATA.margeBrutePct.toFixed(1)}%`}
+          sub={`${fmtM(KPI_DATA.margeBruteVal)} FCFA`}
+          bgClass="bg-emerald-50 dark:bg-emerald-950/30"
+          iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
+          iconColorClass="text-emerald-600 dark:text-emerald-400"
+          icon={BarChart3}
+        />
+        <TrsKpiCard />
+        <KpiDir
+          label="Valeur stock"
+          value={fmtM(KPI_DATA.valeurStock)}
+          sub="FCFA · MP+PF+AC"
+          bgClass="bg-violet-50 dark:bg-violet-950/30"
+          iconBgClass="bg-violet-100 dark:bg-violet-900/50"
+          iconColorClass="text-violet-600 dark:text-violet-400"
+          icon={Boxes}
+        />
       </div>
 
       {/* ── Graphiques ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Bar chart CA & Coût */}
-        <div className="lg:col-span-2 rounded-2xl border bg-card shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold flex items-center gap-2">
-              <span>📈</span> CA &amp; Marge brute
-              <span className="text-muted-foreground font-normal">(6 mois)</span>
-            </p>
-            <span className="text-xs text-muted-foreground">FCFA</span>
-          </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={CA_MARGE_DATA} barGap={4} barCategoryGap="28%">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={fmtYAxis} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={36} />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'hsl(var(--muted))', radius: 4 }} />
-              <Legend iconType="square" iconSize={10} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-              <Bar dataKey="ca"   name="CA"              fill="#2563eb" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cout" name="Coût production" fill="#f97316" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <Card className="lg:col-span-2 py-3 gap-2">
+          <CardHeader>
+            <CardTitle>CA &amp; Marge brute</CardTitle>
+            <CardDescription>6 derniers mois · FCFA</CardDescription>
+            <CardAction>
+              <PeriodPicker value={periodeCA} onChange={setPeriodeCA} defaultPreset="6m" />
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={caMargeChartConfig} className="h-[200px] w-full">
+              <BarChart accessibilityLayer data={CA_MARGE_DATA}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="mois" tickLine={false} tickMargin={10} axisLine={false} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dashed" formatter={(v) => `${fmtM(Number(v))} FCFA`} />}
+                />
+                <Bar dataKey="ca"   fill="var(--color-ca)"   radius={4} />
+                <Bar dataKey="cout" fill="var(--color-cout)" radius={4} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex-col items-start gap-2 text-sm">
+            <div className="flex gap-2 font-medium leading-none">
+              En hausse de +{KPI_DATA.caVsM1}% ce mois <TrendingUp className="size-4" />
+            </div>
+            <div className="leading-none text-muted-foreground">
+              CA vs coût de production sur la période sélectionnée
+            </div>
+          </CardFooter>
+        </Card>
 
         {/* Donut mix ventes */}
-        <div className="rounded-2xl border bg-card shadow-sm p-5">
-          <p className="text-sm font-semibold flex items-center gap-2 mb-4">
-            <span>🧃</span> Mix ventes par saveur
-          </p>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={MIX_VENTES} cx="50%" cy="50%" innerRadius={52} outerRadius={82} paddingAngle={2} dataKey="value">
-                {MIX_VENTES.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v: any, name: any) => [`${v}%`, name]} contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid hsl(var(--border))' }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-x-3 gap-y-1.5 justify-center mt-2">
-            {MIX_VENTES.map((e) => (
-              <div key={e.name} className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: e.color }} />
-                <span className="text-[11px] text-muted-foreground">{e.name}</span>
+        <Card className="py-3 gap-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-violet-100 dark:bg-violet-900/50">
+                <Layers className="size-[15px] text-violet-600 dark:text-violet-400" />
               </div>
-            ))}
-          </div>
-        </div>
+              Répartition du stock
+            </CardTitle>
+            <CardAction>
+              <PeriodPicker value={periodeStock} onChange={setPeriodeStock} defaultPreset="6m" />
+            </CardAction>
+          </CardHeader>
+          <CardContent className="pb-2">
+            <ChartContainer config={mixChartConfig} className="mx-auto h-[220px]">
+              <PieChart>
+                <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v}%`} nameKey="name" hideLabel />} />
+                <Pie
+                  data={MIX_VENTES}
+                  cx="50%" cy="50%"
+                  innerRadius={70} outerRadius={95}
+                  paddingAngle={2}
+                  dataKey="value"
+                  nameKey="name"
+                  strokeWidth={0}
+                >
+                  <Label
+                    content={({ viewBox }) => {
+                      if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                        return (
+                          <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                            <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-xl font-bold">
+                              {MIX_VENTES[0].value}%
+                            </tspan>
+                            <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 18} className="fill-muted-foreground text-[10px]">
+                              {MIX_VENTES[0].name}
+                            </tspan>
+                          </text>
+                        )
+                      }
+                    }}
+                  />
+                  {MIX_VENTES.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {MIX_VENTES.map((e) => (
+                <div key={e.name} className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: e.color }} />
+                  <span className="text-[11px] text-muted-foreground truncate flex-1">{e.name}</span>
+                  <span className="text-[11px] font-semibold tabular-nums">{e.value}%</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* ── Marge insight + Alertes ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* ── Analyse de marge + Alertes ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-        {/* Analyse de marge — insight compact */}
-        <div className="rounded-2xl border bg-card shadow-sm p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold flex items-center gap-2">
-              <span>💰</span> Analyse de marge
-              <span className="text-muted-foreground font-normal">— Coût théorique vs réel</span>
-            </p>
-            <Link href={`/${locale}/analyse-marge`} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5">
-              Détail <ArrowRight className="size-3" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Écart coût moyen</p>
-              <p className={`text-xl font-bold ${MARGE_INSIGHT.ecartMoyen > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                {MARGE_INSIGHT.ecartMoyen > 0 ? '+' : ''}{MARGE_INSIGHT.ecartMoyen}%
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">sur le coût de revient</p>
-            </div>
-            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Produit déviant</p>
-              <p className="text-xl font-bold text-orange-600">{MARGE_INSIGHT.produitDéviant}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">+{MARGE_INSIGHT.ecartProduit}% d&apos;écart</p>
-            </div>
-            <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Tendance</p>
-              <p className={`text-xl font-bold ${MARGE_INSIGHT.ecartTendance === 'up' ? 'text-red-500' : 'text-emerald-500'}`}>
-                {MARGE_INSIGHT.ecartTendance === 'up' ? '↑' : '↓'}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">vs M-1</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground border-t pt-3">
-            <span className={`font-semibold ${MARGE_INSIGHT.ecartMoyen > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              Écart moyen : {MARGE_INSIGHT.ecartMoyen > 0 ? '+' : ''}{MARGE_INSIGHT.ecartMoyen}%
-            </span>
-            {' '}sur le coût de revient — {MARGE_INSIGHT.commentaire}
-          </p>
-        </div>
+        {/* Analyse de marge */}
+        <Card className="lg:col-span-3 py-3 gap-3">
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-100 dark:bg-rose-900/50">
+                <BarChart3 className="size-[15px] text-rose-600 dark:text-rose-400" />
+              </div>
+              Analyse de marge
+            </CardTitle>
+            <CardAction className="row-span-1 self-center">
+              <Link href={`/${locale}/production`} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium">
+                Détail <ArrowRight className="size-3" />
+              </Link>
+            </CardAction>
+            <CardDescription className="mt-2">Écart vs coût cible · 3 produits</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {MARGE_PRODUITS.map((m) => <MargeCard key={m.produit} {...m} />)}
+          </CardContent>
+        </Card>
 
-        {/* Alertes prioritaires */}
-        <div className="rounded-2xl border bg-card shadow-sm p-5 flex flex-col gap-3">
-          <p className="text-sm font-semibold flex items-center gap-2">
-            <span>⚠️</span> Alertes prioritaires
-          </p>
-          <div className="space-y-2">
+        {/* Alertes */}
+        <Card className="lg:col-span-2 py-3 gap-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-100 dark:bg-amber-900/50">
+                <Bell className="size-[15px] text-amber-600 dark:text-amber-400" />
+              </div>
+              Alertes prioritaires
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
             {ALERTES_PRIORITAIRES.map((a) => {
-              const s = ALERTE_STYLES[a.niveau]
-              const inner = (
-                <div className={`rounded-xl border px-3.5 py-2.5 ${s.bg} ${s.border}`}>
-                  <p className={`text-xs font-semibold flex items-center gap-1.5 ${s.titleColor}`}>
-                    <span>{a.emoji}</span> {a.titre}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{a.detail}</p>
-                </div>
+              const cfg = ALERTE_CONFIG[a.niveau]
+              const alertEl = (
+                <Alert variant={cfg.variant} icon={cfg.icon as never} title={a.titre}>
+                  {a.detail}
+                </Alert>
               )
               return a.lien
-                ? <Link key={a.id} href={`/${locale}${a.lien}`} className="block hover:opacity-80 transition-opacity">{inner}</Link>
-                : <div key={a.id}>{inner}</div>
+                ? <Link key={a.id} href={`/${locale}${a.lien}`} className="block hover:opacity-80 transition-opacity">{alertEl}</Link>
+                : <div key={a.id}>{alertEl}</div>
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
       </div>
 
-      {/* ── P&L prévisionnel ── */}
-      <div className="rounded-2xl border bg-card shadow-sm p-5">
-        <p className="text-sm font-semibold flex items-center gap-2 mb-5">
-          <span>🧳</span> P&amp;L prévisionnel — Mois en cours
-        </p>
-        <div className="grid grid-cols-5 items-center">
-          {([
-            { label: 'CA',               value: PL_DATA.ca,           color: 'text-foreground',       op: null },
-            { label: '– Coût production', value: PL_DATA.coutProd,    color: 'text-muted-foreground', op: '–'  },
-            { label: '= Marge brute',     value: PL_DATA.margebrute,  color: 'text-emerald-600',      op: '='  },
-            { label: '– Charges fixes',   value: PL_DATA.chargesFixes,color: 'text-muted-foreground', op: '–'  },
-            { label: '= EBITDA',          value: PL_DATA.ebitda,      color: 'text-blue-600',         op: '='  },
-          ] as const).map((item, i) => (
-            <div key={i} className="flex items-center">
-              {item.op && (
-                <span className="text-lg text-muted-foreground font-light px-2 hidden sm:block">{item.op}</span>
-              )}
-              <div className={`flex-1 ${i > 0 ? 'pl-2 sm:pl-0' : ''}`}>
-                <p className="text-[11px] text-muted-foreground font-medium">{item.label}</p>
-                <p className={`text-base font-bold tabular-nums mt-0.5 ${item.color}`}>
-                  {item.value.toLocaleString('fr-FR')}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
     </div>
   )
