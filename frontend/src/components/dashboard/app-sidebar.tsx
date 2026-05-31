@@ -193,7 +193,6 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       <SidebarContent>
         {NAV_GROUPS
           .filter((g) => g.items.length > 0)
-          .filter((g) => g.items.some((i) => !i.disabled))  // masque les groupes 100% désactivés
           .map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
