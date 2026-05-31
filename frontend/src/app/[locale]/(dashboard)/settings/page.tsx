@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Building2, User, Palette, Factory } from 'lucide-react'
 import type { Metadata } from 'next'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export const metadata: Metadata = { title: 'Paramètres · Bluwa ERP' }
 
@@ -134,9 +135,9 @@ export default async function SettingsPage() {
             <p className="text-xs text-muted-foreground mb-1">Langue</p>
             <p className="font-medium">Français</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Thème</p>
-            <p className="text-muted-foreground italic text-xs">Bientôt disponible</p>
+          <div className="col-span-2">
+            <p className="text-xs text-muted-foreground mb-2">Thème</p>
+            <ThemeToggle />
           </div>
         </div>
       </section>
