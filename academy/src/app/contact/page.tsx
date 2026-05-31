@@ -1,5 +1,6 @@
 import { Mail, MessageSquare } from 'lucide-react'
 import type { Metadata } from 'next'
+import { ContactForm } from './ContactForm'
 
 export const metadata: Metadata = { title: 'Contact  Bluwa Academy' }
 
@@ -43,47 +44,7 @@ export default function ContactPage() {
 
       <div className="bg-slate-50 rounded-xl p-6">
         <p className="font-semibold text-slate-800 mb-4">Formulaire de demande</p>
-        <form className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Nom complet</label>
-            <input
-              type="text"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Votre nom"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Adresse e-mail</label>
-            <input
-              type="email"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="vous@entreprise.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Objet de la demande</label>
-            <select className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option>Demande de formation</option>
-              <option>Accès à la plateforme Academy</option>
-              <option>Information sur le CBSCP</option>
-              <option>Autre</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Message</label>
-            <textarea
-              rows={4}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              placeholder="Décrivez votre besoin..."
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
-          >
-            Envoyer la demande
-          </button>
-        </form>
+        <ContactForm />
       </div>
     </div>
   )

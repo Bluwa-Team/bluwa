@@ -17,6 +17,7 @@ export default function PlanificationMRP2Page() {
   return (
     <ModulePage
       num="02"
+      moduleSlug="planification-mrp2"
       title="Planification & Pilotage d'Atelier"
       subtitle="La Méthode MRP2"
       duration="4 heures"
@@ -32,6 +33,10 @@ export default function PlanificationMRP2Page() {
       sections={[
         {
           title: 'Le processus de planification opérationnelle',
+          video: {
+            title: 'De la prévision des ventes au lancement de l\'OF — le cycle MRP2',
+            duration: '3 min 20 s',
+          },
           content: (
             <ol className="space-y-3">
               {steps.map((s, i) => (
@@ -50,6 +55,10 @@ export default function PlanificationMRP2Page() {
         },
         {
           title: 'TRS  Taux de Rendement Synthétique',
+          video: {
+            title: 'Calcul du TRS et pilotage de l\'atelier dans Bluwa',
+            duration: '2 min 40 s',
+          },
           content: (
             <div className="space-y-3">
               <p>Le TRS mesure l'efficacité réelle d'un équipement en intégrant trois types de pertes :</p>

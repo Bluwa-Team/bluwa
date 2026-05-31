@@ -17,6 +17,7 @@ export default function StocksQualitePage() {
   return (
     <ModulePage
       num="03"
+      moduleSlug="stocks-qualite"
       title="Gestion des stocks & Contrôle qualité"
       subtitle="L'Optimisation WM"
       duration="4 heures"
@@ -32,6 +33,10 @@ export default function StocksQualitePage() {
       sections={[
         {
           title: 'Zoning des stocks',
+          video: {
+            title: 'Les 4 zones de stock dans Bluwa WM — libre, quarantaine, rétention, rebuts',
+            duration: '2 min 30 s',
+          },
           content: (
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
@@ -50,6 +55,10 @@ export default function StocksQualitePage() {
         },
         {
           title: 'Phase exécution terrain  Séquence OF',
+          video: {
+            title: 'Suivi d\'un ordre de fabrication de A à Z dans Bluwa',
+            duration: '3 min 15 s',
+          },
           content: (
             <ol className="space-y-3">
               {execSteps.map((s, i) => (

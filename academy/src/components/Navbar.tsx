@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { UserMenu } from '@/components/UserMenu'
 
 const links = [
-  { href: '/parcours', label: 'Parcours' },
-  { href: '/modules', label: 'Modules' },
-  { href: '/certifications', label: 'Certifications' },
-  { href: '/aide', label: 'Aide' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/parcours',       label: 'Parcours'        },
+  { href: '/modules',        label: 'Modules'         },
+  { href: '/certifications', label: 'Certifications'  },
+  { href: '/aide',           label: 'Aide'            },
+  { href: '/contact',        label: 'Contact'         },
 ]
 
 export function Navbar() {
@@ -37,6 +38,7 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
+          <UserMenu />
         </nav>
 
         <button className="md:hidden" onClick={() => setOpen(!open)}>
@@ -56,6 +58,9 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
+          <div className="pt-1 border-t border-slate-100">
+            <UserMenu />
+          </div>
         </div>
       )}
     </header>
