@@ -251,7 +251,7 @@ export default function GEDQualitePage() {
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 currentUser === m.nom
                   ? 'bg-violet-600 text-white shadow-sm'
-                  : 'bg-white border text-muted-foreground hover:text-foreground hover:border-violet-300'
+                  : 'bg-card border text-muted-foreground hover:text-foreground hover:border-violet-300'
               }`}
             >
               {m.nom}

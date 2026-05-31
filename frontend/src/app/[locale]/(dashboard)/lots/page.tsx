@@ -189,8 +189,8 @@ export default function LotsProductionPage() {
 
         <div className="rounded-2xl p-4 bg-gray-50 dark:bg-gray-900/20 hover:scale-[1.02] hover:shadow-md transition-all cursor-default">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-              <Package className="size-[18px] text-gray-500" />
+            <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+              <Package className="size-[18px] text-muted-foreground" />
             </div>
             <span className="text-sm font-semibold">Brouillons</span>
           </div>

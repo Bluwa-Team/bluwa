@@ -400,7 +400,7 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
                               className={`w-[86px] shrink-0 h-8 text-right text-xs font-mono tabular-nums ${
                                 isEdited
                                   ? 'border-amber-400 bg-amber-50 focus-visible:ring-amber-300'
-                                  : 'bg-white'
+                                  : 'bg-card'
                               }`}
                             />
                             <span className="w-[30px] shrink-0 text-xs text-stone-600">{row.unite}</span>

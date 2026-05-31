@@ -855,12 +855,12 @@ export default function MrpPage() {
             </div>
             <div className="rounded-xl border bg-gray-50 dark:bg-gray-900/20 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <XCircle className="size-3.5 text-gray-500" />
+                <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                  <XCircle className="size-3.5 text-muted-foreground" />
                 </div>
-                <span className="text-xs font-semibold text-gray-600">Ignorées</span>
+                <span className="text-xs font-semibold text-muted-foreground">Ignorées</span>
               </div>
-              <p className="text-2xl font-bold text-gray-600">{recCounts.IGNORED}</p>
+              <p className="text-2xl font-bold text-muted-foreground">{recCounts.IGNORED}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Rejetées manuellement</p>
             </div>
           </div>
@@ -981,7 +981,7 @@ export default function MrpPage() {
                                 <button
                                   onClick={() => handleIgnore(rec)}
                                   disabled={isActing}
-                                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 border transition-colors disabled:opacity-50 whitespace-nowrap"
                                 >
                                   {isActing ? <Loader2 className="size-3 animate-spin" /> : <XCircle className="size-3 shrink-0" />}
                                   Ignorer
