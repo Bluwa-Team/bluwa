@@ -214,8 +214,8 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       <SidebarFooter>
         <SidebarMenu>
           <NavItem
-            item={{ title: t('settings'), url: '/settings', icon: Settings, disabled: true }}
-            isActive={false}
+            item={{ title: t('settings'), url: '/settings', icon: Settings, disabled: false }}
+            isActive={pathname === '/settings'}
           />
         </SidebarMenu>
       </SidebarFooter>
