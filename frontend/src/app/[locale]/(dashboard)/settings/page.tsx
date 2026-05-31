@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Building2, User, Globe, Palette } from 'lucide-react'
+import { Building2, User, Palette, Factory } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Paramètres · Bluwa ERP' }
@@ -10,22 +10,30 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, organisation_id')
+    .select('full_name, role, organization_id')
     .eq('id', user?.id ?? '')
     .single()
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('name, country, currency')
-    .eq('id', profile?.organisation_id ?? '')
-    .single()
+  const [{ data: org }, { data: siteAccess }] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('name, country, currency')
+      .eq('id', profile?.organization_id ?? '')
+      .single(),
+    supabase
+      .from('user_site_access')
+      .select('factories(id, name, code, country, city, timezone, is_active)')
+      .eq('user_id', user?.id ?? ''),
+  ])
+
+  const factories = siteAccess?.flatMap(r => r.factories ? [r.factories] : []) ?? []
 
   return (
     <div className="max-w-2xl space-y-6">
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
-        <p className="text-sm text-muted-foreground mt-1">Informations sur votre compte et votre organisation.</p>
+        <p className="text-sm text-muted-foreground mt-1">Compte, organisation et sites de production.</p>
       </div>
 
       {/* Organisation */}
@@ -50,6 +58,43 @@ export default async function SettingsPage() {
             <p className="font-medium">{org?.currency ?? 'XOF'}</p>
           </div>
         </div>
+      </section>
+
+      {/* Sites de production */}
+      <section className="rounded-xl border bg-card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center">
+            <Factory className="size-4 text-teal-600 dark:text-teal-400" />
+          </div>
+          <h2 className="font-semibold text-sm">Sites de production</h2>
+          <span className="ml-auto text-xs text-muted-foreground">{factories.length} site{factories.length > 1 ? 's' : ''}</span>
+        </div>
+
+        {factories.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">Aucun site assigné.</p>
+        ) : (
+          <div className="space-y-3">
+            {factories.map((f: any) => (
+              <div key={f.id} className="flex items-start justify-between rounded-lg bg-muted/40 px-4 py-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold">{f.name}</p>
+                    <span className="font-mono text-[11px] bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">
+                      {f.code}
+                    </span>
+                    {!f.is_active && (
+                      <span className="text-[11px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Inactif</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {[f.city, f.country].filter(Boolean).join(', ')}
+                    {f.timezone && <span className="ml-2 opacity-60">· {f.timezone}</span>}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Compte utilisateur */}
@@ -91,12 +136,11 @@ export default async function SettingsPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Thème</p>
-            <p className="font-medium text-muted-foreground italic text-xs">Bientôt disponible</p>
+            <p className="text-muted-foreground italic text-xs">Bientôt disponible</p>
           </div>
         </div>
       </section>
 
-      {/* Version */}
       <p className="text-xs text-muted-foreground text-center pt-2">Bluwa ERP · v0.1.0</p>
 
     </div>
