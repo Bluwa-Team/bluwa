@@ -101,55 +101,73 @@ export function AppSidebar({ orgName }: { orgName: string }) {
   const t = useTranslations('nav')
 
   const NAV_GROUPS = [
+    // ── 1. Principal ──────────────────────────────────────────────────────────
     {
       label: t('main'),
       items: [
         { title: t('dashboard'), url: '/dashboard', icon: LayoutDashboard, disabled: false },
-        { title: t('marginAnalysis'), url: '/analyse-marge', icon: TrendingUp, disabled: false },
       ],
     },
+    // ── 2. Données de référence ───────────────────────────────────────────────
     {
       label: t('referenceData'),
       items: [
-        { title: t('articles'), url: '/articles', icon: BookOpen, disabled: false },
-        { title: t('clients'), url: '/clients', icon: Users, disabled: false },
-        { title: t('suppliers'), url: '/fournisseurs', icon: Truck, disabled: false },
+        { title: t('articles'),   url: '/articles',    icon: BookOpen, disabled: false },
+        { title: t('clients'),    url: '/clients',     icon: Users,    disabled: false },
+        { title: t('suppliers'),  url: '/fournisseurs',icon: Truck,    disabled: false },
       ],
     },
+    // ── 3. Planification ─────────────────────────────────────────────────────
     {
-      label: t('sourcingSupply'),
+      label: t('planification'),
+      items: [
+        { title: t('mrp'), url: '/mrp', icon: Calculator, disabled: false },
+      ],
+    },
+    // ── 4. Achats & Stocks ───────────────────────────────────────────────────
+    {
+      label: t('achatsStocks'),
       items: [
         { title: t('approvisionnement'), url: '/approvisionnement', icon: ClipboardList,  disabled: false },
         { title: t('reception'),         url: '/reception',         icon: ShoppingCart,   disabled: false },
         { title: t('stocks'),            url: '/stocks',            icon: Warehouse,      disabled: false },
         { title: t('inventaire'),        url: '/inventaire',        icon: ClipboardCheck, disabled: false },
-        { title: t('mrp'),               url: '/mrp',               icon: Calculator,     disabled: false },
       ],
     },
-    {
-      label: t('ventes'),
-      items: [
-        { title: t('commandesClients'), url: '/ventes',     icon: ShoppingBag,   disabled: true },
-        { title: t('adv'),              url: '/adv',         icon: Receipt,       disabled: true },
-        { title: t('bonsLivraison'),    url: '/logistique',  icon: PackageCheck,  disabled: true },
-      ],
-    },
+    // ── 5. Production ─────────────────────────────────────────────────────────
     {
       label: t('production'),
       items: [
-        { title: t('ordresFabrication'),  url: '/production',                       icon: Factory,     disabled: false },
-        { title: t('mes'),                url: '/production/mes',                   icon: MonitorPlay, disabled: false },
-        { title: 'Postes de charge',      url: '/production/postes-de-charge',      icon: Cog,         disabled: false },
-        { title: t('productionBatches'),  url: '/lots',                             icon: Package,     disabled: false },
+        { title: t('ordresFabrication'), url: '/production',                  icon: Factory,     disabled: false },
+        { title: t('mes'),               url: '/production/mes',              icon: MonitorPlay, disabled: false },
+        { title: 'Postes de charge',     url: '/production/postes-de-charge', icon: Cog,         disabled: false },
+        { title: t('productionBatches'), url: '/lots',                        icon: Package,     disabled: false },
       ],
     },
+    // ── 6. Qualité ────────────────────────────────────────────────────────────
     {
       label: t('qualite'),
       items: [
-        { title: t('liberationLots'),    url: '/qualite',                       icon: FlaskConical,  disabled: false },
-        { title: t('nonConformitesQA'),  url: '/qualite/non-conformites',       icon: AlertTriangle, disabled: false },
-        { title: t('genealogie'),        url: '/qualite/genealogie',            icon: GitBranch,     disabled: false },
-        { title: t('gedQualite'),        url: '/qualite/ged',                   icon: FileText,      disabled: false },
+        { title: t('liberationLots'),   url: '/qualite',                 icon: FlaskConical,  disabled: false },
+        { title: t('nonConformitesQA'), url: '/qualite/non-conformites', icon: AlertTriangle, disabled: false },
+        { title: t('genealogie'),       url: '/qualite/genealogie',      icon: GitBranch,     disabled: false },
+        { title: t('gedQualite'),       url: '/qualite/ged',             icon: FileText,      disabled: false },
+      ],
+    },
+    // ── 7. Ventes — masqué si tout est désactivé ─────────────────────────────
+    {
+      label: t('ventes'),
+      items: [
+        { title: t('commandesClients'), url: '/ventes',    icon: ShoppingBag,  disabled: true },
+        { title: t('adv'),              url: '/adv',        icon: Receipt,      disabled: true },
+        { title: t('bonsLivraison'),    url: '/logistique', icon: PackageCheck, disabled: true },
+      ],
+    },
+    // ── 8. Analyse ────────────────────────────────────────────────────────────
+    {
+      label: t('analyse'),
+      items: [
+        { title: t('marginAnalysis'), url: '/analyse-marge', icon: TrendingUp, disabled: false },
       ],
     },
   ]
@@ -173,7 +191,10 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV_GROUPS.filter((g) => g.items.length > 0).map((group) => (
+        {NAV_GROUPS
+          .filter((g) => g.items.length > 0)
+          .filter((g) => g.items.some((i) => !i.disabled))  // masque les groupes 100% désactivés
+          .map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

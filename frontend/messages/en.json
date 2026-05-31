@@ -58,7 +58,10 @@
     "ventes": "Sales & Logistics",
     "commandesClients": "Sales Orders",
     "adv": "Invoicing",
-    "bonsLivraison": "Delivery Notes"
+    "bonsLivraison": "Delivery Notes",
+    "planification": "Planning",
+    "achatsStocks": "Procurement & Stock",
+    "analyse": "Analytics"
   },
   "header": {
     "aiAgent": "AI Agent",
