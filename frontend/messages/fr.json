@@ -58,7 +58,10 @@
     "ventes": "Ventes & Logistique",
     "commandesClients": "Commandes clients",
     "adv": "Facturation ADV",
-    "bonsLivraison": "Bons de livraison"
+    "bonsLivraison": "Bons de livraison",
+    "planification": "Planification",
+    "achatsStocks": "Achats & Stocks",
+    "analyse": "Analyse"
   },
   "header": {
     "aiAgent": "Agent IA",

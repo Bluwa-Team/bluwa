@@ -102,7 +102,7 @@ function fmtM(v: number) {
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
 
-function KpiDir({ label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon }: {
+function KpiDir({ label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon, href }: {
   label: string
   value: string
   sub: string
@@ -110,19 +110,35 @@ function KpiDir({ label, value, sub, bgClass, iconBgClass, iconColorClass, icon:
   iconBgClass: string
   iconColorClass: string
   icon: React.ElementType
+  href?: string
 }) {
-  return (
-    <div className={`rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
+  const inner = (
+    <>
       <div className="flex items-center gap-2 mb-2.5">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgClass}`}>
           <Icon className={`size-4 ${iconColorClass}`} />
         </div>
         <span className="text-sm font-semibold">{label}</span>
+        {href && <ArrowRight className="size-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
       </div>
       <div className="bg-white dark:bg-background rounded-lg px-3 py-2.5 shadow-sm">
         <p className="text-2xl font-bold tracking-tight leading-none">{value}</p>
         <p className="text-xs text-muted-foreground mt-1 leading-tight">{sub}</p>
       </div>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className={`group rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-pointer block ${bgClass}`}>
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={`rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
+      {inner}
     </div>
   )
 }
@@ -237,14 +253,15 @@ function TrsGauge({ value }: { value: number }) {
 
 // ── TRS KPI card ──────────────────────────────────────────────────────────────
 
-function TrsKpiCard() {
+function TrsKpiCard({ href }: { href: string }) {
   return (
-    <div className="rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default bg-teal-50 dark:bg-teal-950/30">
+    <Link href={href} className="group rounded-xl p-3 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-pointer block bg-teal-50 dark:bg-teal-950/30">
       <div className="flex items-center gap-2 mb-2.5">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-100 dark:bg-teal-900/50">
           <Factory className="size-4 text-teal-600 dark:text-teal-400" />
         </div>
         <span className="text-sm font-semibold">TRS atelier</span>
+        <ArrowRight className="size-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       <div className="bg-white dark:bg-background rounded-lg px-3 py-2.5 shadow-sm flex items-center gap-2">
         {/* Texte */}
@@ -259,7 +276,7 @@ function TrsKpiCard() {
           <TrsGauge value={KPI_DATA.trs} />
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -295,8 +312,9 @@ export default function DashboardPage() {
           iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
           iconColorClass="text-emerald-600 dark:text-emerald-400"
           icon={BarChart3}
+          href={`/${locale}/analyse-marge`}
         />
-        <TrsKpiCard />
+        <TrsKpiCard href={`/${locale}/production`} />
         <KpiDir
           label="Valeur stock"
           value={fmtM(KPI_DATA.valeurStock)}
@@ -305,6 +323,7 @@ export default function DashboardPage() {
           iconBgClass="bg-violet-100 dark:bg-violet-900/50"
           iconColorClass="text-violet-600 dark:text-violet-400"
           icon={Boxes}
+          href={`/${locale}/stocks`}
         />
       </div>
 
@@ -418,7 +437,7 @@ export default function DashboardPage() {
               Analyse de marge
             </CardTitle>
             <CardAction className="row-span-1 self-center">
-              <Link href={`/${locale}/production`} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium">
+              <Link href={`/${locale}/analyse-marge`} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium">
                 Détail <ArrowRight className="size-3" />
               </Link>
             </CardAction>
