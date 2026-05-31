@@ -8,6 +8,7 @@ export default function HACCPPage() {
   return (
     <ModulePage
       num="04"
+      moduleSlug="haccp"
       title="Qualité Industrielle & Sécurité Sanitaire"
       subtitle="Les Standards HACCP"
       duration="3 heures"
@@ -23,6 +24,10 @@ export default function HACCPPage() {
       sections={[
         {
           title: 'Les 7 principes HACCP',
+          video: {
+            title: 'Les 7 principes HACCP appliqués à l\'agroalimentaire',
+            duration: '2 min 50 s',
+          },
           content: (
             <ol className="space-y-2">
               {[
@@ -46,6 +51,10 @@ export default function HACCPPage() {
         },
         {
           title: 'Blocage automatique des lots dans Bluwa',
+          video: {
+            title: 'Démonstration : blocage de lot et workflow de décision qualité',
+            duration: '3 min 05 s',
+          },
           content: (
             <div className="space-y-3">
               <p>Dès la détection d'une anomalie, Bluwa déclenche automatiquement :</p>

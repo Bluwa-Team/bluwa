@@ -1,9 +1,18 @@
 import Link from 'next/link'
 import { ChevronLeft, Clock, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { VideoEmbed } from '@/components/VideoEmbed'
+import { SectionProgress } from '@/components/SectionProgress'
+
+export interface ModuleSectionVideo {
+  title: string
+  duration?: string   // ex. "2 min 30 s"
+  youtubeId?: string  // laisser vide → placeholder "bientôt disponible"
+}
 
 export interface ModuleSection {
   title: string
+  video?: ModuleSectionVideo
   content: React.ReactNode
 }
 
@@ -13,13 +22,14 @@ interface Props {
   subtitle: string
   duration: string
   level: string
+  moduleSlug: string
   icon: LucideIcon
   iconColor: string
   objectives: string[]
   sections: ModuleSection[]
 }
 
-export function ModulePage({ num, title, subtitle, duration, level, icon: Icon, iconColor, objectives, sections }: Props) {
+export function ModulePage({ num, title, subtitle, duration, level, moduleSlug, icon: Icon, iconColor, objectives, sections }: Props) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <Link href="/modules" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 mb-8">
@@ -62,7 +72,15 @@ export function ModulePage({ num, title, subtitle, duration, level, icon: Icon, 
               <h3 className="font-semibold text-slate-800">{s.title}</h3>
             </div>
             <div className="px-5 py-4 text-sm text-slate-600 leading-relaxed">
+              {s.video && (
+                <VideoEmbed
+                  youtubeId={s.video.youtubeId}
+                  title={s.video.title}
+                  duration={s.video.duration}
+                />
+              )}
               {s.content}
+              <SectionProgress moduleSlug={moduleSlug} sectionTitle={s.title} />
             </div>
           </div>
         ))}

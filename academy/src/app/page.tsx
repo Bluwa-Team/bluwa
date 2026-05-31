@@ -3,6 +3,12 @@ import {
   Database, CalendarClock, Boxes, ShieldCheck,
   ArrowRight, Award, LifeBuoy, ChevronRight
 } from 'lucide-react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Bluwa Academy — Formations agroalimentaires pour l\'Afrique de l\'Ouest',
+  description: 'Maîtrisez Bluwa ERP et certifiez vos compétences opérationnelles en production, stocks, qualité et planification agroalimentaire.',
+}
 
 const modules = [
   {

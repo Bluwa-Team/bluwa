@@ -8,6 +8,7 @@ export default function FondationsMDMPage() {
   return (
     <ModulePage
       num="01"
+      moduleSlug="fondations-mdm"
       title="Fondations & Référentiels Industriels Agro"
       subtitle="La Rigueur MDM"
       duration="3 heures"
@@ -23,6 +24,11 @@ export default function FondationsMDMPage() {
       sections={[
         {
           title: 'Règle de codification  Format TYPE-XXXX',
+          video: {
+            title: 'Introduction à la codification MDM — Format TYPE-XXXX',
+            duration: '2 min 45 s',
+            youtubeId: '1HRYOhbZazo', // exemple IA — à remplacer par ta vidéo
+          },
           content: (
             <div className="space-y-3">
               <p>Tous les articles Bluwa suivent un format standardisé :</p>
@@ -37,6 +43,10 @@ export default function FondationsMDMPage() {
         },
         {
           title: 'Dualité formel / informel',
+          video: {
+            title: 'Gérer les circuits formels et informels dans Bluwa',
+            duration: '3 min 10 s',
+          },
           content: (
             <ul className="space-y-2">
               <li>• Capturer les informations issues des circuits officiels <strong>et</strong> des réseaux de collecte informels.</li>
@@ -81,6 +91,10 @@ export default function FondationsMDMPage() {
         },
         {
           title: 'Mise en pratique terrain',
+          video: {
+            title: 'Exercice : créer vos premières fiches article dans Bluwa',
+            duration: '2 min 55 s',
+          },
           content: (
             <ul className="space-y-2">
               <li>• Identifier les matières premières locales : céréales, huiles, épices, packagings.</li>
