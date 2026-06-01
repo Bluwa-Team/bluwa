@@ -13,6 +13,16 @@ export interface Factory {
   is_active: boolean
 }
 
+export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED'
+
+export interface FactorySubscription {
+  planName:    string
+  priceMonthly: number          // en XOF
+  status:      SubscriptionStatus | null
+  expiresAt:   string | null    // ISO date
+  maxUsers:    number
+}
+
 // ── Changer d'usine active ────────────────────────────────────────────────────
 export async function switchFactory(factoryId: string) {
   const cookieStore = await cookies()
@@ -57,4 +67,42 @@ export async function getUserFactories(): Promise<Factory[]> {
     .eq('user_id', user.id)
 
   return data?.flatMap(r => r.factories ? [r.factories as unknown as Factory] : []) ?? []
+}
+
+// ── Abonnement de l'usine active ─────────────────────────────────────────────
+export async function getFactorySubscription(
+  factoryId: string,
+): Promise<FactorySubscription | null> {
+  if (!factoryId) return null
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('factories')
+    .select(`
+      subscription_status,
+      subscription_expires_at,
+      plan:subscription_plans (
+        name,
+        price_monthly,
+        max_users_allowed
+      )
+    `)
+    .eq('id', factoryId)
+    .single()
+
+  if (error || !data?.plan) return null
+
+  const plan = data.plan as {
+    name: string
+    price_monthly: number
+    max_users_allowed: number
+  }
+
+  return {
+    planName:     plan.name,
+    priceMonthly: plan.price_monthly,
+    status:       (data.subscription_status as SubscriptionStatus) ?? null,
+    expiresAt:    data.subscription_expires_at ?? null,
+    maxUsers:     plan.max_users_allowed,
+  }
 }

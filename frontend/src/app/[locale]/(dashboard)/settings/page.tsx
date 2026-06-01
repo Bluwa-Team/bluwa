@@ -4,8 +4,9 @@ import { Building2, User, Palette } from 'lucide-react'
 import type { Metadata } from 'next'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UsersSection } from './_components/UsersSection'
+import { AbonnementSection } from './_components/AbonnementSection'
 import { listOrgUsers, type UserRole } from '@/lib/actions/users'
-import { getUserFactories } from '@/lib/actions/factory'
+import { getUserFactories, getFactorySubscription } from '@/lib/actions/factory'
 import { FactorySwitcherSettings } from './_components/FactorySwitcherSettings'
 
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,9 @@ export default async function SettingsPage() {
     getUserFactories(),
     listOrgUsers(),
   ])
+
+  const activeId = activeFactoryId ?? factories[0]?.id ?? null
+  const subscription = activeId ? await getFactorySubscription(activeId) : null
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -101,6 +105,12 @@ export default async function SettingsPage() {
         users={orgUsers}
         currentUserId={user?.id ?? ''}
         currentUserRole={(profile?.role ?? 'operator') as UserRole}
+      />
+
+      {/* Abonnement */}
+      <AbonnementSection
+        subscription={subscription}
+        currentUserCount={orgUsers.length}
       />
 
       {/* Préférences */}
