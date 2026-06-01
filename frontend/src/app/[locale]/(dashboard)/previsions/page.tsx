@@ -1,136 +1,203 @@
 'use client'
 
-import { TrendingUp, Target, Package, CircleDot, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts'
-
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-const KPI = {
-  precision:   87,
-  deltaPrec:   +3,
-  horizon:     8,     // semaines
-  produitsActifs: 12,
-  biais:       -2.4,  // % sous-estimation moyenne
-}
-
-const PREVISIONS = [
-  { produit: 'Jus Originale',   semS1: 3200, semS2: 3400, semS3: 3100, semS4: 3600, tendance: 'up'   },
-  { produit: 'Jus Vanille',     semS1: 2100, semS2: 2200, semS3: 2050, semS4: 2300, tendance: 'up'   },
-  { produit: 'Jus Gingembre',   semS1: 1200, semS2: 1150, semS3: 1300, semS4: 1250, tendance: 'flat' },
-  { produit: 'Jus Menthe',      semS1:  600, semS2:  580, semS3:  550, semS4:  520, tendance: 'down' },
-  { produit: 'Jus Citronnelle', semS1:  450, semS2:  480, semS3:  500, semS4:  520, tendance: 'up'   },
-]
-
-const CHART_DATA = [
-  { sem: 'S-4', reel: 9200, prev: 8800 },
-  { sem: 'S-3', reel: 9600, prev: 9400 },
-  { sem: 'S-2', reel: 8900, prev: 9100 },
-  { sem: 'S-1', reel: 9550, prev: 9300 },
-  { sem: 'S+1', reel: null, prev: 9500 },
-  { sem: 'S+2', reel: null, prev: 9900 },
-  { sem: 'S+3', reel: null, prev: 9650 },
-  { sem: 'S+4', reel: null, prev: 10200 },
-]
-
-const TENDANCE_ICON = {
-  up:   <ArrowUpRight className="size-3.5 text-emerald-500" />,
-  down: <ArrowDownRight className="size-3.5 text-red-500" />,
-  flat: <Minus className="size-3.5 text-muted-foreground" />,
-}
+import { useEffect, useState, useTransition } from 'react'
+import { Save, Loader2, CircleDot, TrendingUp, Info } from 'lucide-react'
+import { getForecasts, upsertForecast, type ForecastRow } from '@/lib/actions/forecasts'
+import { weekLabel } from '@/lib/planning-utils'
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function PrevisionsPage() {
+  const [rows,    setRows]    = useState<ForecastRow[]>([])
+  const [weeks,   setWeeks]   = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pending, startTransition] = useTransition()
+  const [saved,   setSaved]   = useState<string | null>(null)   // "articleId-week"
+  const [error,   setError]   = useState<string | null>(null)
+
+  useEffect(() => {
+    getForecasts(6).then(data => {
+      setRows(data)
+      if (data.length) setWeeks(Object.keys(data[0].weeks))
+      setLoading(false)
+    })
+  }, [])
+
+  function handleChange(articleId: string, week: string, val: number) {
+    setRows(prev => prev.map(r =>
+      r.articleId === articleId
+        ? { ...r, weeks: { ...r.weeks, [week]: val } }
+        : r
+    ))
+  }
+
+  function handleSave(articleId: string, week: string, quantity: number) {
+    setSaved(null)
+    setError(null)
+    startTransition(async () => {
+      const res = await upsertForecast(articleId, week, quantity)
+      if (res?.error) { setError(res.error); return }
+      setSaved(`${articleId}-${week}`)
+      setTimeout(() => setSaved(null), 2000)
+    })
+  }
+
+  const totalForecast = rows.reduce((s, r) =>
+    s + Object.values(r.weeks).reduce((a, v) => a + v, 0), 0
+  )
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prévisions de la demande</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Anticipez la demande future pour alimenter le Supply Planning et le MRP.
+            Saisissez les quantités prévisionnelles par produit et par semaine.
+            Ces données alimentent le Supply Planning et le MRP.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border">
-          <CircleDot className="size-3 text-amber-500" />
-          Données simulées
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border shrink-0">
+          <CircleDot className="size-3 text-emerald-500" />
+          Données réelles
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Précision prévision', value: `${KPI.precision}%`, sub: `${KPI.deltaPrec > 0 ? '+' : ''}${KPI.deltaPrec}% vs mois précédent`, color: 'bg-blue-50 dark:bg-blue-950/30', icon: Target },
-          { label: 'Horizon planifié',    value: `${KPI.horizon} sem`,  sub: 'Couverture glissante',                                              color: 'bg-violet-50 dark:bg-violet-950/30', icon: TrendingUp },
-          { label: 'Produits actifs',     value: `${KPI.produitsActifs}`, sub: 'Références avec prévision',                                       color: 'bg-teal-50 dark:bg-teal-950/30',   icon: Package },
-          { label: 'Biais moyen',         value: `${KPI.biais}%`,       sub: 'Sous-estimation structurelle',                                      color: 'bg-amber-50 dark:bg-amber-950/30',  icon: TrendingUp },
-        ].map(({ label, value, sub, color, icon: Icon }) => (
-          <div key={label} className={`rounded-xl p-4 ${color}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="size-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {/* KPI */}
+      {!loading && rows.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="size-4 text-blue-500" />
+              <span className="text-xs font-medium text-muted-foreground">Produits planifiés</span>
             </div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+            <p className="text-2xl font-bold">{rows.length}</p>
           </div>
-        ))}
-      </div>
-
-      {/* Graphique prévisions vs réel */}
-      <div className="rounded-xl border bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Prévisions vs Réel — 4 sem. passées + 4 sem. à venir (unités)</h2>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={CHART_DATA} barGap={4} barCategoryGap="30%">
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-            <XAxis dataKey="sem" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
-            <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }}
-            />
-            <Legend iconType="square" iconSize={10} />
-            <Bar dataKey="reel" name="Réel"       fill="hsl(var(--chart-1))" radius={[4,4,0,0]} />
-            <Bar dataKey="prev" name="Prévision"  fill="hsl(var(--chart-3))" radius={[4,4,0,0]} opacity={0.7} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Tableau des prévisions par produit */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="px-5 py-3 border-b bg-muted/30">
-          <h2 className="text-sm font-semibold">Prévisions par produit — 4 prochaines semaines (unités)</h2>
+          <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="size-4 text-violet-500" />
+              <span className="text-xs font-medium text-muted-foreground">Horizon</span>
+            </div>
+            <p className="text-2xl font-bold">{weeks.length} semaines</p>
+          </div>
+          <div className="rounded-xl bg-teal-50 dark:bg-teal-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="size-4 text-teal-500" />
+              <span className="text-xs font-medium text-muted-foreground">Total prévu</span>
+            </div>
+            <p className="text-2xl font-bold">{totalForecast.toLocaleString('fr-FR')} u</p>
+          </div>
         </div>
-        <div className="overflow-x-auto">
+      )}
+
+      {/* Erreur */}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {/* Aide */}
+      <div className="flex items-start gap-2 rounded-xl border bg-muted/30 px-4 py-3">
+        <Info className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Saisissez une quantité et appuyez sur <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs font-mono">Entrée</kbd> ou
+          cliquez <Save className="size-3 inline mx-0.5" /> pour enregistrer.
+          Les cellules vides valent 0 — elles seront ignorées dans le calcul du Supply Planning.
+        </p>
+      </div>
+
+      {/* Grille */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          <span className="text-sm">Chargement des articles…</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+          <TrendingUp className="size-8 opacity-30" />
+          <p className="text-sm font-medium">Aucun produit fini ou semi-fini actif</p>
+          <p className="text-xs">Créez des articles de type PF ou PSF dans le module Articles.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">Produit</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">S+1</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">S+2</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">S+3</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">S+4</th>
-                <th className="text-right px-5 py-3 font-medium text-muted-foreground">Tendance</th>
+              <tr className="border-b bg-muted/30">
+                <th className="sticky left-0 z-10 bg-muted/30 text-left px-4 py-3 font-semibold text-xs tracking-wide min-w-[200px]">
+                  Produit
+                </th>
+                {weeks.map(w => (
+                  <th key={w} className="text-center px-3 py-3 font-semibold text-xs tracking-wide min-w-[120px]">
+                    <div className="text-muted-foreground">{weekLabel(w)}</div>
+                  </th>
+                ))}
+                <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide text-muted-foreground">
+                  Total 6 sem.
+                </th>
               </tr>
             </thead>
             <tbody>
-              {PREVISIONS.map((p, i) => (
-                <tr key={p.produit} className={`border-b last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>
-                  <td className="px-5 py-3 font-medium">{p.produit}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.semS1.toLocaleString('fr-FR')}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.semS2.toLocaleString('fr-FR')}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.semS3.toLocaleString('fr-FR')}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{p.semS4.toLocaleString('fr-FR')}</td>
-                  <td className="px-5 py-3 text-right">
-                    <span className="inline-flex items-center justify-end gap-1">
-                      {TENDANCE_ICON[p.tendance as keyof typeof TENDANCE_ICON]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((row, ri) => {
+                const total = Object.values(row.weeks).reduce((s, v) => s + v, 0)
+                return (
+                  <tr key={row.articleId} className={`border-b last:border-0 ${ri % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                    {/* Article */}
+                    <td className="sticky left-0 z-10 bg-card px-4 py-2.5 border-r">
+                      <p className="font-medium truncate max-w-[180px]" title={row.articleLabel}>
+                        {row.articleLabel}
+                      </p>
+                      <p className="font-mono text-xs text-muted-foreground">{row.articleCode} · {row.unite}</p>
+                    </td>
+
+                    {/* Cellules éditables */}
+                    {weeks.map(w => {
+                      const key = `${row.articleId}-${w}`
+                      const isSaved = saved === key
+                      return (
+                        <td key={w} className="px-2 py-2 text-center">
+                          <div className="relative flex items-center justify-center">
+                            <input
+                              type="number"
+                              min={0}
+                              value={row.weeks[w] || ''}
+                              placeholder="0"
+                              onChange={e => handleChange(row.articleId, w, Number(e.target.value))}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleSave(row.articleId, w, row.weeks[w] ?? 0)
+                              }}
+                              onBlur={() => handleSave(row.articleId, w, row.weeks[w] ?? 0)}
+                              className="w-[90px] h-8 px-2 text-sm text-right rounded-lg border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                            />
+                            {isSaved && (
+                              <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-[8px]">✓</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )
+                    })}
+
+                    {/* Total */}
+                    <td className="px-4 py-2 text-right font-mono font-semibold text-muted-foreground">
+                      {total > 0 ? total.toLocaleString('fr-FR') : <span className="text-muted-foreground/40">—</span>}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+
+      {pending && (
+        <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-card border rounded-xl px-4 py-2.5 shadow-lg text-sm">
+          <Loader2 className="size-3.5 animate-spin text-primary" />
+          Enregistrement…
+        </div>
+      )}
 
     </div>
   )

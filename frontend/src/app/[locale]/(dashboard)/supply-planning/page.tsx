@@ -1,161 +1,178 @@
 'use client'
 
-import { Factory, CircleDot, TrendingUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Factory, AlertTriangle, CheckCircle2, Loader2, CircleDot, TrendingUp } from 'lucide-react'
+import { getSupplyPlan, type SupplyPlanSummary, type SupplyStatus } from '@/lib/actions/supply-plan'
+import { weekLabel } from '@/lib/planning-utils'
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-const KPI = {
-  semainesPlannifiees: 4,
-  tauxCouverture:      82,    // % capacité utilisée
-  produitsEnTension:   2,
-  totalUnitesProd:     47_200,
+const STATUS_CONFIG: Record<SupplyStatus, { label: string; bar: string; bg: string; text: string }> = {
+  ok:       { label: 'OK',        bar: 'bg-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/30',   text: 'text-emerald-700 dark:text-emerald-300' },
+  tension:  { label: 'Tension',   bar: 'bg-amber-500',   bg: 'bg-amber-50 dark:bg-amber-950/30',       text: 'text-amber-700 dark:text-amber-300'     },
+  surcharge:{ label: 'Surcharge', bar: 'bg-red-500',     bg: 'bg-red-50 dark:bg-red-950/30',           text: 'text-red-700 dark:text-red-300'         },
 }
-
-type Statut = 'ok' | 'tension' | 'surcharge'
-
-interface PlanLigne {
-  produit:    string
-  demande:    number
-  capacite:   number
-  planifie:   number
-  couverture: number
-  statut:     Statut
-  action?:    string
-}
-
-const PLAN: PlanLigne[] = [
-  { produit: 'Jus Originale',   demande: 14300, capacite: 16000, planifie: 14300, couverture: 100, statut: 'ok'       },
-  { produit: 'Jus Vanille',     demande:  9650, capacite:  8000, planifie:  8000, couverture:  83, statut: 'tension',  action: 'Heure sup. semaine 2 ou report S+5'   },
-  { produit: 'Jus Gingembre',   demande:  5100, capacite:  6000, planifie:  5100, couverture: 100, statut: 'ok'       },
-  { produit: 'Jus Menthe',      demande:  2150, capacite:  4000, planifie:  2150, couverture: 100, statut: 'ok'       },
-  { produit: 'Jus Citronnelle', demande:  2200, capacite:  2000, planifie:  2000, couverture:  91, statut: 'tension',  action: 'Externaliser 200 u ou décaler livraison' },
-]
-
-const SEMAINES = [
-  { sem: 'S+1', charge: 78,  alerte: false },
-  { sem: 'S+2', charge: 95,  alerte: true  },
-  { sem: 'S+3', charge: 71,  alerte: false },
-  { sem: 'S+4', charge: 86,  alerte: false },
-]
-
-const STATUT_CONFIG: Record<Statut, { icon: React.ElementType; color: string; label: string; bar: string }> = {
-  ok:       { icon: CheckCircle2,  color: 'text-emerald-600 dark:text-emerald-400', label: 'OK',      bar: 'bg-emerald-500' },
-  tension:  { icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400',    label: 'Tension', bar: 'bg-amber-500'   },
-  surcharge:{ icon: AlertTriangle, color: 'text-red-600 dark:text-red-400',        label: 'Charge',  bar: 'bg-red-500'     },
-}
-
-// ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function SupplyPlanningPage() {
+  const [plan,    setPlan]    = useState<SupplyPlanSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getSupplyPlan(6).then(data => { setPlan(data); setLoading(false) })
+  }, [])
+
+  const tensions   = plan?.tensionWeeks.length ?? 0
+  const surcharges = plan?.surchargeWeeks.length ?? 0
+  const nbArticles = plan?.lines.length ?? 0
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Supply Planning</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Équilibrez la demande et la capacité de production avant de lancer le MRP.
+            Calcul automatique — équilibre entre la demande (prévisions + commandes) et la capacité de production.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border">
-          <CircleDot className="size-3 text-amber-500" />
-          Données simulées
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border shrink-0">
+          <CircleDot className="size-3 text-emerald-500" />
+          Calculé automatiquement
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Semaines planifiées', value: KPI.semainesPlannifiees,              sub: 'Horizon courant',            color: 'bg-blue-50 dark:bg-blue-950/30',    icon: Clock         },
-          { label: 'Taux d\'utilisation', value: `${KPI.tauxCouverture}%`,             sub: 'Capacité atelier',           color: 'bg-teal-50 dark:bg-teal-950/30',    icon: Factory       },
-          { label: 'Produits en tension', value: KPI.produitsEnTension,               sub: 'Capacité < demande',          color: 'bg-amber-50 dark:bg-amber-950/30',  icon: AlertTriangle },
-          { label: 'Unités à produire',   value: KPI.totalUnitesProd.toLocaleString('fr-FR'), sub: '4 semaines glissantes', color: 'bg-violet-50 dark:bg-violet-950/30', icon: TrendingUp    },
-        ].map(({ label, value, sub, color, icon: Icon }) => (
-          <div key={label} className={`rounded-xl p-4 ${color}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="size-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {!loading && plan && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Factory className="size-4 text-blue-500" />
+              <span className="text-xs font-medium text-muted-foreground">Produits planifiés</span>
             </div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+            <p className="text-2xl font-bold">{nbArticles}</p>
           </div>
-        ))}
-      </div>
-
-      {/* Charge par semaine */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {SEMAINES.map(s => (
-          <div key={s.sem} className={`rounded-xl border p-4 space-y-2 ${s.alerte ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20' : 'bg-card'}`}>
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold">{s.sem}</p>
-              {s.alerte && <AlertTriangle className="size-3.5 text-amber-500" />}
+          <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="size-4 text-violet-500" />
+              <span className="text-xs font-medium text-muted-foreground">Capacité / semaine</span>
             </div>
-            <p className={`text-2xl font-bold ${s.charge >= 90 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-              {s.charge}%
+            <p className="text-2xl font-bold">
+              {plan.weekCapacity > 0 ? plan.weekCapacity.toLocaleString('fr-FR') + ' u' : '—'}
             </p>
-            <p className="text-xs text-muted-foreground">utilisation capacité</p>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${s.charge >= 90 ? 'bg-amber-500' : s.charge >= 80 ? 'bg-blue-500' : 'bg-emerald-500'}`}
-                style={{ width: `${s.charge}%` }}
-              />
-            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Plan par produit */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="px-5 py-3 border-b bg-muted/30 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Plan de production — Demande vs Capacité</h2>
-          <span className="text-xs text-muted-foreground">4 semaines · toutes références</span>
+          <div className={`rounded-xl p-4 ${tensions > 0 ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className={`size-4 ${tensions > 0 ? 'text-amber-500' : 'text-emerald-500'}`} />
+              <span className="text-xs font-medium text-muted-foreground">Semaines en tension</span>
+            </div>
+            <p className={`text-2xl font-bold ${tensions > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{tensions}</p>
+          </div>
+          <div className={`rounded-xl p-4 ${surcharges > 0 ? 'bg-red-50 dark:bg-red-950/30' : 'bg-emerald-50 dark:bg-emerald-950/30'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className={`size-4 ${surcharges > 0 ? 'text-red-500' : 'text-emerald-500'}`} />
+              <span className="text-xs font-medium text-muted-foreground">Semaines en surcharge</span>
+            </div>
+            <p className={`text-2xl font-bold ${surcharges > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{surcharges}</p>
+          </div>
         </div>
-        <div className="overflow-x-auto">
+      )}
+
+      {/* Alertes globales */}
+      {!loading && plan && surcharges > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-950/30 px-4 py-3">
+          <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700 dark:text-red-300">
+            <span className="font-semibold">{surcharges} semaine{surcharges > 1 ? 's' : ''} en surcharge</span> — la demande dépasse la capacité de production.
+            Envisagez des heures supplémentaires, une sous-traitance ou un décalage de livraison.
+          </p>
+        </div>
+      )}
+
+      {/* Grille */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          <span className="text-sm">Calcul du plan en cours…</span>
+        </div>
+      ) : !plan || plan.lines.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+          <Factory className="size-8 opacity-30" />
+          <p className="text-sm font-medium">Aucune donnée de planification</p>
+          <p className="text-xs">Saisissez des prévisions dans la page Prévisions pour démarrer.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">Produit</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Demande (u)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Capacité (u)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Planifié (u)</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Couverture</th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">Statut / Action</th>
+              <tr className="border-b bg-muted/30">
+                <th className="sticky left-0 z-10 bg-muted/30 text-left px-4 py-3 font-semibold text-xs tracking-wide min-w-[200px]">
+                  Produit
+                </th>
+                {plan.weeks.map(w => (
+                  <th key={w} className="text-center px-3 py-3 font-semibold text-xs tracking-wide min-w-[130px]">
+                    <div className="text-muted-foreground">{weekLabel(w)}</div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {PLAN.map((p, i) => {
-                const cfg = STATUT_CONFIG[p.statut]
-                const Icon = cfg.icon
-                return (
-                  <tr key={p.produit} className={`border-b last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>
-                    <td className="px-5 py-3 font-medium">{p.produit}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{p.demande.toLocaleString('fr-FR')}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{p.capacite.toLocaleString('fr-FR')}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold">{p.planifie.toLocaleString('fr-FR')}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${p.couverture}%` }} />
-                        </div>
-                        <span className="text-xs tabular-nums w-8 text-right">{p.couverture}%</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-start gap-1.5">
-                        <Icon className={`size-3.5 shrink-0 mt-0.5 ${cfg.color}`} />
-                        <span className={`text-xs ${p.action ? 'text-muted-foreground' : cfg.color + ' font-medium'}`}>
-                          {p.action ?? cfg.label}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
+              {plan.lines.map((line, ri) => (
+                <tr key={line.articleId} className={`border-b last:border-0 ${ri % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                  {/* Article */}
+                  <td className="sticky left-0 z-10 bg-card px-4 py-3 border-r">
+                    <p className="font-medium truncate max-w-[180px]" title={line.articleLabel}>
+                      {line.articleLabel}
+                    </p>
+                    <p className="font-mono text-xs text-muted-foreground">{line.articleCode}</p>
+                  </td>
+
+                  {/* Cellules semaine */}
+                  {line.weeks.map(cell => {
+                    const cfg = STATUS_CONFIG[cell.status]
+                    return (
+                      <td key={cell.weekStart} className="px-2 py-2 text-center">
+                        {cell.totalDemand === 0 ? (
+                          <span className="text-muted-foreground/30 text-xs">—</span>
+                        ) : (
+                          <div className={`rounded-lg p-2 ${cfg.bg}`}>
+                            <p className={`text-xs font-bold tabular-nums ${cfg.text}`}>
+                              {cell.totalDemand.toLocaleString('fr-FR')}
+                              <span className="font-normal ml-0.5">{line.unite}</span>
+                            </p>
+                            {cell.capacity > 0 && (
+                              <>
+                                <div className="h-1 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden mt-1.5">
+                                  <div
+                                    className={`h-full rounded-full ${cfg.bar}`}
+                                    style={{ width: `${Math.min(cell.coverage, 100)}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{cell.coverage}%</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
+
+          {/* Légende */}
+          <div className="px-5 py-3 border-t bg-muted/10 flex items-center gap-4 flex-wrap">
+            {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+              <div key={k} className="flex items-center gap-1.5">
+                <div className={`w-2.5 h-2.5 rounded-full ${v.bar}`} />
+                <span className="text-xs text-muted-foreground">{v.label}</span>
+              </div>
+            ))}
+            <span className="text-xs text-muted-foreground ml-auto">
+              % = utilisation de la capacité · Tension &gt;85% · Surcharge &gt;100%
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   )

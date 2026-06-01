@@ -1,143 +1,146 @@
 'use client'
 
-import { ShoppingBag, CalendarClock, CircleDot, TrendingUp, AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ShoppingBag, CalendarClock, CircleDot, Loader2, AlertTriangle, TrendingUp } from 'lucide-react'
+import { getDemandPlan, type DemandPlanWeek } from '@/lib/actions/demand-plan'
+import { weekLabel } from '@/lib/planning-utils'
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-const KPI = {
-  commandesFermes: 18,
-  unitesTotales:   47_200,
-  horizonJours:    42,
-  valeurFCFA:      28_400_000,
+const STATUS_STYLE: Record<string, { bg: string; text: string; label: string }> = {
+  confirmed:   { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', label: 'Confirmée'    },
+  in_progress: { bg: 'bg-blue-100 dark:bg-blue-900/40',       text: 'text-blue-700 dark:text-blue-300',       label: 'En cours'     },
+  draft:       { bg: 'bg-amber-100 dark:bg-amber-900/40',     text: 'text-amber-700 dark:text-amber-300',     label: 'Brouillon'    },
 }
 
-const COMMANDES = [
-  { id: 'CMD-0089', client: 'Auchan Dakar',       produit: 'Jus Originale',  qte: 4800, livraison: '2026-06-10', statut: 'confirmé'  },
-  { id: 'CMD-0090', client: 'Casino Abidjan',      produit: 'Jus Vanille',    qte: 3200, livraison: '2026-06-12', statut: 'confirmé'  },
-  { id: 'CMD-0091', client: 'Carrefour Lomé',      produit: 'Jus Gingembre',  qte: 2400, livraison: '2026-06-14', statut: 'en attente'},
-  { id: 'CMD-0092', client: 'Jumia Sénégal',       produit: 'Jus Originale',  qte: 1600, livraison: '2026-06-18', statut: 'confirmé'  },
-  { id: 'CMD-0093', client: 'Marché Central Dakar',produit: 'Jus Menthe',     qte: 900,  livraison: '2026-06-20', statut: 'urgent'    },
-  { id: 'CMD-0094', client: 'Auchan Dakar',        produit: 'Jus Citronnelle',qte: 1200, livraison: '2026-06-25', statut: 'confirmé'  },
-]
+export default function DemandePlanPage() {
+  const [weeks,   setWeeks]   = useState<DemandPlanWeek[]>([])
+  const [loading, setLoading] = useState(true)
 
-const STATUT_STYLE: Record<string, { bg: string; text: string; label: string }> = {
-  confirmé:  { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300', label: 'Confirmé'   },
-  'en attente': { bg: 'bg-amber-100 dark:bg-amber-900/40',  text: 'text-amber-700 dark:text-amber-300',    label: 'En attente' },
-  urgent:    { bg: 'bg-red-100 dark:bg-red-900/40',         text: 'text-red-700 dark:text-red-300',        label: '⚡ Urgent'   },
-}
+  useEffect(() => {
+    getDemandPlan(6).then(data => { setWeeks(data); setLoading(false) })
+  }, [])
 
-// Agrégation par semaine
-const PAR_SEMAINE = [
-  { sem: 'S+1 (09 juin)', unites: 8000,  commandes: 4 },
-  { sem: 'S+2 (16 juin)', unites: 12400, commandes: 6 },
-  { sem: 'S+3 (23 juin)', unites: 9800,  commandes: 5 },
-  { sem: 'S+4 (30 juin)', unites: 17000, commandes: 3 },
-]
+  const totalUnits  = weeks.reduce((s, w) => s + w.totalUnits,  0)
+  const totalOrders = new Set(weeks.flatMap(w => w.lines.map(l => l.orderId))).size
+  const hasUrgent   = weeks.slice(0, 2).some(w => w.lines.length > 0)
 
-// ── Page ───────────────────────────────────────────────────────────────────────
-
-export default function DemandeClientsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Plan de demande</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Commandes fermes et signaux de demande confirmés — alimentent directement le Supply Planning.
+            Commandes fermes des clients organisées par semaine de livraison.
+            Alimente le Supply Planning avec la demande confirmée.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border">
-          <CircleDot className="size-3 text-amber-500" />
-          Données simulées
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 rounded-full bg-muted/50 border shrink-0">
+          <CircleDot className="size-3 text-emerald-500" />
+          Données réelles
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Commandes fermes', value: KPI.commandesFermes,              sub: '4 prochaines semaines',    color: 'bg-blue-50 dark:bg-blue-950/30',    icon: ShoppingBag   },
-          { label: 'Unités à livrer',  value: KPI.unitesTotales.toLocaleString('fr-FR'), sub: 'Toutes références', color: 'bg-teal-50 dark:bg-teal-950/30',    icon: TrendingUp    },
-          { label: 'Horizon couvert',  value: `${KPI.horizonJours}j`,           sub: 'Commandes enregistrées',   color: 'bg-violet-50 dark:bg-violet-950/30', icon: CalendarClock },
-          { label: 'Valeur totale',    value: `${(KPI.valeurFCFA/1_000_000).toFixed(1)}M`, sub: 'FCFA · commandes fermes', color: 'bg-emerald-50 dark:bg-emerald-950/30', icon: TrendingUp },
-        ].map(({ label, value, sub, color, icon: Icon }) => (
-          <div key={label} className={`rounded-xl p-4 ${color}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="size-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {!loading && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <ShoppingBag className="size-4 text-blue-500" />
+              <span className="text-xs font-medium text-muted-foreground">Commandes fermes</span>
             </div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+            <p className="text-2xl font-bold">{totalOrders}</p>
+            <p className="text-xs text-muted-foreground mt-1">6 semaines glissantes</p>
           </div>
-        ))}
-      </div>
-
-      {/* Charge par semaine */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {PAR_SEMAINE.map(s => (
-          <div key={s.sem} className="rounded-xl border bg-card p-4 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{s.sem}</p>
-            <p className="text-xl font-bold tabular-nums">{s.unites.toLocaleString('fr-FR')} u</p>
-            <p className="text-xs text-muted-foreground">{s.commandes} commandes</p>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-blue-500"
-                style={{ width: `${Math.min((s.unites / 20000) * 100, 100)}%` }}
-              />
+          <div className="rounded-xl bg-teal-50 dark:bg-teal-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="size-4 text-teal-500" />
+              <span className="text-xs font-medium text-muted-foreground">Unités à livrer</span>
             </div>
+            <p className="text-2xl font-bold">{totalUnits.toLocaleString('fr-FR')}</p>
+            <p className="text-xs text-muted-foreground mt-1">Toutes références</p>
           </div>
-        ))}
-      </div>
-
-      {/* Alerte urgent */}
-      <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3">
-        <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
-        <p className="text-sm text-red-700 dark:text-red-300">
-          <span className="font-semibold">CMD-0093</span> — Marché Central Dakar · Jus Menthe · 900 u · livraison urgente le 20 juin.
-          Vérifier la disponibilité stock avant confirmation.
-        </p>
-      </div>
-
-      {/* Tableau des commandes */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="px-5 py-3 border-b bg-muted/30">
-          <h2 className="text-sm font-semibold">Commandes fermes</h2>
+          <div className="rounded-xl bg-violet-50 dark:bg-violet-950/30 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarClock className="size-4 text-violet-500" />
+              <span className="text-xs font-medium text-muted-foreground">Horizon</span>
+            </div>
+            <p className="text-2xl font-bold">6 semaines</p>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">N° commande</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Produit</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Qté (u)</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Livraison</th>
-                <th className="text-left px-5 py-3 font-medium text-muted-foreground">Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMMANDES.map((c, i) => {
-                const s = STATUT_STYLE[c.statut]
-                return (
-                  <tr key={c.id} className={`border-b last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>
-                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{c.id}</td>
-                    <td className="px-4 py-3 font-medium">{c.client}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{c.produit}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold">{c.qte.toLocaleString('fr-FR')}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{new Date(c.livraison).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                        {s.label}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+      )}
+
+      {/* Alerte S1-S2 chargées */}
+      {!loading && hasUrgent && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+          <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            Des commandes sont planifiées dans les 2 prochaines semaines.
+            Vérifiez le Supply Planning pour confirmer la capacité.
+          </p>
         </div>
-      </div>
+      )}
+
+      {/* Contenu */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          <span className="text-sm">Chargement des commandes…</span>
+        </div>
+      ) : totalOrders === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+          <ShoppingBag className="size-8 opacity-30" />
+          <p className="text-sm font-medium">Aucune commande ferme sur les 6 prochaines semaines</p>
+          <p className="text-xs">Créez des commandes clients dans le module Ventes.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {weeks.map(w => (
+            <div key={w.weekStart} className="rounded-xl border bg-card overflow-hidden">
+              {/* En-tête semaine */}
+              <div className={`flex items-center justify-between px-5 py-3 border-b ${w.lines.length > 0 ? 'bg-muted/30' : 'bg-muted/10'}`}>
+                <div>
+                  <p className="text-sm font-semibold">{weekLabel(w.weekStart)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Semaine du {new Date(w.weekStart).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">{w.orderCount} commande{w.orderCount > 1 ? 's' : ''}</span>
+                  <span className="text-sm font-bold tabular-nums">
+                    {w.totalUnits > 0 ? w.totalUnits.toLocaleString('fr-FR') + ' u' : <span className="text-muted-foreground font-normal text-xs">Vide</span>}
+                  </span>
+                </div>
+              </div>
+
+              {/* Lignes */}
+              {w.lines.length === 0 ? (
+                <div className="px-5 py-4 text-xs text-muted-foreground italic">Aucune commande cette semaine</div>
+              ) : (
+                <div className="divide-y">
+                  {w.lines.map(line => {
+                    const s = STATUS_STYLE[line.status] ?? STATUS_STYLE.confirmed
+                    return (
+                      <div key={`${line.orderId}-${line.articleCode}`} className="flex items-center gap-4 px-5 py-3 hover:bg-muted/10 transition-colors">
+                        <p className="font-mono text-xs text-muted-foreground w-24 shrink-0">{line.orderNumber}</p>
+                        <p className="text-sm font-medium flex-1 truncate">{line.clientName}</p>
+                        <p className="text-sm text-muted-foreground flex-1 truncate">{line.articleLabel}</p>
+                        <p className="text-sm font-semibold tabular-nums w-24 text-right">{line.quantity.toLocaleString('fr-FR')} {line.unite}</p>
+                        <p className="text-xs text-muted-foreground w-24 text-right">
+                          {new Date(line.deliveryDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        </p>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${s.bg} ${s.text}`}>
+                          {s.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
     </div>
   )
