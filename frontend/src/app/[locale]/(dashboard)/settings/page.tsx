@@ -21,7 +21,7 @@ export default async function SettingsPage() {
   const [{ data: org }, { data: siteAccess }, orgUsers] = await Promise.all([
     supabase
       .from('organizations')
-      .select('name, country, currency')
+      .select('name, slug, plan')
       .eq('id', profile?.organization_id ?? '')
       .single(),
     supabase
@@ -55,12 +55,12 @@ export default async function SettingsPage() {
             <p className="font-medium">{org?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Pays</p>
-            <p className="font-medium">{org?.country ?? '—'}</p>
+            <p className="text-xs text-muted-foreground mb-1">Identifiant</p>
+            <p className="font-medium font-mono text-xs">{org?.slug ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Devise</p>
-            <p className="font-medium">{org?.currency ?? 'XOF'}</p>
+            <p className="text-xs text-muted-foreground mb-1">Plan</p>
+            <p className="font-medium capitalize">{org?.plan ?? '—'}</p>
           </div>
         </div>
       </section>
