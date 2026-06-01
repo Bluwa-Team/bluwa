@@ -59,33 +59,33 @@
     "solutionBody": "Bluwa guarantees your margin and operational rigor: multi-site, multi-currency, with an AI copilot that answers your leadership in real time."
   },
   "features": {
-    "eyebrow": "The 5 pillars",
-    "title": "The factory core, complete from day one.",
-    "subtitle": "5 critical industrial pillars. 1 platform. 0 compromises.",
+    "eyebrow": "The modules",
+    "title": "Everything your plant needs, from day one.",
+    "subtitle": "6 integrated modules. 1 platform. From master data to gross margin, every link in the chain is covered.",
     "items": [
       {
         "title": "Master Data (MDM)",
-        "body": "Items, BOMs, customers, suppliers. Clean reference data: the foundation every Bluwa insight rests on."
+        "body": "Items, BOMs, customers, suppliers and work centres. Clean reference data: the foundation every Bluwa insight rests on."
       },
       {
-        "title": "Production & MES",
-        "body": "Scheduling, work orders, shop floor tracking. From production plan to field declaration, uninterrupted."
+        "title": "Production & Shop Floor",
+        "body": "Work orders, shop floor tracking (MES) and batch management. From production plan to field declaration, uninterrupted."
       },
       {
-        "title": "Quality & HACCP",
-        "body": "Batch-level control, real-time release, full upstream/downstream traceability. HACCP compliance built in."
+        "title": "Planning & MRP",
+        "body": "Forecasts, consolidated customer demand, Supply Planning and MRP. Needs calculated automatically, shortages anticipated."
       },
       {
-        "title": "Purchasing & MRP",
-        "body": "Needs calculated automatically, orders generated, stock valued in FEFO. Shortages anticipated, never suffered."
+        "title": "Purchasing & Stock",
+        "body": "Procurement, receiving, FEFO/FIFO stock and inventory. Cash under control, zero unplanned stockouts."
       },
       {
-        "title": "Dashboards & Gross Margin",
-        "body": "Gross margin per batch and work order in real time. The AI copilot answers your leadership in natural language."
+        "title": "Sales & Order Management",
+        "body": "Customer orders, order administration and delivery notes. From quote to delivery, tracked in real time."
       },
       {
-        "title": "Offline-first & Mobile Money",
-        "body": "No network outage stops your plant. Wave, Orange Money and MTN integrated natively."
+        "title": "Quality & Reporting",
+        "body": "Batch release, non-conformances, genealogy, DMS and margin analysis per batch. HACCP compliance and leadership visibility in one place."
       }
     ]
   },

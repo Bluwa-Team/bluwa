@@ -4,12 +4,12 @@ import {
   Boxes,
   Cpu,
   Factory,
-  LineChart,
+  FlaskConical,
+  ShoppingBag,
   ShoppingCart,
-  Smartphone,
 } from './Icons'
 
-const ICONS = [Boxes, Factory, Cpu, ShoppingCart, LineChart, Smartphone]
+const ICONS = [Boxes, Factory, Cpu, ShoppingCart, ShoppingBag, FlaskConical]
 
 export function Features() {
   const t = useTranslations('features')

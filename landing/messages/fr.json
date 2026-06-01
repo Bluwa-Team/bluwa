@@ -59,33 +59,33 @@
     "solutionBody": "Bluwa garantit votre marge et votre rigueur opérationnelle : multi-sites, multi-devises, avec un copilote IA qui répond à vos dirigeants en temps réel."
   },
   "features": {
-    "eyebrow": "Les 5 piliers",
-    "title": "Le cœur d’usine, complet dès le premier jour.",
-    "subtitle": "5 piliers industriels critiques. 1 plateforme. 0 compromis.",
+    "eyebrow": "Les modules",
+    "title": "Tout ce dont votre usine a besoin, dès le premier jour.",
+    "subtitle": "6 modules intégrés. 1 plateforme. Du référentiel à la marge brute, chaque maillon est couvert.",
     "items": [
       {
-        "title": "Référentiel maître (MDM)",
-        "body": "Articles, BOM, clients, fournisseurs. La donnée de référence propre sur laquelle toute la précision de Bluwa repose."
+        "title": "Données de référence (MDM)",
+        "body": "Articles, nomenclatures, clients, fournisseurs et postes de charge. La donnée propre sur laquelle toute la précision de Bluwa repose."
       },
       {
-        "title": "Production & GPAO",
-        "body": "Planification, ordres de fabrication, suivi atelier. Du plan de production à la déclaration terrain, sans rupture."
+        "title": "Production & Atelier",
+        "body": "Ordres de fabrication, suivi atelier (MES) et gestion des lots. Du plan de production à la déclaration terrain, sans rupture."
       },
       {
-        "title": "Qualité & HACCP",
-        "body": "Contrôle lot par lot, libération en temps réel, traçabilité complète amont/aval. Conformité HACCP native."
+        "title": "Planification & MRP",
+        "body": "Prévisions, demande clients consolidée, Supply Planning et MRP. Les besoins calculés automatiquement, les ruptures anticipées."
       },
       {
-        "title": "Achats & MRP",
-        "body": "Besoins calculés automatiquement, commandes générées, stocks valorisés en FEFO. Rupture anticipée, jamais subie."
+        "title": "Achats & Stocks",
+        "body": "Approvisionnement, réception, stocks FEFO/FIFO et inventaire. Cash immobilisé maîtrisé, zéro rupture subie."
       },
       {
-        "title": "Pilotage & Marge brute",
-        "body": "Marge brute par lot et par OF en temps réel. Le copilote IA répond à vos dirigeants en langage naturel."
+        "title": "Ventes & ADV",
+        "body": "Commandes clients, administration des ventes et bons de livraison. Du devis à la livraison, tracé en temps réel."
       },
       {
-        "title": "Offline-first & Mobile Money",
-        "body": "Aucune coupure réseau n’arrête votre usine. Wave, Orange Money et MTN intégrés nativement."
+        "title": "Qualité & Pilotage",
+        "body": "Libération des lots, non-conformités, généalogie, GED et analyse de marge par lot. Conformité HACCP et visibilité dirigeants réunies."
       }
     ]
   },

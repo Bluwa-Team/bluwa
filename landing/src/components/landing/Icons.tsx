@@ -136,6 +136,26 @@ export function X(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function ShoppingBag(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <line x1="3" x2="21" y1="6" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  )
+}
+
+export function FlaskConical(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14 2v6l3.84 7.01A2 2 0 0 1 16 18H8a2 2 0 0 1-1.84-2.99L10 8V2" />
+      <path d="M6 2h12" />
+      <path d="M14.5 9.5h-5" />
+    </svg>
+  )
+}
+
 export function EyeOff(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>
