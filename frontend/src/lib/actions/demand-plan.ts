@@ -9,6 +9,7 @@ export interface DemandPlanLine {
   orderId:      string
   orderNumber:  string
   clientName:   string
+  articleId:    string
   articleCode:  string
   articleLabel: string
   quantity:     number
@@ -38,7 +39,7 @@ export async function getDemandPlan(weeksCount = 6): Promise<DemandPlanWeek[]> {
   let query = supabase
     .from('sales_order_items')
     .select(`
-      id, quantity,
+      id, quantity, article_id,
       sales_orders!sales_order_id(
         id, order_number, delivery_date, status,
         clients!client_id(nom)
@@ -77,6 +78,7 @@ export async function getDemandPlan(weeksCount = 6): Promise<DemandPlanWeek[]> {
         orderId:      order.id,
         orderNumber:  order.order_number,
         clientName:   order.clients?.nom ?? '—',
+        articleId:    item.article_id as string,
         articleCode:  article?.code ?? '—',
         articleLabel: article?.designation ?? '—',
         quantity:     Number(item.quantity),

@@ -49,13 +49,6 @@ export async function runMrpEngine(): Promise<MrpEngineResult> {
     if (runErr || !run) throw runErr ?? new Error('Impossible de créer le MRP run')
     runId = run.id as string
 
-    // Purger les anciennes recommandations NEW avant de recalculer
-    await supabase
-      .from('mrp_recommendations')
-      .delete()
-      .eq('organization_id', orgId)
-      .eq('status', 'NEW')
-
     // ── 2. Charger toutes les données en parallèle ──────────────────────────
     const today   = new Date()
     const todayStr = today.toISOString().split('T')[0]
@@ -181,6 +174,21 @@ export async function runMrpEngine(): Promise<MrpEngineResult> {
     // Besoins composants issus de l'explosion BOM
     const componentDemand = new Map<string, number>()
 
+    // Explosion BOM récursive — descend tous les niveaux avec garde anti-cycle.
+    // `ancestors` = set des articleId déjà traversés dans la branche courante.
+    const explodeBom = (articleId: string, netQty: number, ancestors: Set<string>): void => {
+      if (ancestors.has(articleId)) return
+      const bom = bomMap.get(articleId)
+      if (!bom) return
+      const batches = Math.ceil(netQty / bom.batchSize)
+      const nextAncestors = new Set(ancestors).add(articleId)
+      for (const comp of bom.items) {
+        const need = batches * comp.qty * (1 + comp.scrapPct / 100)
+        componentDemand.set(comp.componentId, (componentDemand.get(comp.componentId) ?? 0) + need)
+        explodeBom(comp.componentId, need, nextAncestors)
+      }
+    }
+
     // Passe 1 — Produits finis et semi-finis (PRODUCE)
     for (const article of articles as any[] ?? []) {
       if (!['PF', 'PSF'].includes(article.type)) continue
@@ -202,15 +210,8 @@ export async function runMrpEngine(): Promise<MrpEngineResult> {
 
       recommendations.push({ articleId: article.id, actionType: 'PRODUCE', suggestedQty: Math.ceil(netReq), suggestedOrderDate, requiredDate })
 
-      // Explosion BOM → besoins composants
-      const bom = bomMap.get(article.id)
-      if (bom) {
-        const batches = Math.ceil(netReq / bom.batchSize)
-        for (const comp of bom.items) {
-          const need = batches * comp.qty * (1 + comp.scrapPct / 100)
-          componentDemand.set(comp.componentId, (componentDemand.get(comp.componentId) ?? 0) + need)
-        }
-      }
+      // Explosion BOM complète (tous niveaux)
+      explodeBom(article.id, netReq, new Set())
     }
 
     // Passe 2 — Composants : MP, AC, CS (BUY) + PSF composants (PRODUCE récursif)
@@ -273,8 +274,15 @@ export async function runMrpEngine(): Promise<MrpEngineResult> {
       if (recErr) throw recErr
     }
 
-    // ── 6. Marquer le run SUCCESS ───────────────────────────────────────────
+    // ── 6. Marquer le run SUCCESS + purge des anciennes recs NEW ───────────
     await supabase.from('mrp_runs').update({ status: 'SUCCESS' }).eq('id', runId)
+    // Ne supprime que les recs des passes précédentes — pas celles du run courant
+    await supabase
+      .from('mrp_recommendations')
+      .delete()
+      .eq('organization_id', orgId)
+      .eq('status', 'NEW')
+      .neq('mrp_run_id', runId)
 
     return { runId, count: recommendations.length }
 

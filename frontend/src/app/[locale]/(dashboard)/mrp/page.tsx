@@ -35,15 +35,20 @@ export default function MrpPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const [newRecs, run] = await Promise.all([
-      getMrpRecommendations(filter),
+      getMrpRecommendations('ALL'),
       getLatestMrpRun(),
     ])
     setRecs(newRecs)
     setLatestRun(run)
     setLoading(false)
-  }, [filter])
+  }, [])
 
   useEffect(() => { load() }, [load])
+
+  const filteredRecs = useMemo(
+    () => filter === 'ALL' ? recs : recs.filter(r => r.status === filter),
+    [recs, filter],
+  )
 
   async function handleConvert(rec: MrpRecommendationRow) {
     setActingId(rec.id)
@@ -219,7 +224,7 @@ export default function MrpPage() {
             <Loader2 className="size-4 animate-spin" />
             <span className="text-sm">Chargement…</span>
           </div>
-        ) : recs.length === 0 ? (
+        ) : filteredRecs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Bell className="size-8 opacity-30" />
             <p className="text-sm font-medium">Aucune recommandation</p>
@@ -244,7 +249,7 @@ export default function MrpPage() {
                 </tr>
               </thead>
               <tbody>
-                {recs.map(rec => {
+                {filteredRecs.map(rec => {
                   const isActing = actingId === rec.id
                   const reqDate  = new Date(rec.requiredDate)
                   const today    = new Date()
