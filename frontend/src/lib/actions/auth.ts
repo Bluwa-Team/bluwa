@@ -1,7 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
-import { getLocale } from 'next-intl/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 
@@ -66,7 +64,7 @@ export async function completeOnboardingAction(input: {
   factoryName: string
   factoryCity?: string
   factoryCountry?: string
-}): Promise<ActionResult<{ slug: string }>> {
+}): Promise<ActionResult> {
   const { orgName, factoryName, factoryCity, factoryCountry } = input
 
   if (!orgName || !factoryName) {
@@ -143,6 +141,5 @@ export async function completeOnboardingAction(input: {
     return { ok: false, error: accessError.message }
   }
 
-  const locale = await getLocale()
-  redirect(`/${locale}/dashboard`)
+  return { ok: true }
 }

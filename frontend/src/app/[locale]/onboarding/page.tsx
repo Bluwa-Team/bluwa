@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboardingAction } from '@/lib/actions/auth'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -78,10 +79,14 @@ export default function OnboardingPage() {
       factoryCity: form.factoryLocation,
     })
 
-    if (result && !result.ok) {
-      setError(result.error || t('errors.generic'))
+    if (!result || !result.ok) {
+      setError(result?.error || t('errors.generic'))
       setLoading(false)
+      return
     }
+
+    router.push('/dashboard')
+    router.refresh()
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]
@@ -92,7 +97,9 @@ export default function OnboardingPage() {
       <div className="w-full" style={{ maxWidth: '400px' }}>
         <div className="p-6">
           <div className="text-center mb-6">
-            <Link href="/" className="text-xl font-bold tracking-tight">Bluwa</Link>
+            <Link href="/" className="inline-block">
+              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="mx-auto" />
+            </Link>
           </div>
 
           <StepIndicator current={step} labels={stepLabels} />

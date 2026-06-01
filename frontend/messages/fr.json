@@ -68,10 +68,11 @@
     "myProfile": "Mon profil",
     "logout": "Se déconnecter",
     "roles": {
-      "org_admin": "Administrateur",
-      "factory_admin": "Responsable d'usine",
+      "owner": "Propriétaire",
+      "admin": "Administrateur",
+      "manager": "Manager",
       "operator": "Opérateur",
-      "super_admin": "Super admin"
+      "viewer": "Lecteur"
     }
   },
   "dashboard": {

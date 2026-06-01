@@ -109,6 +109,14 @@ CREATE TABLE user_site_access (
 COMMENT ON TABLE user_site_access IS 'Pivot accès multi-sites : UNIQUE(user_id, factory_id) empêche les doublons';
 
 
+-- ── Fonction helper SECURITY DEFINER pour briser la récursion RLS ──
+-- Lit organization_id depuis profiles en bypassant le RLS (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION fn_profile_org()
+RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT organization_id FROM profiles WHERE id = auth.uid()
+$$;
+
+
 -- ================================================================
 -- §2  RLS (toutes les tables existent maintenant)
 -- ================================================================
@@ -143,10 +151,18 @@ CREATE POLICY "factories_update_admin" ON factories FOR UPDATE
 
 -- Profiles
 DROP POLICY IF EXISTS "profiles_select_own_org" ON profiles;
-DROP POLICY IF EXISTS "profiles_update_own"      ON profiles;
+DROP POLICY IF EXISTS "profiles_select_own"     ON profiles;
+DROP POLICY IF EXISTS "profiles_select_org"     ON profiles;
+DROP POLICY IF EXISTS "profiles_update_own"     ON profiles;
 
-CREATE POLICY "profiles_select_own_org" ON profiles FOR SELECT
-  USING (organization_id = (SELECT organization_id FROM profiles p WHERE p.id = auth.uid()));
+-- Lecture du propre profil (pas de récursion, comparaison directe)
+CREATE POLICY "profiles_select_own" ON profiles FOR SELECT
+  USING (id = auth.uid());
+
+-- Lecture des profils de la même org via fn SECURITY DEFINER (bypass RLS)
+CREATE POLICY "profiles_select_org" ON profiles FOR SELECT
+  USING (organization_id = fn_profile_org());
+
 CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE
   USING (id = auth.uid());
 
