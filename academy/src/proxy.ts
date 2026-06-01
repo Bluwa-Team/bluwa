@@ -24,8 +24,14 @@ export async function proxy(req: NextRequest) {
     }
   )
 
-  // Rafraîchit la session si expirée
-  const { data: { user } } = await supabase.auth.getUser()
+  // Rafraîchit la session si expirée — traite comme non-connecté si Supabase est injoignable
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // réseau indisponible ou clés invalides — on laisse passer sans crash
+  }
 
   const isProtected = PROTECTED.some(p => pathname.startsWith(p))
   if (isProtected && !user) {
