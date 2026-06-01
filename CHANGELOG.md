@@ -5,6 +5,68 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-06-01] — Session 16 — Modales S&OP + Section Abonnement + doc guide modules
+
+### Module S&OP — Modales de détail
+
+#### `demande-clients/page.tsx`
+- **Ajout** : modale `OrderDetailModal` — s'ouvre au clic sur n'importe quelle ligne de commande
+  - En-tête : n° commande (monospace) + badge statut (Confirmée / En cours / Brouillon)
+  - Blocs détail : Client · Article (libellé + code) · Quantité + unité · Date de livraison exacte
+  - Les lignes passent de `<div>` à `<button>` avec `cursor-pointer` et `hover:bg-muted/10`
+- **Import** : `DemandPlanLine` exporté depuis `demand-plan.ts` (type manquant)
+
+#### `supply-planning/page.tsx`
+- **Ajout** : modale `CellDetailModal` — s'ouvre au clic sur une cellule colorée (ignoré si `totalDemand === 0`)
+  - En-tête : badge statut (OK / Tension / Surcharge) + semaine + nom article + code monospace
+  - Section **Décomposition de la demande** : prévisions vs commandes fermes, badge "retenu" sur la valeur `Math.max()`, explication de la règle de calcul
+  - Section **Capacité de production** : barre de progression du taux d'utilisation, seuils OK / Tension (>85%) / Surcharge (>100%)
+  - Alerte rouge si surcharge avec actions suggérées (heures supp., sous-traitance, décalage)
+- Les cellules passent de `<div>` à `<button>` avec `hover:ring-2` et `active:scale-95`
+- Message d'alerte surcharge globale mis à jour : *"Cliquez sur une cellule rouge pour voir le détail"*
+- Légende bas de tableau : *"Cliquez sur une cellule pour voir le détail du calcul"*
+
+### Paramètres — Section Abonnement
+
+#### `lib/actions/factory.ts`
+- **Ajout** : types `SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED'` et interface `FactorySubscription`
+- **Ajout** : server action `getFactorySubscription(factoryId)` — lit `factories` jointé à `subscription_plans` ; retourne plan name, prix XOF, statut, date expiry, max users
+
+#### `settings/_components/AbonnementSection.tsx` (nouveau)
+- Section visuelle avec badge statut coloré : **Actif** (vert) · **Paiement en attente** (orange) · **Résilié** (rouge)
+- Grille infos : plan + tarif mensuel XOF · compteur utilisateurs `X / max` · date de renouvellement
+- Alerte orange si `PAST_DUE` avec lien `support@bluwa.io`
+- Fallback propre si aucun abonnement configuré sur le site actif
+
+#### `settings/page.tsx`
+- Import `AbonnementSection` + `getFactorySubscription`
+- Appel `getFactorySubscription(activeId)` en parallèle des autres requêtes
+- `<AbonnementSection>` inséré entre la section Utilisateurs et les Préférences
+
+### Document `bluwa_erp_guide_modules.docx` — mise à jour module S&OP
+
+#### Prévisions
+- Horizon corrigé : "4 à 12 semaines" → **"6 semaines glissantes"** (valeur réelle de l'app)
+- Supprimé : *Comparaison prévisions vs ventes réelles*, *Indicateur de tendance*, *Alerte si écart* (non implémentés)
+- Ajouté : saisie manuelle + enregistrement automatique, total 6 semaines par produit, transmission automatique au Supply Planning et MRP
+- Exemple mis à jour : suppression de l'algorithme saisonnier automatique → saisie manuelle par le planificateur
+
+#### Plan de demande (ex "Demande clients")
+- Titre renommé : **"🛒 Demande clients"** → **"📋 Plan de demande"** (aligné sur la sidebar)
+- Sous-titre et description mis à jour pour refléter le regroupement par semaine
+- Features : groupement 6 semaines glissantes, KPIs unités/commandes, alerte S1-S2, 3 statuts visuels
+- Supprimé : valeur monétaire totale (non affichée dans l'UI)
+
+#### Supply Planning
+- "En langage simple" : calcul automatique prévisions + commandes fermes, taux d'utilisation, alerte rouge si >100%
+- Features : 3 niveaux OK / Tension (>85%) / Surcharge (>100%), barre de progression, alerte globale rouge
+- Exemple : taux d'utilisation 121% + statut Surcharge affiché, décision manuelle du responsable
+
+### Fix — dépendance `date-fns`
+- `npm install date-fns` : package manquant des `node_modules` malgré sa présence dans `package.json`
+
+---
+
 ## [2026-06-01] — Session 15 — Fixes auth & cohérence rôles
 
 ### `src/lib/actions/auth.ts` — `completeOnboardingAction` (3 bugs critiques corrigés)
