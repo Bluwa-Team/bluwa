@@ -33,7 +33,7 @@ export default async function DashboardLayout({
     .eq('id', profile.organization_id)
     .maybeSingle()
 
-  const canUseAgent = profile.role === 'org_admin' || profile.role === 'factory_admin' || profile.role === 'super_admin'
+  const canUseAgent = profile.role === 'owner' || profile.role === 'admin'
 
   const cookieStore = await cookies()
   const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false'
