@@ -2,7 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { Building2, User, Palette, Factory } from 'lucide-react'
 import type { Metadata } from 'next'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { UsersSection } from './_components/UsersSection'
+import { listOrgUsers, type UserRole } from '@/lib/actions/users'
 
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Paramètres · Bluwa ERP' }
 
 export default async function SettingsPage() {
@@ -15,7 +18,7 @@ export default async function SettingsPage() {
     .eq('id', user?.id ?? '')
     .single()
 
-  const [{ data: org }, { data: siteAccess }] = await Promise.all([
+  const [{ data: org }, { data: siteAccess }, orgUsers] = await Promise.all([
     supabase
       .from('organizations')
       .select('name, country, currency')
@@ -25,6 +28,7 @@ export default async function SettingsPage() {
       .from('user_site_access')
       .select('factories(id, name, code, country, city, timezone, is_active)')
       .eq('user_id', user?.id ?? ''),
+    listOrgUsers(),
   ])
 
   const factories = siteAccess?.flatMap(r => r.factories ? [r.factories] : []) ?? []
@@ -121,6 +125,13 @@ export default async function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {/* Utilisateurs */}
+      <UsersSection
+        users={orgUsers}
+        currentUserId={user?.id ?? ''}
+        currentUserRole={(profile?.role ?? 'operator') as UserRole}
+      />
 
       {/* Préférences */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
