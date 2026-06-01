@@ -61,7 +61,8 @@
     "bonsLivraison": "Delivery Notes",
     "planification": "Planning",
     "achatsStocks": "Procurement & Stock",
-    "analyse": "Analytics",
+    "analyse": "Reporting",
+    "workCenters": "Work Centers",
     "previsions": "Demand Forecasting",
     "demandeClients": "Demand Plan",
     "supplyPlanning": "Supply Planning"

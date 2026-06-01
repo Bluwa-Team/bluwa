@@ -115,12 +115,22 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('referenceData'),
       items: [
-        { title: t('articles'),   url: '/articles',    icon: BookOpen, disabled: false },
-        { title: t('clients'),    url: '/clients',     icon: Users,    disabled: false },
-        { title: t('suppliers'),  url: '/fournisseurs',icon: Truck,    disabled: false },
+        { title: t('articles'),    url: '/articles',                    icon: BookOpen, disabled: false },
+        { title: t('clients'),     url: '/clients',                     icon: Users,    disabled: false },
+        { title: t('suppliers'),   url: '/fournisseurs',                icon: Truck,    disabled: false },
+        { title: t('workCenters'), url: '/production/postes-de-charge', icon: Cog,      disabled: false },
       ],
     },
-    // ── 3. Planification ─────────────────────────────────────────────────────
+    // ── 3. Ventes ─────────────────────────────────────────────────────────────
+    {
+      label: t('ventes'),
+      items: [
+        { title: t('commandesClients'), url: '/ventes',    icon: ShoppingBag,  disabled: false },
+        { title: t('adv'),              url: '/adv',        icon: Receipt,      disabled: false },
+        { title: t('bonsLivraison'),    url: '/logistique', icon: PackageCheck, disabled: false },
+      ],
+    },
+    // ── 4. Planification ─────────────────────────────────────────────────────
     {
       label: t('planification'),
       items: [
@@ -130,7 +140,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('mrp'),            url: '/mrp',             icon: Calculator, disabled: false },
       ],
     },
-    // ── 4. Achats & Stocks ───────────────────────────────────────────────────
+    // ── 5. Achats & Stocks ───────────────────────────────────────────────────
     {
       label: t('achatsStocks'),
       items: [
@@ -140,17 +150,16 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('inventaire'),        url: '/inventaire',        icon: ClipboardCheck, disabled: false },
       ],
     },
-    // ── 5. Production ─────────────────────────────────────────────────────────
+    // ── 6. Production ─────────────────────────────────────────────────────────
     {
       label: t('production'),
       items: [
-        { title: t('ordresFabrication'), url: '/production',                  icon: Factory,     disabled: false },
-        { title: t('mes'),               url: '/production/mes',              icon: MonitorPlay, disabled: false },
-        { title: 'Postes de charge',     url: '/production/postes-de-charge', icon: Cog,         disabled: false },
-        { title: t('productionBatches'), url: '/lots',                        icon: Package,     disabled: false },
+        { title: t('ordresFabrication'), url: '/production',     icon: Factory,     disabled: false },
+        { title: t('mes'),               url: '/production/mes', icon: MonitorPlay, disabled: false },
+        { title: t('productionBatches'), url: '/lots',           icon: Package,     disabled: false },
       ],
     },
-    // ── 6. Qualité ────────────────────────────────────────────────────────────
+    // ── 7. Qualité ────────────────────────────────────────────────────────────
     {
       label: t('qualite'),
       items: [
@@ -160,16 +169,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('gedQualite'),       url: '/qualite/ged',             icon: FileText,      disabled: false },
       ],
     },
-    // ── 7. Ventes — masqué si tout est désactivé ─────────────────────────────
-    {
-      label: t('ventes'),
-      items: [
-        { title: t('commandesClients'), url: '/ventes',    icon: ShoppingBag,  disabled: false },
-        { title: t('adv'),              url: '/adv',        icon: Receipt,      disabled: false },
-        { title: t('bonsLivraison'),    url: '/logistique', icon: PackageCheck, disabled: false },
-      ],
-    },
-    // ── 8. Analyse ────────────────────────────────────────────────────────────
+    // ── 8. Pilotage ────────────────────────────────────────────────────────────
     {
       label: t('analyse'),
       items: [

@@ -61,7 +61,8 @@
     "bonsLivraison": "Bons de livraison",
     "planification": "Planification",
     "achatsStocks": "Achats & Stocks",
-    "analyse": "Analyse",
+    "analyse": "Pilotage",
+    "workCenters": "Postes de charge",
     "previsions": "Prévisions",
     "demandeClients": "Plan de demande",
     "supplyPlanning": "Supply Planning"
