@@ -2,6 +2,7 @@ import { Header } from '@/components/landing/Header'
 import { Hero } from '@/components/landing/Hero'
 import { ProblemSolution } from '@/components/landing/ProblemSolution'
 import { Features } from '@/components/landing/Features'
+import { Presence } from '@/components/landing/Presence'
 import { PilotProgram } from '@/components/landing/PilotProgram'
 import { Pricing } from '@/components/landing/Pricing'
 import { Faq } from '@/components/landing/Faq'
@@ -15,6 +16,7 @@ export default function LandingPage() {
       <main>
         <Hero />
         <ProblemSolution />
+        <Presence />
         <Features />
         <PilotProgram />
         <Pricing />

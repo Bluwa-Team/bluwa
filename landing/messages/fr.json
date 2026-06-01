@@ -95,6 +95,12 @@
       }
     ]
   },
+  "presence": {
+    "eyebrow": "Ancrage Terrain",
+    "title": "Conçu avec des transformateurs sur 4 marchés",
+    "subtitle": "Des ateliers de co-conception avec des PME agroalimentaires au Togo, au Bénin, en Côte d'Ivoire et au Sénégal. La réalité africaine au cœur du produit.",
+    "countries": ["Togo", "Bénin", "Côte d'Ivoire", "Sénégal"]
+  },
   "pilot": {
     "eyebrow": "Programme Fondateurs",
     "title": "Devenez client fondateur.",

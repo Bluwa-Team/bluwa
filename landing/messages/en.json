@@ -95,6 +95,12 @@
       }
     ]
   },
+  "presence": {
+    "eyebrow": "Field Roots",
+    "title": "Built with processors across 4 markets",
+    "subtitle": "Co-design workshops with agri-food SMEs in Togo, Benin, Côte d'Ivoire and Senegal. African field reality at the heart of the product.",
+    "countries": ["Togo", "Benin", "Côte d'Ivoire", "Senegal"]
+  },
   "pilot": {
     "eyebrow": "Founders Programme",
     "title": "Become a founding client.",
