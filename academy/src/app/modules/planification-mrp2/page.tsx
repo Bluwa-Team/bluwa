@@ -5,12 +5,12 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Module 02  Planification MRP2 · Bluwa Academy' }
 
 const steps = [
-  { label: 'Prévisions de ventes', desc: 'Base de la demande future, consolidée dans le PIC/MPS/S&OP.' },
-  { label: 'Plan industriel & commercial (PIC/S&OP)', desc: 'Ajustement de la charge et de la capacité globale à long terme.' },
-  { label: 'Plan directeur de production (PDP)', desc: 'Calendrier des produits finis à moyen terme, enrichi par les commandes fermes.' },
-  { label: 'Calcul des besoins nets (MRP 1)', desc: 'Explosion de la nomenclature (BOM) → génération automatique des DA et des OF.' },
-  { label: 'Analyse des capacités', desc: 'Vérification manuelle de la disponibilité machine et main-d\'œuvre.' },
-  { label: 'Validation & lancement de l\'OF', desc: 'Déclenchement final après arbitrage des ressources et des contraintes.' },
+  { label: 'Prévisions de la demande', desc: 'Saisie des quantités prévisionnelles par produit et par semaine (horizon 6 semaines glissantes). Alimente le Supply Planning et le MRP.' },
+  { label: 'Plan de demande', desc: 'Commandes fermes des clients organisées par semaine de livraison. Bluwa retient le maximum entre prévisions et commandes confirmées pour ne jamais sous-estimer la charge.' },
+  { label: 'Supply Planning', desc: 'Équilibre automatique entre la demande retenue et la capacité de production. Trois statuts : OK (<85%), Tension (85–100%), Surcharge (>100%).' },
+  { label: 'MRP — Calcul des besoins nets', desc: 'Explosion de la nomenclature (BOM) → génération automatique des recommandations : ACHETER, PRODUIRE ou AVANCER une livraison.' },
+  { label: 'Analyse des capacités (postes de charge)', desc: 'Vérification de la disponibilité machine et main-d\'œuvre par poste. Prise en compte du taux d\'efficacité et des capacités journalières.' },
+  { label: 'Validation & lancement de l\'OF', desc: 'Déclenchement de l\'Ordre de Fabrication après arbitrage des recommandations MRP : convertir, ignorer ou avancer une livraison fournisseur.' },
 ]
 
 export default function PlanificationMRP2Page() {
@@ -25,16 +25,17 @@ export default function PlanificationMRP2Page() {
       icon={CalendarClock}
       iconColor="bg-amber-50 text-amber-600"
       objectives={[
-        'Élaborer le Plan Directeur de Production (PDP).',
-        'Calculer les besoins nets en fonction des stocks, commandes et délais.',
-        'Piloter l\'atelier avec un focus sur le TRS.',
-        'Intégrer les aléas locaux : coupures électriques, pannes machines.',
+        'Saisir et interpréter les prévisions de la demande dans Bluwa.',
+        'Lire le Plan de demande et comprendre la règle max(prévisions, commandes fermes).',
+        'Analyser le Supply Planning : statuts OK, Tension et Surcharge.',
+        'Exploiter les recommandations MRP (ACHETER, PRODUIRE, AVANCER) pour piloter les approvisionnements.',
+        'Intégrer les aléas locaux : coupures électriques, pannes machines, saisons agricoles.',
       ]}
       sections={[
         {
-          title: 'Le processus de planification opérationnelle',
+          title: 'La chaîne S&OP dans Bluwa — 6 étapes',
           video: {
-            title: 'De la prévision des ventes au lancement de l\'OF — le cycle MRP2',
+            title: 'De la prévision de demande au lancement de l\'OF — la chaîne S&OP Bluwa',
             duration: '3 min 20 s',
           },
           content: (

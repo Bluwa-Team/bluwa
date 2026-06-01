@@ -31,13 +31,15 @@ export default function FondationsMDMPage() {
           },
           content: (
             <div className="space-y-3">
-              <p>Tous les articles Bluwa suivent un format standardisé :</p>
+              <p>Tous les articles Bluwa suivent un format standardisé basé sur le type d'article :</p>
               <div className="font-mono text-sm bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-1">
-                <div><span className="text-blue-600">MATR-0001</span>  Matière première</div>
-                <div><span className="text-blue-600">PFTS-0001</span>  Produit semi-fini</div>
-                <div><span className="text-blue-600">PFTS-0002</span>  Produit fini</div>
+                <div><span className="text-blue-600">MP-0001</span>   — Matière première</div>
+                <div><span className="text-blue-600">PSF-0001</span>  — Produit semi-fini</div>
+                <div><span className="text-blue-600">PF-0001</span>   — Produit fini</div>
+                <div><span className="text-blue-600">AC-0001</span>   — Article de conditionnement</div>
+                <div><span className="text-blue-600">CS-0001</span>   — Consommable</div>
               </div>
-              <p>Ce format garantit une identification unique et une traçabilité fiable à travers toute la chaîne.</p>
+              <p>Le préfixe correspond au type défini dans Bluwa (<code className="text-xs bg-slate-100 px-1 py-0.5 rounded">MP · PSF · PF · AC · CS</code>), ce qui garantit une identification sans ambiguïté et une traçabilité fiable à travers toute la chaîne.</p>
             </div>
           ),
         },
@@ -71,10 +73,10 @@ export default function FondationsMDMPage() {
                 </thead>
                 <tbody>
                   {[
-                    ['MATR-0001', 'Farine de maïs', 'Matière première', 'Actif', '2026-05-22'],
-                    ['MATR-0002', 'Huile de palme', 'Matière première', 'Actif', '2026-05-22'],
-                    ['PFTS-0001', 'Mélange semi-fini', 'Produit semi-fini', 'Actif', '2026-05-22'],
-                    ['PFTS-0002', 'Snack riz épicé', 'Produit fini', 'Actif', '2026-05-22'],
+                    ['MP-0001', 'Farine de maïs', 'Matière première', 'Actif', '2026-05-22'],
+                    ['MP-0002', 'Huile de palme', 'Matière première', 'Actif', '2026-05-22'],
+                    ['PSF-0001', 'Mélange semi-fini', 'Produit semi-fini', 'Actif', '2026-05-22'],
+                    ['PF-0001', 'Snack riz épicé', 'Produit fini', 'Actif', '2026-05-22'],
                   ].map(row => (
                     <tr key={row[0]} className="border border-slate-200 hover:bg-slate-50">
                       {row.map((cell, i) => (
