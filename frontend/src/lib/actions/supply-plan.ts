@@ -132,19 +132,16 @@ export async function getSupplyPlan(weeksCount = 6): Promise<SupplyPlanSummary> 
   const { byArticle: capacityByArticle, factoryTotal } =
     await getCapacityPerArticle(supabase, factoryId, articleIds)
 
-  // Fallback pour les articles sans gamme : capacité usine / nb articles sans gamme
-  const articlesWithoutRouting = forecasts.filter(f => !capacityByArticle.has(f.articleId))
-  const fallbackCapacity = articlesWithoutRouting.length > 0 && factoryTotal > 0
-    ? Math.round(factoryTotal / articlesWithoutRouting.length)
-    : 0
+  // Articles sans gamme configurée → capacité 0 (affichée "Non configurée" dans la grille)
+  const fallbackCapacity = 0
 
-  // Index commandes fermes : articleCode → weekStart → quantité
+  // Index commandes fermes : articleId → weekStart → quantité
   const ordersIndex: Record<string, Record<string, number>> = {}
   demandWeeks.forEach(dw => {
     dw.lines.forEach(l => {
-      if (!ordersIndex[l.articleCode]) ordersIndex[l.articleCode] = {}
-      ordersIndex[l.articleCode][dw.weekStart] =
-        (ordersIndex[l.articleCode][dw.weekStart] ?? 0) + l.quantity
+      if (!ordersIndex[l.articleId]) ordersIndex[l.articleId] = {}
+      ordersIndex[l.articleId][dw.weekStart] =
+        (ordersIndex[l.articleId][dw.weekStart] ?? 0) + l.quantity
     })
   })
 
@@ -157,7 +154,7 @@ export async function getSupplyPlan(weeksCount = 6): Promise<SupplyPlanSummary> 
       unite:        f.unite,
       weeks: weeks.map(w => {
         const forecast        = f.weeks[w] ?? 0
-        const confirmedOrders = ordersIndex[f.articleCode]?.[w] ?? 0
+        const confirmedOrders = ordersIndex[f.articleId]?.[w] ?? 0
         const totalDemand     = Math.max(forecast, confirmedOrders)
         const coverage        = capacity > 0 ? Math.min(Math.round((totalDemand / capacity) * 100), 200) : 0
         const status: SupplyStatus =
