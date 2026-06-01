@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Factory, AlertTriangle, CheckCircle2, Loader2, CircleDot, TrendingUp, TrendingDown, ShoppingBag, BarChart3 } from 'lucide-react'
+import { Factory, AlertTriangle, CheckCircle2, Loader2, CircleDot, TrendingUp, TrendingDown, ShoppingBag, BarChart3, Calculator, ArrowRight } from 'lucide-react'
 import { getSupplyPlan, type SupplyPlanSummary, type SupplyPlanLine, type SupplyPlanWeekCell, type SupplyStatus } from '@/lib/actions/supply-plan'
 import { weekLabel } from '@/lib/planning-utils'
+import { runMrpEngine } from '@/lib/actions/mrp-engine'
+import { useRouter } from '@/i18n/navigation'
+import { Button } from '@/components/ui/button'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
@@ -175,14 +178,23 @@ function CellDetailModal({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SupplyPlanningPage() {
+  const router = useRouter()
   const [plan,      setPlan]      = useState<SupplyPlanSummary | null>(null)
   const [loading,   setLoading]   = useState(true)
+  const [mrpRunning, setMrpRunning] = useState(false)
   const [selection, setSelection] = useState<{ line: SupplyPlanLine; cell: SupplyPlanWeekCell } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     getSupplyPlan(6).then(data => { setPlan(data); setLoading(false) })
   }, [])
+
+  async function handleLancerMrp() {
+    setMrpRunning(true)
+    await runMrpEngine()
+    setMrpRunning(false)
+    router.push('/mrp')
+  }
 
   function openCell(line: SupplyPlanLine, cell: SupplyPlanWeekCell) {
     if (cell.totalDemand === 0) return
@@ -247,14 +259,34 @@ export default function SupplyPlanningPage() {
         </div>
       )}
 
-      {/* Alerte surcharge globale */}
-      {!loading && plan && surcharges > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-950/30 px-4 py-3">
-          <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700 dark:text-red-300">
-            <span className="font-semibold">{surcharges} semaine{surcharges > 1 ? 's' : ''} en surcharge</span> — la demande dépasse la capacité de production.
-            Cliquez sur une cellule rouge pour voir le détail.
-          </p>
+      {/* Alerte surcharge + CTA MRP */}
+      {!loading && plan && (tensions > 0 || surcharges > 0) && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-950/30 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300">
+              {surcharges > 0 && (
+                <><span className="font-semibold">{surcharges} semaine{surcharges > 1 ? 's' : ''} en surcharge</span> — la demande dépasse la capacité. </>
+              )}
+              {tensions > 0 && (
+                <><span className="font-semibold">{tensions} semaine{tensions > 1 ? 's' : ''} en tension</span>. </>
+              )}
+              Lancez le MRP pour générer les recommandations d'achat et de production.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 h-8 gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white"
+            onClick={handleLancerMrp}
+            disabled={mrpRunning}
+          >
+            {mrpRunning
+              ? <Loader2 className="size-3.5 animate-spin" />
+              : <Calculator className="size-3.5" />
+            }
+            {mrpRunning ? 'Calcul…' : 'Lancer le MRP'}
+            {!mrpRunning && <ArrowRight className="size-3.5" />}
+          </Button>
         </div>
       )}
 
