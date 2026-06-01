@@ -6,7 +6,13 @@
     "faq": "FAQ",
     "contact": "Contact",
     "login": "Se connecter",
-    "cta": "Demander une démo"
+    "cta": "Demander une démo",
+    "resources": "Ressources",
+    "resourceItems": [
+      { "title": "Bluwa Academy", "description": "Formations et certifications métier agroalimentaire", "href": "#" },
+      { "title": "Newsletter", "description": "Actualités ERP & agroalimentaire africain", "href": "#" },
+      { "title": "Blog", "description": "Guides pratiques et retours terrain", "href": "#" }
+    ]
   },
   "hero": {
     "badge": "Pensé pour l’Afrique de l’Ouest",

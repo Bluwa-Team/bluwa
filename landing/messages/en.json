@@ -6,7 +6,13 @@
     "faq": "FAQ",
     "contact": "Contact",
     "login": "Sign in",
-    "cta": "Book a demo"
+    "cta": "Book a demo",
+    "resources": "Resources",
+    "resourceItems": [
+      { "title": "Bluwa Academy", "description": "Professional training and certifications for agri-food", "href": "#" },
+      { "title": "Newsletter", "description": "ERP & African agri-food industry news", "href": "#" },
+      { "title": "Blog", "description": "Practical guides and field insights", "href": "#" }
+    ]
   },
   "hero": {
     "badge": "Built for West Africa",
