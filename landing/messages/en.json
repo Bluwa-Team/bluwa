@@ -101,10 +101,11 @@
         "currency": "XOF / site / month",
         "tagline": "1 to 3 users",
         "features": [
-          "1 site",
-          "Stock, production, purchasing",
-          "Essential dashboards",
-          "3-month support included"
+          "Dashboard & key indicators",
+          "Master data: items & suppliers",
+          "Purchasing, receiving & stock management",
+          "Work orders & batch tracking",
+          "Batch release (quality control)"
         ],
         "cta": "Get started"
       },
@@ -114,26 +115,31 @@
         "currency": "XOF / site / month",
         "tagline": "Up to 15 users",
         "features": [
-          "1 site",
-          "Full MRP + Quality DMS",
+          "Everything in Starter",
+          "Sales: customer orders, ADV & deliveries",
+          "Full MRP + Supply Planning + forecasts",
+          "Full quality: NC, genealogy, DMS",
           "Leadership AI copilot",
-          "WhatsApp priority support"
+          "Margin analysis per batch and work order"
         ],
         "highlighted": true,
         "cta": "Book a demo"
       },
       {
         "name": "Enterprise",
-        "price": "350,000",
-        "currency": "XOF / site / month",
-        "tagline": "Unlimited users",
+        "price": "Custom quote",
+        "priceNote": "Pricing based on number of users",
+        "currency": "",
+        "tagline": "Multi-site · Unlimited users",
+        "custom": true,
         "features": [
-          "1 site",
+          "Everything in Growth",
+          "Multi-site included",
           "Priority access Phase 2: ADV & Logistics WM",
-          "SSO, audit, compliance",
+          "SSO, audit & compliance",
           "Dedicated Customer Success"
         ],
-        "cta": "Contact us"
+        "cta": "Request a quote"
       }
     ]
   },

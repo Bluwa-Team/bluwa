@@ -101,10 +101,11 @@
         "currency": "FCFA / site / mois",
         "tagline": "1 à 3 utilisateurs",
         "features": [
-          "1 site",
-          "Stocks, production, achats",
-          "Tableaux de bord essentiels",
-          "Support inclus 3 mois"
+          "Dashboard & indicateurs clés",
+          "Référentiel : articles & fournisseurs",
+          "Achats, réception & gestion des stocks",
+          "Ordres de fabrication & suivi des lots",
+          "Libération des lots (contrôle qualité)"
         ],
         "cta": "Commencer"
       },
@@ -114,26 +115,31 @@
         "currency": "FCFA / site / mois",
         "tagline": "Jusqu’à 15 utilisateurs",
         "features": [
-          "1 site",
-          "MRP complet + GED qualité",
+          "Tout Starter inclus",
+          "Ventes : commandes clients, ADV & livraisons",
+          "MRP complet + Supply Planning + prévisions",
+          "Qualité complète : NC, généalogie, GED",
           "Copilote IA dirigeants",
-          "Support prioritaire WhatsApp"
+          "Analyse de marge par lot et par OF"
         ],
         "highlighted": true,
         "cta": "Demander une démo"
       },
       {
         "name": "Enterprise",
-        "price": "350 000",
-        "currency": "FCFA / site / mois",
-        "tagline": "Utilisateurs illimités",
+        "price": "Sur mesure",
+        "priceNote": "Tarif selon le nombre d'utilisateurs",
+        "currency": "",
+        "tagline": "Multi-sites · Utilisateurs illimités",
+        "custom": true,
         "features": [
-          "1 site",
+          "Tout Growth inclus",
+          "Multi-sites inclus",
           "Accès prioritaire Phase 2 : ADV & Logistique WM",
-          "SSO, audit, conformité",
+          "SSO, audit & conformité",
           "Customer Success dédié"
         ],
-        "cta": "Nous contacter"
+        "cta": "Demander un devis"
       }
     ]
   },

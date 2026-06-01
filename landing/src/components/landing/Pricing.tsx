@@ -11,6 +11,8 @@ type Plan = {
   tagline: string
   features: string[]
   highlighted?: boolean
+  custom?: boolean
+  priceNote?: string
   cta: string
 }
 
@@ -48,12 +50,21 @@ export function Pricing() {
               ) : null}
               <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">{plan.tagline}</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
-                {plan.currency ? (
-                  <span className="text-sm text-[var(--muted-foreground)]">{plan.currency}</span>
-                ) : null}
-              </div>
+              {plan.custom ? (
+                <div className="mt-5">
+                  <span className="text-2xl font-semibold tracking-tight">{plan.price}</span>
+                  {plan.priceNote && (
+                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">{plan.priceNote}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-5 flex items-baseline gap-1">
+                  <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
+                  {plan.currency ? (
+                    <span className="text-sm text-[var(--muted-foreground)]">{plan.currency}</span>
+                  ) : null}
+                </div>
+              )}
               <ul className="mt-6 flex-1 space-y-3">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
