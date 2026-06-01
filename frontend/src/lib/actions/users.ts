@@ -102,11 +102,30 @@ export async function toggleUserActive(targetId: string, active: boolean) {
 export async function inviteUser(email: string, role: UserRole) {
   const { orgId } = await assertAdmin()
 
+  // Vérifier si l'email est déjà membre de l'organisation
+  const existingUsers = await listOrgUsers()
+  const alreadyMember = existingUsers.some(
+    u => u.email.toLowerCase() === email.toLowerCase()
+  )
+  if (alreadyMember) {
+    return { error: 'Cet utilisateur est déjà membre de l\'organisation.' }
+  }
+
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     data: { organization_id: orgId, role },
   })
 
-  if (error) return { error: error.message }
+  if (error) {
+    // Traduction des erreurs Supabase courantes
+    if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      return { error: 'Cet email est déjà enregistré dans Supabase. Contactez le support pour le rattacher à votre organisation.' }
+    }
+    if (error.message.includes('Database error')) {
+      return { error: 'Erreur de base de données. Vérifiez que la migration 019 a été appliquée dans Supabase.' }
+    }
+    return { error: error.message }
+  }
+
   revalidatePath('/settings')
   return { success: true, userId: data.user.id }
 }
