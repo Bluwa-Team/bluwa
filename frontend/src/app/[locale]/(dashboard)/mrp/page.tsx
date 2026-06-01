@@ -12,6 +12,7 @@ import {
   getMrpRecommendations, getLatestMrpRun,
   convertRecommendation, ignoreRecommendation,
 } from '@/lib/actions/mrp'
+import { runMrpEngine } from '@/lib/actions/mrp-engine'
 import type { MrpRecommendationRow, MrpRun, MrpRecommendationStatus } from '@/types/erp'
 import {
   MRP_ACTION_LABELS, MRP_ACTION_COLORS,
@@ -26,8 +27,10 @@ export default function MrpPage() {
   const [filter,    setFilter]    = useState<MrpRecommendationStatus | 'ALL'>('NEW')
   const [recs,      setRecs]      = useState<MrpRecommendationRow[]>([])
   const [latestRun, setLatestRun] = useState<MrpRun | null>(null)
-  const [loading,   setLoading]   = useState(false)
-  const [actingId,  setActingId]  = useState<string | null>(null)
+  const [loading,    setLoading]    = useState(false)
+  const [running,    setRunning]    = useState(false)
+  const [runResult,  setRunResult]  = useState<{ count: number; error?: string } | null>(null)
+  const [actingId,   setActingId]   = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -47,6 +50,15 @@ export default function MrpPage() {
     const updated = await convertRecommendation(rec.id)
     if (updated) setRecs(prev => prev.map(r => r.id === rec.id ? updated : r))
     setActingId(null)
+  }
+
+  async function handleRunEngine() {
+    setRunning(true)
+    setRunResult(null)
+    const result = await runMrpEngine()
+    setRunResult({ count: result.count, error: result.error })
+    setRunning(false)
+    await load()
   }
 
   async function handleIgnore(rec: MrpRecommendationRow) {
@@ -107,18 +119,40 @@ export default function MrpPage() {
             )}
           </div>
         </div>
-        <Button
-          variant="outline" size="sm"
-          className="h-8 gap-1.5 text-xs"
-          onClick={load}
-          disabled={loading}
-        >
-          {loading
-            ? <Loader2 className="size-3.5 animate-spin" />
-            : <RefreshCw className="size-3.5" />
-          }
-          Actualiser
-        </Button>
+        <div className="flex items-center gap-2">
+          {runResult && !runResult.error && (
+            <span className="text-xs text-emerald-600 font-medium">
+              ✓ {runResult.count} recommandation{runResult.count > 1 ? 's' : ''} générée{runResult.count > 1 ? 's' : ''}
+            </span>
+          )}
+          {runResult?.error && (
+            <span className="text-xs text-red-500 font-medium">Erreur : {runResult.error}</span>
+          )}
+          <Button
+            variant="outline" size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={load}
+            disabled={loading || running}
+          >
+            {loading
+              ? <Loader2 className="size-3.5 animate-spin" />
+              : <RefreshCw className="size-3.5" />
+            }
+            Actualiser
+          </Button>
+          <Button
+            size="sm"
+            className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white"
+            onClick={handleRunEngine}
+            disabled={running || loading}
+          >
+            {running
+              ? <Loader2 className="size-3.5 animate-spin" />
+              : <Calculator className="size-3.5" />
+            }
+            {running ? 'Calcul en cours…' : 'Lancer le calcul MRP'}
+          </Button>
+        </div>
       </div>
 
       {/* ── KPI cards ── */}
