@@ -1,5 +1,6 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 export async function getOrgId(): Promise<string> {
@@ -18,5 +19,9 @@ export async function getOrgId(): Promise<string> {
 export async function getSupabaseWithOrg() {
   const supabase = await createClient()
   const orgId = await getOrgId()
-  return { supabase, orgId }
+
+  const cookieStore = await cookies()
+  const factoryId = cookieStore.get('active_factory_id')?.value ?? null
+
+  return { supabase, orgId, factoryId }
 }

@@ -1,6 +1,8 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { FactorySwitcher } from '@/components/dashboard/FactorySwitcher'
+import type { Factory as FactoryData } from '@/lib/actions/factory'
 import {
   LayoutDashboard,
   Package,
@@ -96,7 +98,11 @@ function NavItem({ item, isActive }: { item: NavItemData; isActive: boolean }) {
   )
 }
 
-export function AppSidebar({ orgName }: { orgName: string }) {
+export function AppSidebar({ orgName, factories = [], activeFactoryId = null }: {
+  orgName: string
+  factories?: FactoryData[]
+  activeFactoryId?: string | null
+}) {
   const pathname = usePathname()
   const t = useTranslations('nav')
 
@@ -188,6 +194,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
             <span className="text-xs text-muted-foreground mt-1 truncate max-w-[140px]">{orgName}</span>
           </div>
         </Link>
+        <FactorySwitcher factories={factories} activeFactoryId={activeFactoryId} />
       </SidebarHeader>
 
       <SidebarContent>

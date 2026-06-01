@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppHeader } from '@/components/dashboard/app-header'
+import { getUserFactories } from '@/lib/actions/factory'
 
 export default async function DashboardLayout({
   children,
@@ -36,11 +37,21 @@ export default async function DashboardLayout({
   const canUseAgent = profile.role === 'owner' || profile.role === 'admin'
 
   const cookieStore = await cookies()
-  const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false'
+  const sidebarOpen      = cookieStore.get('sidebar_state')?.value !== 'false'
+  const activeFactoryId  = cookieStore.get('active_factory_id')?.value ?? null
+
+  const factories = await getUserFactories()
+
+  // Si pas de cookie usine, on prend la première par défaut
+  const resolvedFactoryId = activeFactoryId ?? factories[0]?.id ?? null
 
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
-      <AppSidebar orgName={org?.name || ''} />
+      <AppSidebar
+        orgName={org?.name || ''}
+        factories={factories}
+        activeFactoryId={resolvedFactoryId}
+      />
       <SidebarInset className="min-w-0">
         <AppHeader
           fullName={profile.full_name || ''}
