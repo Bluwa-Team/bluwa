@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 type Plan = {
   name: string
   subtitle: string
+  badge?: string
   price: string
   currency: string
   tagline: string
@@ -49,7 +50,14 @@ export function Pricing() {
                   Populaire
                 </span>
               ) : null}
-              <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
+                {plan.badge && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                    {plan.badge}
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-xs font-medium text-[var(--primary)]">{plan.subtitle}</p>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">{plan.tagline}</p>
               {plan.custom ? (

@@ -15,11 +15,11 @@
     ]
   },
   "hero": {
-    "badge": "Pensé pour l’Afrique de l’Ouest",
+    "badge": "Programme Fondateurs · Accès Pilote",
     "title": "Pilotez votre marge. Maîtrisez votre supply chain.",
     "subtitle": "Le copilote de croissance des agroalimentaires africains : standards industriels mondiaux, interface ultra-simple, déployé main dans la main avec votre terrain.",
-    "primaryCta": "Demander une démo",
-    "secondaryCta": "Voir une démo en 2 min",
+    "primaryCta": "Rejoindre le programme pilote",
+    "secondaryCta": "Découvrir les modules",
     "trust": "Conçu avec des transformateurs au Togo, Bénin, Côte d’Ivoire et Sénégal"
   },
   "heroVisual": {
@@ -95,11 +95,33 @@
       }
     ]
   },
+  "pilot": {
+    "eyebrow": "Programme Fondateurs",
+    "title": "Devenez client fondateur.",
+    "subtitle": "10 entreprises pionnières pour co-construire le standard ERP de l'agroalimentaire africain. Places limitées.",
+    "receiveTitle": "Ce que vous recevez",
+    "receiveItems": [
+      "Tarif fondateur exclusif (−40 % à vie)",
+      "Formation & accompagnement dédié sur site",
+      "Ligne directe avec l'équipe produit",
+      "Accès prioritaire à chaque nouvelle fonctionnalité",
+      "Impact direct sur la feuille de route Bluwa"
+    ],
+    "expectTitle": "Ce que nous attendons",
+    "expectItems": [
+      "Retours terrain réguliers et honnêtes",
+      "1 appel mensuel avec notre équipe (30 min)",
+      "Témoignage après 3 mois d'utilisation",
+      "Ouverture à nos visites terrain occasionnelles"
+    ],
+    "availability": "10 places · Candidatures ouvertes",
+    "cta": "Candidater maintenant"
+  },
   "pricing": {
     "eyebrow": "Tarifs",
     "title": "Simple. Prévisible. À votre échelle.",
     "subtitle": "Tarif par site. Ajoutez des sites selon votre croissance.",
-    "billing": "1er mois offert · Sans engagement · Annuel = 2 mois offerts",
+    "billing": "1er mois offert · Sans engagement",
     "plans": [
       {
         "name": "Starter",
@@ -119,6 +141,7 @@
       {
         "name": "Growth",
         "subtitle": "Vendre, planifier, piloter",
+        "badge": "Tarif Fondateur",
         "price": "150 000",
         "currency": "FCFA / site / mois",
         "tagline": "Jusqu’à 15 utilisateurs",
@@ -183,17 +206,17 @@
     ]
   },
   "contact": {
-    "eyebrow": "Contact",
-    "title": "Parlons de votre opération",
-    "subtitle": "Décrivez-nous votre activité en quelques lignes. Nous revenons vers vous sous 24 h ouvrées.",
+    "eyebrow": "Candidature Pilote",
+    "title": "Postulez au programme fondateurs",
+    "subtitle": "Décrivez votre activité et vos enjeux en quelques lignes. Nous revenons vers vous sous 48 h pour valider votre candidature.",
     "name": "Nom complet",
     "email": "Email professionnel",
     "company": "Entreprise",
-    "message": "Votre message",
-    "submit": "Envoyer la demande",
+    "message": "Votre activité & vos principaux enjeux opérationnels",
+    "submit": "Envoyer ma candidature",
     "sending": "Envoi en cours…",
-    "successTitle": "Message reçu !",
-    "successBody": "Nous revenons vers vous sous 24 h ouvrées.",
+    "successTitle": "Candidature reçue !",
+    "successBody": "Nous étudions votre dossier et revenons vers vous sous 48 h.",
     "or": "ou écrivez-nous à",
     "emailAddress": "john@bluwa.io"
   },

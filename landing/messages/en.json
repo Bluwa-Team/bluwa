@@ -15,11 +15,11 @@
     ]
   },
   "hero": {
-    "badge": "Built for West Africa",
+    "badge": "Founders Programme · Pilot Access",
     "title": "Pilot your margin. Master your supply chain.",
     "subtitle": "The growth copilot for African agri-food companies: world-class industrial standards, ultra-simple interface, deployed hand in hand with your teams.",
-    "primaryCta": "Book a demo",
-    "secondaryCta": "Watch a 2-min demo",
+    "primaryCta": "Join the pilot programme",
+    "secondaryCta": "Explore the modules",
     "trust": "Designed with processors in Togo, Benin, Côte d’Ivoire and Senegal"
   },
   "heroVisual": {
@@ -95,11 +95,33 @@
       }
     ]
   },
+  "pilot": {
+    "eyebrow": "Founders Programme",
+    "title": "Become a founding client.",
+    "subtitle": "10 pioneering companies to co-build the ERP standard for African agri-food. Limited spots.",
+    "receiveTitle": "What you get",
+    "receiveItems": [
+      "Exclusive founder pricing (−40 % for life)",
+      "On-site training & dedicated onboarding",
+      "Direct line to the product team",
+      "Priority access to every new feature",
+      "Direct impact on the Bluwa roadmap"
+    ],
+    "expectTitle": "What we ask",
+    "expectItems": [
+      "Regular, honest field feedback",
+      "1 monthly call with our team (30 min)",
+      "Testimonial after 3 months of use",
+      "Openness to occasional field visits"
+    ],
+    "availability": "10 spots · Applications open",
+    "cta": "Apply now"
+  },
   "pricing": {
     "eyebrow": "Pricing",
     "title": "Simple. Predictable. Built to scale.",
     "subtitle": "Priced per site. Add sites as you grow.",
-    "billing": "First month free · No commitment · Annual = 2 months free",
+    "billing": "First month free · No commitment",
     "plans": [
       {
         "name": "Starter",
@@ -119,6 +141,7 @@
       {
         "name": "Growth",
         "subtitle": "Sell, plan, steer",
+        "badge": "Founder Rate",
         "price": "150,000",
         "currency": "XOF / site / month",
         "tagline": "Up to 15 users",
@@ -183,17 +206,17 @@
     ]
   },
   "contact": {
-    "eyebrow": "Contact",
-    "title": "Let’s talk about your operation",
-    "subtitle": "Tell us about your business in a few lines. We get back to you within 24 business hours.",
+    "eyebrow": "Pilot Application",
+    "title": "Apply to the founders programme",
+    "subtitle": "Tell us about your business and key challenges. We’ll get back to you within 48 hours to validate your application.",
     "name": "Full name",
     "email": "Work email",
     "company": "Company",
-    "message": "Your message",
-    "submit": "Send request",
+    "message": "Your business & main operational challenges",
+    "submit": "Submit my application",
     "sending": "Sending…",
-    "successTitle": "Message received!",
-    "successBody": "We'll get back to you within 24 business hours.",
+    "successTitle": "Application received!",
+    "successBody": "We’ll review your application and get back to you within 48 hours.",
     "or": "or email us at",
     "emailAddress": "john@bluwa.io"
   },
