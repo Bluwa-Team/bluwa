@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { Building2, User, Palette, Factory } from 'lucide-react'
+import { cookies } from 'next/headers'
+import { Building2, User, Palette } from 'lucide-react'
 import type { Metadata } from 'next'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UsersSection } from './_components/UsersSection'
 import { listOrgUsers, type UserRole } from '@/lib/actions/users'
+import { getUserFactories } from '@/lib/actions/factory'
+import { FactorySwitcherSettings } from './_components/FactorySwitcherSettings'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Paramètres · Bluwa ERP' }
@@ -18,20 +21,18 @@ export default async function SettingsPage() {
     .eq('id', user?.id ?? '')
     .single()
 
-  const [{ data: org }, { data: siteAccess }, orgUsers] = await Promise.all([
+  const cookieStore = await cookies()
+  const activeFactoryId = cookieStore.get('active_factory_id')?.value ?? null
+
+  const [{ data: org }, factories, orgUsers] = await Promise.all([
     supabase
       .from('organizations')
       .select('name, slug, plan')
       .eq('id', profile?.organization_id ?? '')
       .single(),
-    supabase
-      .from('user_site_access')
-      .select('factories(id, name, code, country, city, timezone, is_active)')
-      .eq('user_id', user?.id ?? ''),
+    getUserFactories(),
     listOrgUsers(),
   ])
-
-  const factories = siteAccess?.flatMap(r => r.factories ? [r.factories] : []) ?? []
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -66,41 +67,10 @@ export default async function SettingsPage() {
       </section>
 
       {/* Sites de production */}
-      <section className="rounded-xl border bg-card p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center">
-            <Factory className="size-4 text-teal-600 dark:text-teal-400" />
-          </div>
-          <h2 className="font-semibold text-sm">Sites de production</h2>
-          <span className="ml-auto text-xs text-muted-foreground">{factories.length} site{factories.length > 1 ? 's' : ''}</span>
-        </div>
-
-        {factories.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">Aucun site assigné.</p>
-        ) : (
-          <div className="space-y-3">
-            {factories.map((f: any) => (
-              <div key={f.id} className="flex items-start justify-between rounded-lg bg-muted/40 px-4 py-3">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">{f.name}</p>
-                    <span className="font-mono text-[11px] bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">
-                      {f.code}
-                    </span>
-                    {!f.is_active && (
-                      <span className="text-[11px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Inactif</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {[f.city, f.country].filter(Boolean).join(', ')}
-                    {f.timezone && <span className="ml-2 opacity-60">· {f.timezone}</span>}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <FactorySwitcherSettings
+        factories={factories}
+        activeFactoryId={activeFactoryId ?? factories[0]?.id ?? null}
+      />
 
       {/* Compte utilisateur */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
