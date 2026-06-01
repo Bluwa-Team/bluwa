@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 type Plan = {
   name: string
+  subtitle: string
   price: string
   currency: string
   tagline: string
@@ -49,6 +50,7 @@ export function Pricing() {
                 </span>
               ) : null}
               <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
+              <p className="mt-0.5 text-xs font-medium text-[var(--primary)]">{plan.subtitle}</p>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">{plan.tagline}</p>
               {plan.custom ? (
                 <div className="mt-5">

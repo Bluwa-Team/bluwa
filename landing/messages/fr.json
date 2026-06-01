@@ -97,6 +97,7 @@
     "plans": [
       {
         "name": "Starter",
+        "subtitle": "Le cœur opérationnel",
         "price": "dès 30 000",
         "currency": "FCFA / site / mois",
         "tagline": "1 à 3 utilisateurs",
@@ -111,6 +112,7 @@
       },
       {
         "name": "Growth",
+        "subtitle": "Vendre, planifier, piloter",
         "price": "150 000",
         "currency": "FCFA / site / mois",
         "tagline": "Jusqu’à 15 utilisateurs",
@@ -127,6 +129,7 @@
       },
       {
         "name": "Enterprise",
+        "subtitle": "Structurer le groupe",
         "price": "Sur mesure",
         "priceNote": "Tarif selon le nombre d'utilisateurs",
         "currency": "",

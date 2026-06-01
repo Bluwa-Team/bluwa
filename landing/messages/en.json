@@ -97,6 +97,7 @@
     "plans": [
       {
         "name": "Starter",
+        "subtitle": "The operational core",
         "price": "from 30,000",
         "currency": "XOF / site / month",
         "tagline": "1 to 3 users",
@@ -111,6 +112,7 @@
       },
       {
         "name": "Growth",
+        "subtitle": "Sell, plan, steer",
         "price": "150,000",
         "currency": "XOF / site / month",
         "tagline": "Up to 15 users",
@@ -127,6 +129,7 @@
       },
       {
         "name": "Enterprise",
+        "subtitle": "Scale your group",
         "price": "Custom quote",
         "priceNote": "Pricing based on number of users",
         "currency": "",
