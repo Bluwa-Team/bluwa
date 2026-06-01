@@ -61,7 +61,10 @@
     "bonsLivraison": "Bons de livraison",
     "planification": "Planification",
     "achatsStocks": "Achats & Stocks",
-    "analyse": "Analyse"
+    "analyse": "Analyse",
+    "previsions": "Prévisions",
+    "demandeClients": "Demande clients",
+    "supplyPlanning": "Supply Planning"
   },
   "header": {
     "aiAgent": "Agent IA",

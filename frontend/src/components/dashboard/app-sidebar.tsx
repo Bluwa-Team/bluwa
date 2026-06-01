@@ -26,6 +26,9 @@ import {
   ShoppingBag,
   Receipt,
   PackageCheck,
+  LineChart,
+  Users2,
+  Layers,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -121,7 +124,10 @@ export function AppSidebar({ orgName }: { orgName: string }) {
     {
       label: t('planification'),
       items: [
-        { title: t('mrp'), url: '/mrp', icon: Calculator, disabled: false },
+        { title: t('previsions'),     url: '/previsions',      icon: LineChart,  disabled: false },
+        { title: t('demandeClients'), url: '/demande-clients', icon: Users2,     disabled: false },
+        { title: t('supplyPlanning'), url: '/supply-planning', icon: Layers,     disabled: false },
+        { title: t('mrp'),            url: '/mrp',             icon: Calculator, disabled: false },
       ],
     },
     // ── 4. Achats & Stocks ───────────────────────────────────────────────────

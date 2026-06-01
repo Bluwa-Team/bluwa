@@ -61,7 +61,10 @@
     "bonsLivraison": "Delivery Notes",
     "planification": "Planning",
     "achatsStocks": "Procurement & Stock",
-    "analyse": "Analytics"
+    "analyse": "Analytics",
+    "previsions": "Demand Forecasting",
+    "demandeClients": "Customer Demand",
+    "supplyPlanning": "Supply Planning"
   },
   "header": {
     "aiAgent": "AI Agent",
