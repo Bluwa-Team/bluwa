@@ -48,12 +48,26 @@ function generateSlug(name: string): string {
     .replace(/\s+/g, '-')
 }
 
+function generateFactoryCode(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
+    .slice(0, 5)
+    || name.slice(0, 3).toUpperCase()
+}
+
 export async function completeOnboardingAction(input: {
   orgName: string
   factoryName: string
-  factoryLocation?: string
+  factoryCity?: string
+  factoryCountry?: string
 }): Promise<ActionResult<{ slug: string }>> {
-  const { orgName, factoryName, factoryLocation } = input
+  const { orgName, factoryName, factoryCity, factoryCountry } = input
 
   if (!orgName || !factoryName) {
     return { ok: false, error: "Nom de l'organisation et de l'usine requis." }
@@ -67,6 +81,7 @@ export async function completeOnboardingAction(input: {
 
   const slug = generateSlug(orgName)
 
+  // 1. Organisation
   const { data: org, error: orgError } = await supabaseAdmin
     .from('organizations')
     .insert({ name: orgName, slug })
@@ -80,12 +95,16 @@ export async function completeOnboardingAction(input: {
     return { ok: false, error: message }
   }
 
+  // 2. Factory (code généré depuis le nom, country obligatoire)
+  const factoryCode = generateFactoryCode(factoryName)
   const { data: factory, error: factoryError } = await supabaseAdmin
     .from('factories')
     .insert({
       organization_id: org.id,
       name: factoryName,
-      location: factoryLocation || null,
+      code: factoryCode,
+      country: factoryCountry || 'Sénégal',
+      city: factoryCity || null,
     })
     .select()
     .single()
@@ -95,21 +114,33 @@ export async function completeOnboardingAction(input: {
     return { ok: false, error: factoryError.message }
   }
 
+  // 3. Profil (owner de l'organisation)
   const fullName = user.user_metadata?.full_name || user.email || ''
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .insert({
       id: user.id,
       organization_id: org.id,
-      factory_id: null,
-      role: 'org_admin',
       full_name: fullName,
+      role: 'owner',
     })
 
   if (profileError) {
     await supabaseAdmin.from('factories').delete().eq('id', factory.id)
     await supabaseAdmin.from('organizations').delete().eq('id', org.id)
     return { ok: false, error: profileError.message }
+  }
+
+  // 4. Accès au site (owner accède à sa factory par défaut)
+  const { error: accessError } = await supabaseAdmin
+    .from('user_site_access')
+    .insert({ user_id: user.id, factory_id: factory.id })
+
+  if (accessError) {
+    await supabaseAdmin.from('profiles').delete().eq('id', user.id)
+    await supabaseAdmin.from('factories').delete().eq('id', factory.id)
+    await supabaseAdmin.from('organizations').delete().eq('id', org.id)
+    return { ok: false, error: accessError.message }
   }
 
   const locale = await getLocale()

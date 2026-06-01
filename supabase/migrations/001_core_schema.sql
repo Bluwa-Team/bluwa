@@ -1,13 +1,14 @@
 -- ============================================================
 -- Bluwa ERP — Schéma socle
 -- Migration 001 — Auth, Organisations, Sites, Profils
---
--- Tables conservées :
---   organizations    — tenants SaaS
---   factories        — sites de production
---   profiles         — extension auth.users
---   user_site_access — accès multi-sites
 -- ============================================================
+
+-- ── Nettoyage des tables existantes (ordre FK) ────────────
+DROP TABLE IF EXISTS user_site_access CASCADE;
+DROP TABLE IF EXISTS profiles         CASCADE;
+DROP TABLE IF EXISTS factories        CASCADE;
+DROP TABLE IF EXISTS organizations    CASCADE;
+
 
 -- ── Fonction utilitaire updated_at ────────────────────────
 CREATE OR REPLACE FUNCTION fn_set_updated_at()
@@ -16,8 +17,12 @@ BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$;
 
 
--- ── 1. Organizations ───────────────────────────────────────
-CREATE TABLE IF NOT EXISTS organizations (
+-- ================================================================
+-- §1  TABLES (sans politiques RLS — profiles n'existe pas encore)
+-- ================================================================
+
+-- ── 1. Organizations ──────────────────────────────────────
+CREATE TABLE organizations (
   id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   name       VARCHAR(200) NOT NULL,
   slug       VARCHAR(100) NOT NULL UNIQUE,
@@ -30,15 +35,9 @@ CREATE TABLE IF NOT EXISTS organizations (
 COMMENT ON TABLE  organizations      IS 'Tenants SaaS — une ligne par entreprise cliente Bluwa';
 COMMENT ON COLUMN organizations.slug IS 'Identifiant URL unique, ex : bluwa-dakar';
 
-ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "orgs_select_own" ON organizations;
-CREATE POLICY "orgs_select_own" ON organizations FOR SELECT
-  USING (id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-
-
--- ── 2. Factories ───────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS factories (
+-- ── 2. Factories ──────────────────────────────────────────
+CREATE TABLE factories (
   id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID         NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name            VARCHAR(200) NOT NULL,
@@ -54,28 +53,9 @@ CREATE TABLE IF NOT EXISTS factories (
 COMMENT ON TABLE  factories      IS 'Sites de production — sectorise toutes les données opérationnelles';
 COMMENT ON COLUMN factories.code IS 'Code court du site (ex. DAK = Dakar, LOM = Lomé)';
 
-ALTER TABLE factories ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "factories_select_own_org" ON factories;
-DROP POLICY IF EXISTS "factories_insert_admin"    ON factories;
-DROP POLICY IF EXISTS "factories_update_admin"    ON factories;
-
-CREATE POLICY "factories_select_own_org" ON factories FOR SELECT
-  USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-CREATE POLICY "factories_insert_admin" ON factories FOR INSERT
-  WITH CHECK (
-    organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid())
-    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('owner', 'admin')
-  );
-CREATE POLICY "factories_update_admin" ON factories FOR UPDATE
-  USING (
-    organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid())
-    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('owner', 'admin')
-  );
-
-
--- ── 3. Profiles ────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS profiles (
+-- ── 3. Profiles ───────────────────────────────────────────
+CREATE TABLE profiles (
   id              UUID         PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   organization_id UUID         NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   full_name       VARCHAR(200),
@@ -88,16 +68,6 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 COMMENT ON TABLE  profiles      IS 'Extension de auth.users — lie un utilisateur Supabase à un tenant';
 COMMENT ON COLUMN profiles.role IS 'owner > admin > manager > operator > viewer';
-
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "profiles_select_own_org" ON profiles;
-DROP POLICY IF EXISTS "profiles_update_own"      ON profiles;
-
-CREATE POLICY "profiles_select_own_org" ON profiles FOR SELECT
-  USING (organization_id = (SELECT organization_id FROM profiles p WHERE p.id = auth.uid()));
-CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE
-  USING (id = auth.uid());
 
 DO $$ BEGIN
   CREATE TRIGGER trg_profiles_updated_at
@@ -127,8 +97,8 @@ CREATE TRIGGER trg_on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION fn_handle_new_user();
 
 
--- ── 4. User site access ────────────────────────────────────
-CREATE TABLE IF NOT EXISTS user_site_access (
+-- ── 4. User site access ───────────────────────────────────
+CREATE TABLE user_site_access (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID        NOT NULL REFERENCES profiles(id)  ON DELETE CASCADE,
   factory_id UUID        NOT NULL REFERENCES factories(id) ON DELETE CASCADE,
@@ -138,8 +108,49 @@ CREATE TABLE IF NOT EXISTS user_site_access (
 
 COMMENT ON TABLE user_site_access IS 'Pivot accès multi-sites : UNIQUE(user_id, factory_id) empêche les doublons';
 
+
+-- ================================================================
+-- §2  RLS (toutes les tables existent maintenant)
+-- ================================================================
+
+ALTER TABLE organizations    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE factories        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_site_access ENABLE ROW LEVEL SECURITY;
 
+-- Organizations
+DROP POLICY IF EXISTS "orgs_select_own" ON organizations;
+CREATE POLICY "orgs_select_own" ON organizations FOR SELECT
+  USING (id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
+
+-- Factories
+DROP POLICY IF EXISTS "factories_select_own_org" ON factories;
+DROP POLICY IF EXISTS "factories_insert_admin"    ON factories;
+DROP POLICY IF EXISTS "factories_update_admin"    ON factories;
+
+CREATE POLICY "factories_select_own_org" ON factories FOR SELECT
+  USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
+CREATE POLICY "factories_insert_admin" ON factories FOR INSERT
+  WITH CHECK (
+    organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid())
+    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('owner', 'admin')
+  );
+CREATE POLICY "factories_update_admin" ON factories FOR UPDATE
+  USING (
+    organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid())
+    AND (SELECT role FROM profiles WHERE id = auth.uid()) IN ('owner', 'admin')
+  );
+
+-- Profiles
+DROP POLICY IF EXISTS "profiles_select_own_org" ON profiles;
+DROP POLICY IF EXISTS "profiles_update_own"      ON profiles;
+
+CREATE POLICY "profiles_select_own_org" ON profiles FOR SELECT
+  USING (organization_id = (SELECT organization_id FROM profiles p WHERE p.id = auth.uid()));
+CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE
+  USING (id = auth.uid());
+
+-- User site access
 DROP POLICY IF EXISTS "user_site_access_select" ON user_site_access;
 DROP POLICY IF EXISTS "user_site_access_admin"  ON user_site_access;
 

@@ -75,7 +75,7 @@ export default function OnboardingPage() {
     const result = await completeOnboardingAction({
       orgName: form.orgName,
       factoryName: form.factoryName,
-      factoryLocation: form.factoryLocation,
+      factoryCity: form.factoryLocation,
     })
 
     if (result && !result.ok) {
