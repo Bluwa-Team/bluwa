@@ -5,6 +5,45 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-06-01] — Session 17 — Lecture frontend, corrections bugs, UX sidebar, guide modules v1.2
+
+### Lecture frontend — 7 bugs identifiés
+
+Audit complet du frontend (`types/erp.ts`, `mrp-engine.ts`, `supply-plan.ts`, `demand-plan.ts`, `mrp/page.tsx`, sidebar, pages principales).
+
+### Fix P0 — `mrp-engine.ts` : purge des recommandations après succès
+- **Avant** : `DELETE ... status = 'NEW'` exécuté *avant* le calcul → toute panne pendant le calcul vidait les recs sans en recréer
+- **Après** : purge déplacée *après* `status = 'SUCCESS'` + filtre `.neq('mrp_run_id', runId)` pour ne pas supprimer les recs du run courant
+
+### Fix P1 — `mrp-engine.ts` : explosion BOM récursive
+- **Avant** : explosion sur 1 seul niveau (PF → composants directs). Un PSF avec ses propres composants MP n'était jamais développé.
+- **Après** : `explodeBom()` récursive avec garde anti-cycle par `ancestors: Set<string>` — descend tous les niveaux BOM (PF → PSF → MP/AC/CS)
+
+### Fix P1 — `demand-plan.ts` + `supply-plan.ts` : index par `articleId` (UUID)
+- **Avant** : `ordersIndex` dans `supply-plan.ts` indexé par `articleCode` (string) — collisions silencieuses si deux articles ont le même code dans le même contexte
+- **Après** : `articleId: string` ajouté à `DemandPlanLine` (interface + query `article_id` + map) ; `ordersIndex` et son lookup utilisent désormais l'UUID
+
+### Fix P2 — `supply-plan.ts` : suppression du fallback capacité heuristique
+- **Avant** : articles sans gamme recevaient `factoryTotal / nbArticlesSansGameme` — valeur inventée sans sens métier
+- **Après** : `fallbackCapacity = 0` → affiche "Non configurée" dans la grille, ce qui est la vérité
+
+### Fix P3 — `mrp/page.tsx` : filtre local sans round-trip serveur
+- **Avant** : chaque clic sur un filtre (NEW / CONVERTED / IGNORED / ALL) déclenchait `getMrpRecommendations(filter)` côté serveur
+- **Après** : charge toujours `'ALL'` une seule fois ; `filteredRecs` calculé par `useMemo([recs, filter])` — instantané, zéro requête supplémentaire
+
+### UX Sidebar — réorganisation navigation (`app-sidebar.tsx` + i18n)
+- **Ventes & Logistique** remonté en position 3 (était 7) : module le plus utilisé au quotidien par commerciaux et ADV
+- **Postes de charge** déplacé Production → Données de référence : donnée maîtresse configurée une fois, pas une tâche opérationnelle quotidienne
+- **Production** allégé de 4 à 3 items (OF, Suivi de fabrication, Lots)
+- Groupe **"Analyse"** renommé **"Pilotage"** (fr) / **"Reporting"** (en) — prépare l'ajout de futurs modules analytics
+- Clé i18n `workCenters` ajoutée dans `fr.json` et `en.json` pour remplacer le titre hardcodé
+
+### Document `bluwa_erp_guide_modules.docx` — version 1.2
+- **Refonte complète** : page de couverture avec logo Bluwa, en-têtes/pieds de page sur chaque page, styles typographiques brandés, boîtes visuelles (En langage simple / Exemple concret / Flux automatique), tableaux avec en-tête bleu
+- **Ajout** : section *"Vue d'ensemble — Flux inter-modules"* — diagramme visuel 4 phases (Planification → Exécution MRP → Qualité → Ventes) avec blocs colorés par domaine et légende
+
+---
+
 ## [2026-06-01] — Session 16 — Modales S&OP + Section Abonnement + doc guide modules
 
 ### Module S&OP — Modales de détail
