@@ -5,6 +5,90 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-06-01] — Session 15 — Fixes auth & cohérence rôles
+
+### `src/lib/actions/auth.ts` — `completeOnboardingAction` (3 bugs critiques corrigés)
+- **Fix** : `factories` INSERT utilisait `location` (colonne inexistante) → remplacé par `code` (généré depuis le nom), `country` (défaut `'Sénégal'`), `city`
+- **Fix** : `profiles` INSERT contenait `factory_id: null` (colonne inexistante dans le nouveau schéma) → supprimé
+- **Fix** : `role: 'org_admin'` invalide (violait le CHECK constraint) → corrigé en `role: 'owner'`
+- **Ajout** : INSERT dans `user_site_access` après création du profil — l'owner accède automatiquement à sa factory
+- `generateFactoryCode()` : génère le code à partir des initiales du nom (ex. "Site Dakar" → "SD", max 5 chars)
+
+### `src/app/[locale]/onboarding/page.tsx`
+- `factoryLocation` → `factoryCity` pour correspondre au nouveau type de `completeOnboardingAction`
+
+### `src/app/[locale]/(dashboard)/layout.tsx`
+- **Fix** : `canUseAgent` vérifiait `'org_admin' | 'factory_admin' | 'super_admin'` (anciens rôles) → corrigé en `'owner' | 'admin'`
+
+---
+
+## [2026-06-01] — Session 14 — Nettoyage BDD & nouveau schéma
+
+### Décision architecture (modèle validé)
+- **Organisation = propriétaire de tout** : articles, fournisseurs, clients, factories sont liés à `organization_id`
+- **Factory = opérateur** : agit au nom de l'org ; les commandes portent `organization_id` + `factory_id`
+- **Territoire factory** : accès filtré via tables pivot `*_factory_links` (pas de `factory_id` sur les tables maîtres)
+- **Recherche cross-factory à la création de commande** : fonctions SQL dédiées avec flag `est_lie`
+
+### Migrations — restructuration complète
+- **Supprimés** : migrations 002 à 017 (tables métier obsolètes ou incohérentes)
+- **Nouveau `001_core_schema.sql`** : `organizations`, `factories` (avec `code`, `country`), `profiles` (sans `factory_id`), `user_site_access`
+  - Rôles valides : `owner | admin | manager | operator | viewer`
+  - Trigger `fn_handle_new_user()` : création automatique du profil à l'inscription
+  - RLS séparée des CREATE TABLE (tables d'abord, politiques ensuite)
+- **Nouveau `002_master_data.sql`** : `articles`, `article_factory_links`, `fournisseurs`, `fournisseur_factory_links`, `clients`, `client_factory_links`
+  - Helpers SQL : `fn_user_org()`, `fn_user_factories()`, `fn_is_admin()`
+  - Fonctions cross-factory : `search_clients_for_order()`, `search_fournisseurs_for_order()` avec flag `est_lie`
+- **Ajout `cleanup_business_tables.sql`** : script de nettoyage à exécuter dans Supabase Studio
+
+### Mémoire projet mise à jour
+- Schéma BDD documenté (tables, colonnes, fonctions SQL, logique territoire)
+
+---
+
+## [2026-06-01] — Session 13 — Refonte UI Dashboard
+
+### Dashboard `app/[locale]/(dashboard)/dashboard/page.tsx`
+
+#### Palette & charts
+- `globals.css` : `--chart-1..5` passés de gris oklch (chroma=0) à palette bleue (oklch avec chroma 0.12–0.23)
+- `ChartConfig` : couleurs en `var(--chart-N)` (oklch direct) au lieu de `hsl(var(--chart-N))` (incompatible)
+
+#### KPI Cards
+- Composant `KpiDir` : `rounded-2xl p-4` → `rounded-xl p-3`, icones `w-8 h-8 rounded-lg`, inner card `rounded-lg px-3 py-2.5`
+- Suppression du `py-4 gap-4` par défaut des `<Card>` via override `py-3 gap-2`
+
+#### Jauge TRS semi-circulaire
+- `TrsGauge` : SVG pur, 5 segments colorés (rouge/orange/jaune/bleu/vert), aiguille + pivot
+- `TrsKpiCard` : intégrée à droite de la valeur numérique (`w-[72px] h-[42px]`)
+- Fix arc : `sweep-flag=1` (sens horaire, demi-cercle supérieur)
+
+#### PeriodPicker
+- Composant `period-picker.tsx` : presets 7j/1m/3m/6m/1a + calendrier range (react-day-picker v10)
+- Fix : `isSameDay(from, to)` évite la fermeture prématurée au premier clic
+- Fix : pas d'`asChild` (base-ui ne le supporte pas) — `PopoverTrigger` stylisé directement
+- État séparé `periodeCA` / `periodeStock` pour les deux graphiques
+
+#### Alert animé
+- `alert.tsx` réécrit avec `motion/react` (AnimatePresence + whileHover)
+- Variantes : `default | destructive | warning | info | success`
+- Style : fond dégradé `from-[couleur]-50 to-white` + icone carré pastel + `shadow-sm`
+- Suppression du bouton dismiss
+
+#### Analyse de marge
+- 3 `MargeCard` individuelles (Vanille, Gingembre, Originale) à la place d'un bloc unique
+- Dégradé `bg-gradient-to-br from-[couleur]-50 to-white` par sévérité
+- `border-0 ring-0 shadow-none`, padding `p-3 gap-3`
+- Texte cause tronqué avec `title={cause}` (tooltip natif)
+- Layout : `Card` contenant les 3 MargeCards (`lg:col-span-3`) + Card Alertes (`lg:col-span-2`) côte à côte
+- Lien "Détail →" en `text-primary` dans `CardAction row-span-1`
+
+#### Nettoyage
+- Suppression du bloc P&L prévisionnel
+- Suppression des imports inutilisés (`Receipt`, `Badge`, `Separator`, `buttonVariants`)
+
+---
+
 ## [2026-05-25] — Session initiale
 
 ### Environnement
@@ -613,40 +697,20 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ## À venir
 
-### Migrations à appliquer en Supabase (priorité)
-- [ ] **Migration 010** — `010_contrats_achat.sql` à exécuter dans le SQL Editor Supabase (bloque les contrats fournisseurs)
-- [ ] **Migration 009** — `009_master_schema_v1.sql` (schema maître complet — à planifier avec migration des données existantes)
+### Schéma BDD — Migrations à écrire
+- [ ] **`003_commandes.sql`** — commandes fournisseurs + commandes clients (avec `organization_id` + `factory_id`, logique territoire)
+- [ ] **`004_stock.sql`** — stocks par lot, mouvements, traçabilité FEFO
+- [ ] **`005_production.sql`** — ordres de fabrication, nomenclatures, gammes, postes de charge
 
-### Phase 1 — Écrans restants à construire ou compléter
-- [x] Dashboard — KPIs direction + graphiques + alertes prioritaires + P&L (Session 12)
-- [ ] Dashboard — brancher les KPI cards sur les vraies données Supabase
-- [ ] Articles — revoir la codification TYPE-XXXX (`MP-0001`, `PSF-0042`…)
-- [ ] Stocks — connecter `MOCK_LOTS` sur les vraies tables lots (FEFO/FIFO)
-- [x] MRP — câbler la page sur `mrp_runs` + `mrp_recommendations` — Tab ④ Recommandations (Session 9)
-- [x] Analyse de marge — câblée sur Supabase (Session 8)
-- [ ] Paramètres — page non implémentée
-- [x] Production OF — modal "Nouvel OF" (formulaire complet + câblage page)
-- [x] Contrats fournisseurs — modal + server action + câblage Supabase (Session 7)
-- [x] Grille tarifaire clients — modal + server actions upsert/delete + câblage Supabase (Session 7)
-- [x] BOM & Gamme — server actions + câblage Supabase (Session 8)
-- [x] Postes de charge — page CRUD + modal + server actions (Session 8)
-- [x] Généalogie — sections CCP + destinations AVAL (Session 12)
+### Refactoring — Alignement avec le nouveau schéma
+- [ ] Toutes les server actions existantes (approvisionnement, réception, stocks, MRP…) reposent sur l'ancien schéma — à réécrire sur les nouvelles tables
+- [ ] `BCHeader.fournisseur` est un string texte — migrer vers `fournisseur_id UUID` (FK vers `fournisseurs`)
+- [ ] `getArticlesLite()` et toutes les actions articles : à recâbler sur la nouvelle table `articles` (002)
+- [ ] Pages clients et fournisseurs : à recâbler sur `clients` + `client_factory_links` et `fournisseurs` + `fournisseur_factory_links`
 
-### Phase 2 — Ventes & Logistique (modules structurés, en attente activation)
-- [ ] Ventes — câbler `getSalesOrders` + `createSalesOrder` sur Supabase
-- [ ] ADV — câbler `getCustomerInvoices` + `createInvoiceFromOrder` sur Supabase
-- [ ] Logistique — câbler `createDeliveryNote` + `updateDeliveryStatus` sur Supabase
-- [ ] Activer les 3 modules dans la sidebar (`disabled: false`) quand les tables sont en base
-
-### Dette technique identifiée
-- [ ] Colonne `Article` (onglet Stratégie, page Approvisionnement) : même bug `defaultWidth: null` que corrigé sur Commandes
-- [ ] Pas de système de notifications (toast) — les erreurs d'actions sont silencieuses (ex. `createContrat` échoue silencieusement)
-- [ ] Pas de pagination sur les requêtes liste (`getArticles`, `getClients`…)
+### Dette technique
+- [ ] Pas de système de notifications (toast) — les erreurs d'actions sont silencieuses
+- [ ] Pas de pagination sur les requêtes liste
 - [ ] Bouton de déconnexion absent du sidebar
 - [ ] Aucun test (unitaire ou E2E)
-- [ ] Import/export CSV : boutons présents mais sans handlers
-- [ ] `profiles.factory_id` hardcodé à `null` à l'onboarding (`auth.ts` l.101) — fix trivial, voir Session 6
-- [ ] `BCHeader.fournisseur` est un string texte — migrer vers `fournisseur_id UUID` une fois migration 009 appliquée
-- [ ] `getArticlesLite()` filtre `type IN ('PF','PSF')` — à adapter si la grille tarifaire doit couvrir d'autres types d'articles
-- [ ] Onglets "Commandes" et "Livraisons" des pages Fournisseur et Client restent vides (`EmptyTab`) — nécessitent `sales_orders` et `purchase_orders` en base
 - [ ] Dashboard KPIs : brancher sur vraies données Supabase (CA, marge, OTIF, valeur stock)
