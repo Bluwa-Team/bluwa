@@ -92,7 +92,7 @@ export async function getFactorySubscription(
 
   if (error || !data?.plan) return null
 
-  const plan = data.plan as {
+  const plan = data.plan as unknown as {
     name: string
     price_monthly: number
     max_users_allowed: number
