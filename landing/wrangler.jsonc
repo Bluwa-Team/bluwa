@@ -2,10 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "landing",
-	"routes": [
-		{ "pattern": "www.bluwa.io/*", "zone_id": "95affcfceb58bf1de34700c84bd0a3c8" },
-		{ "pattern": "bluwa.io/*", "zone_id": "95affcfceb58bf1de34700c84bd0a3c8" }
-	],
+	"workers_dev": true,
 	"compatibility_date": "2026-06-01",
 	"compatibility_flags": [
 		"nodejs_compat",
