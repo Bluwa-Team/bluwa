@@ -1,6 +1,8 @@
 import { useTranslations } from 'next-intl'
 import { Logo } from './Logo'
 
+type ResourceItem = { title: string; description: string; href: string }
+
 export function Footer() {
   const t = useTranslations('footer')
   const tNav = useTranslations('nav')
@@ -13,10 +15,12 @@ export function Footer() {
     { label: tNav('contact'), href: '#contact' },
   ]
 
+  const resourceItems = tNav.raw('resourceItems') as ResourceItem[]
+
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--background)]">
       <div className="container-x py-14">
-        <div className="grid gap-10 md:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-4 max-w-xs text-sm text-[var(--muted-foreground)]">{t('tagline')}</p>
@@ -29,11 +33,22 @@ export function Footer() {
             <ul className="mt-4 space-y-2.5">
               {productLinks.map((l) => (
                 <li key={l.label}>
-                  <a
-                    href={l.href}
-                    className="text-sm text-[var(--foreground)]/80 hover:text-[var(--foreground)]"
-                  >
+                  <a href={l.href} className="text-sm text-[var(--foreground)]/80 hover:text-[var(--foreground)]">
                     {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+              {tNav('resources')}
+            </div>
+            <ul className="mt-4 space-y-2.5">
+              {resourceItems.map((item) => (
+                <li key={item.title}>
+                  <a href={item.href} className="text-sm text-[var(--foreground)]/80 hover:text-[var(--foreground)]">
+                    {item.title}
                   </a>
                 </li>
               ))}
