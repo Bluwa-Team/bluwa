@@ -15,7 +15,7 @@ export function Presence() {
           </h2>
         </div>
 
-        <div className="mx-auto mt-10" style={{ width: 260 }}>
+        <div className="mx-auto mt-10 max-w-lg">
           <WestAfricaMap />
         </div>
       </div>
