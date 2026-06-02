@@ -35,7 +35,7 @@ export function WestAfricaMap() {
         aria-label="Carte Afrique de l'Ouest — Bluwa"
       >
         <Geographies geography={GEO_URL}>
-          {({ geographies }) =>
+          {({ geographies }: { geographies: any[] }) =>
             geographies.map((geo) => {
               const inRegion = WEST_AFRICA.has(String(geo.id))
               return (
