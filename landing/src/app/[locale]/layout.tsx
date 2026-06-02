@@ -49,6 +49,8 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning className="h-full antialiased">
       <head>
+        <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
+        <link rel="apple-touch-icon" href="/icon-b.png" />
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link
           href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap"
