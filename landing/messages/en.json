@@ -20,7 +20,7 @@
     "subtitle": "The growth copilot for African agri-food companies: world-class industrial standards, ultra-simple interface, deployed hand in hand with your teams.",
     "primaryCta": "Join the pilot programme",
     "secondaryCta": "Explore the modules",
-    "trust": "Designed with processors in Togo, Benin, Côte d’Ivoire and Senegal"
+    "trust": "Built for all 16 West African countries · Co-designed in the field"
   },
   "heroVisual": {
     "browserBar": "app.bluwa.io · MRP",
@@ -96,10 +96,10 @@
     ]
   },
   "presence": {
-    "eyebrow": "Field Roots",
-    "title": "Built with processors across 4 markets",
-    "subtitle": "Co-design workshops with agri-food SMEs in Togo, Benin, Côte d'Ivoire and Senegal. African field reality at the heart of the product.",
-    "countries": ["Togo", "Benin", "Côte d'Ivoire", "Senegal"]
+    "eyebrow": "Our market",
+    "title": "Built for the whole of West Africa",
+    "subtitle": "16 countries · 500 million people · A market virtually untapped by industrial agri-food ERP.",
+    "countries": ["Benin", "Burkina Faso", "Cabo Verde", "Côte d'Ivoire", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Liberia", "Mali", "Mauritania", "Niger", "Nigeria", "Senegal", "Sierra Leone", "Togo"]
   },
   "pilot": {
     "eyebrow": "Founders Programme",
@@ -107,7 +107,7 @@
     "subtitle": "10 pioneering companies to co-build the ERP standard for African agri-food. Limited spots.",
     "receiveTitle": "What you get",
     "receiveItems": [
-      "Exclusive founder pricing (−40 % for life)",
+      "3 months free access (pilot programme)",
       "On-site training & dedicated onboarding",
       "Direct line to the product team",
       "Priority access to every new feature",

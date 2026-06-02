@@ -24,12 +24,12 @@ export function PilotProgram() {
         <div className="mt-12 grid gap-6 md:grid-cols-2">
           {/* Ce que vous recevez */}
           <div className="rounded-2xl border border-[var(--primary)]/20 bg-[var(--background)] p-7">
-            <h3 className="mb-5 text-base font-semibold tracking-tight text-[var(--primary)]">
+            <h3 className="mb-5 text-lg font-semibold tracking-tight text-[var(--primary)]">
               {t('receiveTitle')}
             </h3>
             <ul className="space-y-3">
               {receiveItems.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm">
+                <li key={item} className="flex items-start gap-3 text-base">
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/10">
                     <Check className="h-3 w-3 text-[var(--primary)]" />
                   </span>
@@ -41,12 +41,12 @@ export function PilotProgram() {
 
           {/* Ce que nous attendons */}
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/60 p-7">
-            <h3 className="mb-5 text-base font-semibold tracking-tight text-[var(--foreground)]">
+            <h3 className="mb-5 text-lg font-semibold tracking-tight text-[var(--foreground)]">
               {t('expectTitle')}
             </h3>
             <ul className="space-y-3">
               {expectItems.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm text-[var(--muted-foreground)]">
+                <li key={item} className="flex items-start gap-3 text-base text-[var(--muted-foreground)]">
                   <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
                   <span>{item}</span>
                 </li>

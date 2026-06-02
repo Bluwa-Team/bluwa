@@ -16,20 +16,8 @@ export function Presence() {
           <p className="mt-4 text-[var(--muted-foreground)] md:text-lg">{t('subtitle')}</p>
         </div>
 
-        <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-3xl border border-[var(--border)] shadow-sm">
+        <div className="mx-auto mt-10" style={{ width: 260 }}>
           <WestAfricaMap />
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-6">
-          {(t.raw('countries') as string[]).map((country) => (
-            <span
-              key={country}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-foreground)]"
-            >
-              <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
-              {country}
-            </span>
-          ))}
         </div>
       </div>
     </Section>

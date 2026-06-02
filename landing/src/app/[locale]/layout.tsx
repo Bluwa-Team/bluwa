@@ -1,17 +1,9 @@
 import type { Metadata } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { notFound } from 'next/navigation'
 import { getMessages } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import '../globals.css'
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: '--font-syne',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: "Bluwa · Le copilote de croissance des agroalimentaires africains",
@@ -55,11 +47,14 @@ export default async function LocaleLayout({
   const messages = await getMessages()
 
   return (
-    <html
-      lang={locale}
-      suppressHydrationWarning
-      className={`${plusJakartaSans.variable} h-full antialiased`}
-    >
+    <html lang={locale} suppressHydrationWarning className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full">
         <NextIntlClientProvider messages={messages}>
           {children}

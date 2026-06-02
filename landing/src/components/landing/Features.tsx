@@ -38,7 +38,7 @@ export function Features() {
                   <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-5 text-lg font-semibold tracking-tight">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                <p className="mt-2 text-base leading-relaxed text-[var(--muted-foreground)]">
                   {item.body}
                 </p>
               </div>

@@ -15,7 +15,7 @@
   --color-border: var(--border);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --font-sans: var(--font-syne);
+  --font-sans: 'General Sans', sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -50,6 +50,7 @@
   }
   html {
     @apply font-sans antialiased;
+    font-size: 16px;
     scroll-behavior: smooth;
   }
   body {

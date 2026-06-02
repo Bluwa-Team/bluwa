@@ -20,7 +20,7 @@
     "subtitle": "Le copilote de croissance des agroalimentaires africains : standards industriels mondiaux, interface ultra-simple, déployé main dans la main avec votre terrain.",
     "primaryCta": "Rejoindre le programme pilote",
     "secondaryCta": "Découvrir les modules",
-    "trust": "Conçu avec des transformateurs au Togo, Bénin, Côte d’Ivoire et Sénégal"
+    "trust": "Pensé pour les 16 pays de l'Afrique de l'Ouest · Co-conçu sur le terrain"
   },
   "heroVisual": {
     "browserBar": "app.bluwa.io · MRP",
@@ -96,10 +96,10 @@
     ]
   },
   "presence": {
-    "eyebrow": "Ancrage Terrain",
-    "title": "Conçu avec des transformateurs sur 4 marchés",
-    "subtitle": "Des ateliers de co-conception avec des PME agroalimentaires au Togo, au Bénin, en Côte d'Ivoire et au Sénégal. La réalité africaine au cœur du produit.",
-    "countries": ["Togo", "Bénin", "Côte d'Ivoire", "Sénégal"]
+    "eyebrow": "Notre marché",
+    "title": "Pensé pour toute l'Afrique de l'Ouest",
+    "subtitle": "16 pays · 500 millions d'habitants · Un marché quasi-vierge en ERP industriel agroalimentaire.",
+    "countries": ["Bénin", "Burkina Faso", "Cabo Verde", "Côte d'Ivoire", "Gambie", "Ghana", "Guinée", "Guinée-Bissau", "Libéria", "Mali", "Mauritanie", "Niger", "Nigeria", "Sénégal", "Sierra Leone", "Togo"]
   },
   "pilot": {
     "eyebrow": "Programme Fondateurs",
@@ -107,7 +107,7 @@
     "subtitle": "10 entreprises pionnières pour co-construire le standard ERP de l'agroalimentaire africain. Places limitées.",
     "receiveTitle": "Ce que vous recevez",
     "receiveItems": [
-      "Tarif fondateur exclusif (−40 % à vie)",
+      "3 mois d'accès gratuits (programme pilote)",
       "Formation & accompagnement dédié sur site",
       "Ligne directe avec l'équipe produit",
       "Accès prioritaire à chaque nouvelle fonctionnalité",

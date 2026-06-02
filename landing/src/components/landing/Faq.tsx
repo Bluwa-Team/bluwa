@@ -47,7 +47,7 @@ export function Faq() {
                     isOpen ? 'mt-3 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
                   )}
                 >
-                  <div className="overflow-hidden text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  <div className="overflow-hidden text-base leading-relaxed text-[var(--muted-foreground)]">
                     {item.a}
                   </div>
                 </div>

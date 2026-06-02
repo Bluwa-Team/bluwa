@@ -33,7 +33,7 @@ export function Contact() {
             <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
               {t('title')}
             </h2>
-            <p className="mt-4 text-[var(--muted-foreground)] md:text-base">{t('subtitle')}</p>
+            <p className="mt-4 text-[var(--muted-foreground)] md:text-lg">{t('subtitle')}</p>
 
             <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
               <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
