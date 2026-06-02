@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl'
 import { Logo } from './Logo'
+import { Globe } from './Icons'
 
 type ResourceItem = { title: string; description: string; href: string }
 
@@ -57,7 +58,7 @@ export function Footer() {
         </div>
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-[var(--border)] pt-6 text-xs text-[var(--muted-foreground)] md:flex-row md:items-center">
           <span>© {year} Bluwa · {t('rights')}</span>
-          <span>Made in West Africa 🌍</span>
+          <span className="flex items-center gap-1.5">Made in West Africa <Globe className="h-3.5 w-3.5" /></span>
         </div>
       </div>
     </footer>

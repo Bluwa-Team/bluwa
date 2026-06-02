@@ -1,7 +1,7 @@
 {
   "nav": {
-    "features": "Fonctionnalités",
-    "problem": "Notre approche",
+    "features": "L'Écosystème",
+    "problem": "Le Constat",
     "pricing": "Tarifs",
     "faq": "FAQ",
     "contact": "Contact",
@@ -9,30 +9,30 @@
     "cta": "Rejoindre le pilote",
     "resources": "Ressources",
     "resourceItems": [
-      { "title": "Bluwa Academy", "description": "Formations et certifications métier agroalimentaire", "href": "#" },
-      { "title": "Newsletter", "description": "Actualités ERP & agroalimentaire africain", "href": "#" },
+      { "title": "Bluwa Academy", "description": "Formations et certifications métier", "href": "#" },
+      { "title": "Newsletter", "description": "Actualités ERP & industrie africaine", "href": "#" },
       { "title": "Blog", "description": "Guides pratiques et retours terrain", "href": "#" }
     ]
   },
   "hero": {
     "badge": "Programme Fondateurs · Accès Pilote",
     "title": "Pilotez votre marge. Maîtrisez votre supply chain.",
-    "subtitle": "Le copilote de croissance des agroalimentaires africains : standards industriels mondiaux, interface ultra-simple, déployé main dans la main avec votre terrain.",
-    "primaryCta": "Rejoindre le programme pilote",
-    "secondaryCta": "Découvrir les modules",
+    "subtitle": "L'ERP SaaS industriel nativement conçu pour les 16 pays d'Afrique de l'Ouest. Du tableur au tableau de bord en temps réel.",
+    "primaryCta": "Réserver une démo gratuite",
+    "secondaryCta": "Rejoindre le programme pilote",
     "trust": "Pensé pour les 16 pays de l'Afrique de l'Ouest · Co-conçu sur le terrain"
   },
   "heroVisual": {
-    "browserBar": "app.bluwa.io · MRP",
+    "browserBar": "app.bluwa.io · Tableau de bord",
     "kpis": [
       { "label": "Production J", "value": "12 480 kg", "trend": "+8%", "tone": "good" },
-      { "label": "Couverture", "value": "42 j", "trend": "-3 j", "tone": "warn" },
+      { "label": "Couverture stock", "value": "42 j", "trend": "-3 j", "tone": "warn" },
       { "label": "OF en cours", "value": "17", "trend": "+2", "tone": "good" },
       { "label": "Marge brute", "value": "34,2 %", "trend": "+1,4 pt", "tone": "good" }
     ],
     "copilotLabel": "Copilote IA",
     "copilotLive": "en direct",
-    "copilotMessage": "Maïs : stock dans 4 semaines si rythme inchangé. Suggestion d'achat de 18 t auprès de Sahel Agri.",
+    "copilotMessage": "Maïs : rupture de stock dans 4 semaines si rythme inchangé. Suggestion d'achat de 18 t auprès de Sahel Agri.",
     "chartLabel": "Ordres de production · 6 mois",
     "chartPeriod": "M+0 → M+5"
   },
@@ -43,80 +43,68 @@
     { "label": "Déploiement", "value": "Pilote en 5 à 15 jours" }
   ],
   "problem": {
-    "eyebrow": "Le problème",
-    "title": "Tableurs partout, visibilité nulle part",
-    "subtitle": "Les ERP classiques coûtent cher et ignorent la réalité africaine. Chaque lot perdu, c’est de la marge envolée.",
+    "eyebrow": "Le Constat",
+    "title": "Le marché bouge. Vos outils doivent suivre.",
+    "subtitle": "L'essor du commerce inter-africain (ZLECAF), les accords d'exportation vers la Chine et l'Union Européenne, et la modernisation des corridors logistiques imposent un nouveau standard de rigueur. Gérer une usine ou un entrepôt sur papier ou sur des fichiers Excel volants n'est plus une option.",
     "points": [
       {
-        "title": "Stocks invisibles",
-        "body": "Matières périssables, écarts d’inventaire, ruptures imprévues. Aucune visibilité temps réel."
+        "title": "Zéro visibilité",
+        "body": "Des pertes d'argent invisibles sur les matières premières et les stocks. Aucune traçabilité, aucun chiffre fiable en temps réel."
       },
       {
-        "title": "Planification au feeling",
-        "body": "Pas de MRP. Des ordres basés sur des estimations. Résultat : surproduction, manquants, marges qui fondent."
+        "title": "Complexité multi-sites",
+        "body": "Une usine à Lomé, un entrepôt à Cotonou, et aucune donnée centralisée. Chaque site tourne dans son coin, sans vision d'ensemble."
       },
       {
-        "title": "Dirigeants sans données",
-        "body": "Rapports en retard, illisibles. Les décisions stratégiques se prennent dans le brouillard."
+        "title": "Logiciels inadaptés",
+        "body": "Des licences SAP ou Sage hors de prix, mais personne en interne pour les configurer ou former les équipes. L'outil reste inutilisé."
       }
     ],
     "solutionEyebrow": "Notre réponse",
     "solutionTitle": "Rigueur industrielle. Simplicité absolue.",
-    "solutionBody": "Bluwa garantit votre marge et votre rigueur opérationnelle : multi-sites, multi-devises, avec un copilote IA qui répond à vos dirigeants en temps réel."
+    "solutionBody": "Bluwa garantit votre rigueur opérationnelle : multi-sites, multi-devises, avec un copilote IA qui répond à vos dirigeants en temps réel."
   },
   "features": {
-    "eyebrow": "Les modules",
-    "title": "Tout ce dont votre usine a besoin, dès le premier jour.",
-    "subtitle": "6 modules intégrés. 1 plateforme. Du référentiel à la marge brute, chaque maillon est couvert.",
+    "eyebrow": "L'Écosystème bluwa",
+    "title": "Bien plus qu'un logiciel : un cadre de rigueur pour vos équipes.",
+    "subtitle": "Trois piliers complémentaires conçus pour garantir votre succès opérationnel, de l'installation jusqu'à la montée en compétence de vos équipes.",
     "items": [
       {
-        "title": "Données de référence (MDM)",
-        "body": "Articles, nomenclatures, clients, fournisseurs et postes de charge. La donnée propre sur laquelle toute la précision de Bluwa repose."
+        "title": "bluwa_ERP",
+        "body": "Une plateforme Cloud & Mobile ultra-stable pour piloter vos nomenclatures (BOM), vos stocks critiques, votre traçabilité et vos ateliers. Nativement multi-devises (FCFA, Naira, Cedi, Dollar) et multilingue."
       },
       {
-        "title": "Production & Atelier",
-        "body": "Ordres de fabrication, suivi atelier (MES) et gestion des lots. Du plan de production à la déclaration terrain, sans rupture."
+        "title": "L'Essai Garanti 30 jours",
+        "body": "Vous payez l'installation, nous configurons votre site. Si au bout d'un mois l'outil ne vous convient pas, vous partez sans payer un seul mois d'abonnement. Zéro risque."
       },
       {
-        "title": "Planification & MRP",
-        "body": "Prévisions, demande clients consolidée, Supply Planning et MRP. Les besoins calculés automatiquement, les ruptures anticipées."
-      },
-      {
-        "title": "Achats & Stocks",
-        "body": "Approvisionnement, réception, stocks FEFO/FIFO et inventaire. Cash immobilisé maîtrisé, zéro rupture subie."
-      },
-      {
-        "title": "Ventes & ADV",
-        "body": "Commandes clients, administration des ventes et bons de livraison. Du devis à la livraison, tracé en temps réel."
-      },
-      {
-        "title": "Qualité & Pilotage",
-        "body": "Libération des lots, non-conformités, généalogie, GED et analyse de marge par lot. Conformité HACCP et visibilité dirigeants réunies."
+        "title": "bluwa_Academy",
+        "body": "Nos équipes et nos programmes certifiants forment vos opérateurs et vos chefs d'ateliers directement sur le terrain pendant 3 mois pour garantir le succès de l'intégration."
       }
     ]
   },
   "presence": {
     "eyebrow": "Notre marché",
     "title": "Pensé pour toute l'Afrique de l'Ouest",
-    "subtitle": "16 pays · 500 millions d'habitants · Un marché quasi-vierge en ERP industriel agroalimentaire.",
+    "subtitle": "16 pays · 500 millions d'habitants · Un marché quasi-vierge en ERP industriel.",
     "countries": ["Bénin", "Burkina Faso", "Cabo Verde", "Côte d'Ivoire", "Gambie", "Ghana", "Guinée", "Guinée-Bissau", "Libéria", "Mali", "Mauritanie", "Niger", "Nigeria", "Sénégal", "Sierra Leone", "Togo"]
   },
   "pilot": {
     "eyebrow": "Programme Fondateurs",
     "title": "Devenez client fondateur.",
-    "subtitle": "10 entreprises pionnières pour co-construire le standard ERP de l'agroalimentaire africain. Places limitées.",
+    "subtitle": "10 entreprises pionnières pour co-construire le standard ERP de l'industrie agroalimentaire ouest-africaine. Places limitées.",
     "receiveTitle": "Ce que vous recevez",
     "receiveItems": [
       "3 mois d'accès gratuits (programme pilote)",
       "Formation & accompagnement dédié sur site",
       "Ligne directe avec l'équipe produit",
       "Accès prioritaire à chaque nouvelle fonctionnalité",
-      "Impact direct sur la feuille de route Bluwa"
+      "Impact direct sur la feuille de route bluwa"
     ],
     "expectTitle": "Ce que nous attendons",
     "expectItems": [
       "Retours terrain réguliers et honnêtes",
-      "1 appel mensuel avec notre équipe (30 min)",
+      "Appel hebdomadaire avec notre équipe durant le premier mois",
       "Témoignage après 3 mois d'utilisation",
       "Ouverture à nos visites terrain occasionnelles"
     ],
@@ -125,16 +113,25 @@
   },
   "pricing": {
     "eyebrow": "Tarifs",
-    "title": "Simple. Prévisible. À votre échelle.",
-    "subtitle": "Tarif par site. Ajoutez des sites selon votre croissance.",
-    "billing": "1er mois offert · Sans engagement",
+    "title": "Une tarification transparente, ajustée à votre échelle.",
+    "subtitle": "Deux étapes simples. Zéro coût caché.",
+    "perSiteNote": "L'abonnement est facturé par site, pas par organisation.",
+    "perSiteDetail": "Chaque usine ou entrepôt a sa propre configuration sécurisée. Vous payez ce que vous utilisez, rien de plus.",
+    "billingNote": "Les tarifs affichés sont en XOF pour les pays de l'UEMOA. Les clients hors UEMOA (Nigeria, Ghana, Guinée, etc.) sont facturés en USD au taux de change en vigueur.",
+    "step1Label": "Étape 1",
+    "step1Title": "Frais d'installation",
+    "step1Subtitle": "Paiement unique · paramétrage + import données + 3 mois de suivi",
+    "step2Label": "Étape 2",
+    "step2Title": "Abonnement SaaS",
+    "step2Subtitle": "Engagement annuel · 2 mois offerts",
     "plans": [
       {
         "name": "Starter",
-        "subtitle": "Le cœur opérationnel",
-        "price": "dès 30 000",
-        "currency": "FCFA / site / mois",
-        "tagline": "1 à 3 utilisateurs",
+        "subtitle": "TPE · 1 à 10 employés",
+        "install": "150 000",
+        "price": "37 000",
+        "currency": "XOF / site / mois",
+        "tagline": "L'essentiel pour démarrer",
         "features": [
           "Dashboard & indicateurs clés",
           "Référentiel : articles & fournisseurs",
@@ -146,11 +143,12 @@
       },
       {
         "name": "Growth",
-        "subtitle": "Vendre, planifier, piloter",
-        "badge": "Tarif Fondateur",
-        "price": "150 000",
-        "currency": "FCFA / site / mois",
-        "tagline": "Jusqu’à 15 utilisateurs",
+        "subtitle": "PME · 10 à 20 employés",
+        "badge": "Le plus populaire",
+        "install": "500 000",
+        "price": "125 000",
+        "currency": "XOF / site / mois",
+        "tagline": "Vendre, planifier, piloter",
         "features": [
           "Tout Starter inclus",
           "Ventes : commandes clients, ADV & livraisons",
@@ -164,11 +162,12 @@
       },
       {
         "name": "Enterprise",
-        "subtitle": "Structurer le groupe",
+        "subtitle": "Grande Structure · 50+ employés, multi-ateliers",
+        "install": "Sur devis",
         "price": "Sur mesure",
-        "priceNote": "Tarif selon le nombre d'utilisateurs",
         "currency": "",
-        "tagline": "Multi-sites · Utilisateurs illimités",
+        "priceNote": "Tarif selon le nombre d'utilisateurs",
+        "tagline": "Multi-ateliers & multi-sites",
         "custom": true,
         "features": [
           "Tout Growth inclus",
@@ -181,33 +180,68 @@
       }
     ]
   },
+  "stats": {
+    "eyebrow": "Bluwa en chiffres",
+    "title": "Une infrastructure prête pour la croissance régionale.",
+    "items": [
+      {
+        "icon": "globe",
+        "value": "16",
+        "unit": "Pays couverts",
+        "detail": "Une couverture totale de la zone CEDEAO, du Sénégal au Nigeria."
+      },
+      {
+        "icon": "coins",
+        "value": "100%",
+        "unit": "Multi-devises natif",
+        "detail": "Indexation automatique pour sécuriser vos transactions : FCFA, Naira, Cedi, Dollar."
+      },
+      {
+        "icon": "clock",
+        "value": "90 j",
+        "unit": "Délai de transformation",
+        "detail": "Temps maximal pour transformer une usine désorganisée en site industriel certifié grâce à notre accompagnement."
+      },
+      {
+        "icon": "wifi",
+        "value": "0",
+        "unit": "Dépendance réseau",
+        "detail": "Applications terrain fonctionnelles hors-ligne, sauvegardes automatiques conçues pour les réalités africaines."
+      }
+    ]
+  },
+  "ctaBanner": {
+    "title": "Prêt à passer au niveau supérieur de rigueur industrielle ?",
+    "subtitle": "Rejoignez dès aujourd'hui les entreprises qui digitalisent la supply chain de la région avec bluwa.",
+    "cta": "Discuter avec un expert bluwa"
+  },
   "faq": {
     "eyebrow": "FAQ",
     "title": "Vos questions, nos réponses",
     "items": [
       {
-        "q": "Comment fonctionne l’essai payant garanti ?",
-        "a": "Vous payez les frais d’installation à la signature (couvre la mise en place, la configuration et 3 mois de support). Le 1er mois d’abonnement SaaS est offert. Si Bluwa ne vous convient pas après 30 jours, vous partez sans facturation supplémentaire."
+        "q": "Comment fonctionne l'essai garanti de 30 jours ?",
+        "a": "Vous payez les frais d'installation à la signature (couvre la mise en place, la configuration et 3 mois de support). Le 1er mois d'abonnement SaaS est offert. Si bluwa ne vous convient pas après 30 jours, vous partez sans facturation supplémentaire."
       },
       {
-        "q": "Que couvrent les frais d’installation ?",
-        "a": "La mise en place technique, la configuration, le paramétrage initial, la formation de vos équipes et 3 mois de support post-installation. C’est un paiement unique à la signature."
+        "q": "Que couvrent les frais d'installation ?",
+        "a": "La mise en place technique, la configuration, le paramétrage initial, la formation de vos équipes et 3 mois de support post-installation. C'est un paiement unique à la signature."
       },
       {
         "q": "Y a-t-il une réduction pour un engagement annuel ?",
         "a": "Oui. Avec un engagement 12 mois, nous offrons 2 mois gratuits (≈ 15% de remise). Option A : paiement des 10 mois en une fois. Option B : paiement mensuel avec engagement contractuel."
       },
       {
-        "q": "Bluwa peut-il suivre la croissance de mon groupe ?",
-        "a": "Oui. Bluwa est construit pour grandir avec vous, d'une unité de production à un groupe multi-sites, multi-pays. Le cœur d'usine (V1) s'étendra vers l'ADV et la Logistique WM (Phase 2), puis vers l'Ingénierie & Méthodes (Phase 3). Les clients Enterprise bénéficient d'un accès prioritaire à chaque extension."
+        "q": "Pourquoi l'abonnement est-il facturé par site ?",
+        "a": "Pour que votre coût reste prévisible et proportionnel à votre activité réelle. Chaque site a sa propre base de données, sa configuration et ses utilisateurs. Pas de frais cachés \"par utilisateur\" comme dans les ERP classiques."
       },
       {
-        "q": "Bluwa fonctionne-t-il hors-ligne ?",
-        "a": "Oui. Les applications terrain (production, inventaire) fonctionnent sans connexion et se synchronisent automatiquement."
+        "q": "bluwa peut-il suivre la croissance de mon groupe ?",
+        "a": "Oui. bluwa est conçu pour accompagner votre croissance, d'une seule unité de production jusqu'à un groupe multi-sites et multi-pays. La Phase 2 de bluwa_ERP intégrera les modules ADV, HACCP et Logistique WM, suivis de l'Ingénierie & Méthodes en Phase 3. L'écosystème s'enrichira également de produits dédiés : bluwa_CRM, bluwa_WMS et bluwa_Warehouses, dont les dates de lancement seront communiquées en temps voulu."
       },
       {
-        "q": "Quelles intégrations existent déjà ?",
-        "a": "Mobile money (Wave, Orange Money, MTN), Sage, Excel, et des connecteurs API pour vos outils existants."
+        "q": "bluwa fonctionne-t-il hors-ligne ?",
+        "a": "Oui. Les applications terrain (production, inventaire) fonctionnent sans connexion et se synchronisent automatiquement dès que le réseau est rétabli."
       }
     ]
   },
@@ -227,7 +261,7 @@
     "emailAddress": "john@bluwa.io"
   },
   "footer": {
-    "tagline": "Le système nerveux de l’industrie agroalimentaire ouest-africaine.",
+    "tagline": "Le système nerveux de l'industrie ouest-africaine.",
     "vision": "Construit pour durer, de votre première usine à votre groupe multi-pays.",
     "product": "Produit",
     "company": "Entreprise",

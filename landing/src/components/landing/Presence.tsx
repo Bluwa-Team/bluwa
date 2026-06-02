@@ -13,7 +13,6 @@ export function Presence() {
           <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
             {t('title')}
           </h2>
-          <p className="mt-4 text-[var(--muted-foreground)] md:text-lg">{t('subtitle')}</p>
         </div>
 
         <div className="mx-auto mt-10" style={{ width: 260 }}>

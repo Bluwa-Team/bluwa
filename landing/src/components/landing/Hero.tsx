@@ -32,7 +32,7 @@ export function Hero() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </a>
-            <a href="#features">
+            <a href="#pilot">
               <Button size="lg" variant="outline">
                 <PlayCircle className="h-4 w-4" />
                 {t('secondaryCta')}
