@@ -27,7 +27,7 @@ export function WestAfricaMap() {
     <div className="overflow-hidden rounded-3xl bg-[#f0f6fa]" style={{ aspectRatio: '720 / 560' }}>
       <ComposableMap
         projection="geoMercator"
-        projectionConfig={{ scale: 370, center: [22, 8] }}
+        projectionConfig={{ scale: 300, center: [22, 2] }}
         width={720}
         height={560}
         style={{ width: '100%', height: '100%', display: 'block' }}
@@ -45,7 +45,9 @@ export function WestAfricaMap() {
                     geography={geo}
                     fill={inRegion ? '#074ce1' : '#c8dce8'}
                     fillOpacity={inRegion ? 0.8 : 0.5}
-                    stroke="none"
+                    stroke={inRegion ? '#074ce1' : '#c8dce8'}
+                    strokeWidth={0.8}
+                    strokeOpacity={inRegion ? 0.8 : 0.5}
                     style={{
                       default: { outline: 'none' },
                       hover: { outline: 'none', cursor: 'default' },

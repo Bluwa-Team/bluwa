@@ -15,7 +15,7 @@ export function Presence() {
           </h2>
         </div>
 
-        <div className="mx-auto mt-10 max-w-lg">
+        <div className="mx-auto mt-4 max-w-3xl">
           <WestAfricaMap />
         </div>
       </div>
