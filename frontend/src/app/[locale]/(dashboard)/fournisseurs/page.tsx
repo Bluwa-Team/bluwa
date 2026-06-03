@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Plus, Search, Download, Upload, Pencil, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import {
   CATEGORIES_FOURNISSEUR, scoreColor,
 } from './_components/types'
 import { getFournisseurs, createFournisseur, updateFournisseur } from '@/lib/actions/fournisseurs'
+import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
 import Link from 'next/link'
 
 const QUALIFICATIONS: Array<'Tous' | FournisseurQualification> = ['Tous', 'Agree', 'AQualifier', 'Suspendu']
@@ -40,14 +41,17 @@ export default function FournisseursPage() {
   const t = useTranslations('fournisseurs')
   const tCommon = useTranslations('common')
 
-  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [filterQualif, setFilterQualif] = useState<'Tous' | FournisseurQualification>('Tous')
-  const [filterStatut, setFilterStatut] = useState<'Tous' | FournisseurStatut>('Tous')
+  const [fournisseurs,  setFournisseurs]  = useState<Fournisseur[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [search,        setSearch]        = useState('')
+  const [filterQualif,  setFilterQualif]  = useState<'Tous' | FournisseurQualification>('Tous')
+  const [filterStatut,  setFilterStatut]  = useState<'Tous' | FournisseurStatut>('Tous')
   const [filterCategorie, setFilterCategorie] = useState('Toutes')
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen,     setModalOpen]     = useState(false)
   const [editFournisseur, setEditFournisseur] = useState<Fournisseur | null>(null)
+  const [importing,     setImporting]     = useState(false)
+  const [importBanner,  setImportBanner]  = useState<string | null>(null)
+  const importRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     getFournisseurs().then((data) => { setFournisseurs(data); setLoading(false) })
@@ -81,6 +85,77 @@ export default function FournisseursPage() {
     return true
   }
 
+  function handleExport() {
+    downloadCsv('fournisseurs_bluwa.csv', fournisseurs.map((f) => ({
+      code:             f.code,
+      raisonSociale:    f.raisonSociale,
+      statut:           f.statut,
+      qualification:    f.qualification,
+      categorie:        f.categorie,
+      devise:           f.devise,
+      contactPrincipal: f.contactPrincipal,
+      telephone:        f.telephone,
+      email:            f.email,
+      ville:            f.ville,
+      pays:             f.pays,
+      modeLogistique:   f.modeLogistique,
+      scoreFilabilite:  f.scoreFilabilite ?? '',
+      paiementMobile:   f.paiementMobile ? 'true' : 'false',
+    })))
+  }
+
+  function handleDownloadTemplate() {
+    downloadCsvTemplate('fournisseurs_modele.csv',
+      ['code','raisonSociale','statut','qualification','categorie','devise','contactPrincipal','telephone','email','ville','pays','modeLogistique'],
+      {
+        code: 'FOU-0001', raisonSociale: 'Coop. Bissap Kaolack', statut: 'Formel',
+        qualification: 'Agree', categorie: 'Matières premières', devise: 'XOF',
+        contactPrincipal: 'Aliou Diop', telephone: '+221 77 987 65 43',
+        email: 'coop@bissap.sn', ville: 'Kaolack', pays: 'Sénégal', modeLogistique: 'Route',
+      },
+    )
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    setImportBanner(null)
+
+    const { rows } = await parseCsvFile(file)
+    let created = 0; let errors = 0
+    for (const row of rows) {
+      if (!row.raisonSociale) { errors++; continue }
+      const seq  = fournisseurs.length + created + 1
+      const code = row.code || generateCode(row.pays || '', seq)
+      const result = await createFournisseur({
+        code,
+        raisonSociale:    row.raisonSociale,
+        statut:           row.statut === 'Informel' ? 'Informel' : 'Formel',
+        qualification:    (['Agree','AQualifier','Suspendu'].includes(row.qualification) ? row.qualification : 'AQualifier') as FournisseurQualification,
+        categorie:        row.categorie        || '',
+        devise:           row.devise           || 'XOF',
+        contactPrincipal: row.contactPrincipal || '',
+        telephone:        row.telephone        || '',
+        email:            row.email            || '',
+        ville:            row.ville            || '',
+        pays:             row.pays             || 'Sénégal',
+        modeLogistique:   row.modeLogistique   || 'Route',
+        scoreFilabilite:  row.scoreFilabilite  ? parseFloat(row.scoreFilabilite) : null,
+        paiementMobile:   row.paiementMobile === 'true',
+      } as Fournisseur & { code: string })
+      if (result) created++; else errors++
+    }
+
+    if (created > 0) { const data = await getFournisseurs(); setFournisseurs(data) }
+    setImporting(false)
+    setImportBanner(
+      `${created} fournisseur${created !== 1 ? 's' : ''} importé${created !== 1 ? 's' : ''}` +
+      (errors ? ` · ${errors} ligne${errors !== 1 ? 's' : ''} ignorée${errors !== 1 ? 's' : ''}` : ''),
+    )
+  }
+
   function openEdit(f: Fournisseur) {
     setEditFournisseur(f)
     setModalOpen(true)
@@ -99,20 +174,33 @@ export default function FournisseursPage() {
           <p className="text-muted-foreground text-sm mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Upload className="size-3.5" />
-            {tCommon('import')}
+          <Button variant="outline" size="sm" className="gap-1.5"
+            onClick={() => importRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+            {importing ? 'Import…' : tCommon('import')}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button variant="outline" size="sm" className="gap-1.5"
+            onClick={handleExport} disabled={fournisseurs.length === 0}>
             <Download className="size-3.5" />
             {tCommon('export')}
           </Button>
+          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImportFile} />
           <Button size="sm" className="gap-1.5" onClick={() => { setEditFournisseur(null); setModalOpen(true) }}>
             <Plus className="size-4" />
             {t('new')}
           </Button>
         </div>
       </div>
+
+      {importBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
+          <span>✓ {importBanner}</span>
+          <div className="flex items-center gap-3">
+            <button onClick={handleDownloadTemplate} className="text-xs underline underline-offset-2 text-emerald-700 hover:text-emerald-900">Télécharger le modèle CSV</button>
+            <button onClick={() => setImportBanner(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+          </div>
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">

@@ -1,16 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input }  from '@/components/ui/input'
 import { Label }  from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { X, Printer, Tag } from 'lucide-react'
-import type { ReceptionFlat } from './types'
+import type { ProductionOutputRow } from '@/types/erp'
 import { printStorageLabels } from '@/lib/storage-unit-label'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 type TypeContenant = 'Carton' | 'Palette' | 'Sac' | 'Caisse' | 'Bidon' | 'Vrac'
 
@@ -18,48 +16,43 @@ const TYPES_CONTENANTS: TypeContenant[] = ['Carton', 'Palette', 'Sac', 'Caisse',
 
 interface Props {
   open:    boolean
-  row:     ReceptionFlat | null
+  row:     ProductionOutputRow | null
   onClose: () => void
 }
 
-// ── Composant ─────────────────────────────────────────────────────────────────
+export function LotLabelModal({ open, row, onClose }: Props) {
+  const [type,            setType]            = useState<TypeContenant>('Carton')
+  const [nbContenants,    setNbContenants]    = useState(1)
+  const [qtyParContenant, setQtyParContenant] = useState('')
 
-export function LabelPrintModal({ open, row, onClose }: Props) {
-  const [type,             setType]             = useState<TypeContenant>('Carton')
-  const [qtyParContenant,  setQtyParContenant]  = useState('')
-  const [nbContenants,     setNbContenants]     = useState(1)
-
-  // Pré-remplir qté par contenant quand la ligne change
   useEffect(() => {
     if (!row) return
     setType('Carton')
     setNbContenants(1)
-    setQtyParContenant(String(row.quantite))
+    setQtyParContenant(String(row.quantityProduced))
   }, [row])
 
-  // Auto-ajuster la qté/contenant quand nbContenants change
   useEffect(() => {
     if (!row || nbContenants < 1) return
-    const auto = Math.ceil(row.quantite / nbContenants)
-    setQtyParContenant(String(auto))
+    setQtyParContenant(String(Math.ceil(row.quantityProduced / nbContenants)))
   }, [nbContenants, row])
 
   function handleGenerate() {
     if (!row) return
     const qty = parseFloat(qtyParContenant)
     if (!qty || qty <= 0) return
+
     printStorageLabels(
       {
-        lotNumber:   row.lot ?? row.numero,
-        articleName: row.article,
-        articleSku:  row.article.substring(0, 12).toUpperCase(),
-        quantity:    row.quantite,
-        unit:        row.unite,
-        expiryDate:  row.dlc ?? '',
-        sourceType:  'RECEPTION',
-        sourceRef:   row.numero,
-        sourceDate:  row.date,
-        supplier:    row.fournisseur,
+        lotNumber:   row.productBatchNumber,
+        articleName: row.articleLabel,
+        articleSku:  row.articleSku,
+        quantity:    row.quantityProduced,
+        unit:        row.articleUnit,
+        expiryDate:  row.expiryDate,
+        sourceType:  'PRODUCTION',
+        sourceRef:   row.orderNumber || row.outputNumber,
+        sourceDate:  row.declaredAt.split('T')[0],
       },
       nbContenants,
       qty,
@@ -82,25 +75,37 @@ export function LabelPrintModal({ open, row, onClose }: Props) {
 
             {/* Header */}
             <div className="flex items-start justify-between p-5 border-b shrink-0">
-              <div>
-                <p className="font-semibold">Imprimer étiquettes par contenant</p>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  1 étiquette est générée par contenant, avec la quantité indiquée dessus.
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <Tag className="size-[18px] text-emerald-600" />
+                </div>
+                <div>
+                  <p className="font-semibold">Étiquettes Storage Unit</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    100×72mm · CODE128 + QR · 1 étiquette par contenant
+                  </p>
+                </div>
               </div>
               <Button variant="ghost" size="icon-sm" onClick={onClose}>
                 <X className="size-4" />
               </Button>
             </div>
 
-            {/* Aperçu article */}
+            {/* Aperçu lot */}
             <div className="mx-5 mt-4 px-3 py-2.5 rounded-lg bg-muted/50 border text-sm">
-              <p className="font-semibold truncate">{row.article}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Lot <span className="font-mono">{row.lot ?? '—'}</span>
-                {' · '}{row.quantite} {row.unite} total
-                {row.dlc && <> · DLC <span className="text-red-600 font-semibold">{row.dlc}</span></>}
-              </p>
+              <p className="font-semibold truncate">{row.articleLabel}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{row.productBatchNumber}</p>
+              <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground">
+                <span>{row.quantityProduced} {row.articleUnit} produits</span>
+                <span>·</span>
+                <span>
+                  DLC <span className="font-semibold text-foreground">
+                    {new Date(row.expiryDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                </span>
+                <span>·</span>
+                <span className="font-mono">{row.orderNumber || row.outputNumber}</span>
+              </div>
             </div>
 
             {/* Formulaire */}
@@ -134,7 +139,7 @@ export function LabelPrintModal({ open, row, onClose }: Props) {
                       onChange={(e) => setQtyParContenant(e.target.value)}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                      {row.unite}
+                      {row.articleUnit}
                     </span>
                   </div>
                 </div>
@@ -163,12 +168,11 @@ export function LabelPrintModal({ open, row, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Récapitulatif */}
               {qtyNum > 0 && nbContenants > 0 && (
                 <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
                   → <strong className="text-foreground">{nbContenants}</strong> étiquette{nbContenants > 1 ? 's' : ''}
-                  {' '}de <strong className="text-foreground">{qtyNum} {row.unite}</strong> / {type.toLowerCase()}
-                  {' '}= <strong className="text-foreground">{(qtyNum * nbContenants).toLocaleString('fr-FR')} {row.unite}</strong> total
+                  {' '}de <strong className="text-foreground">{qtyNum} {row.articleUnit}</strong> / {type.toLowerCase()}
+                  {' '}= <strong className="text-foreground">{(qtyNum * nbContenants).toLocaleString('fr-FR')} {row.articleUnit}</strong> total
                 </p>
               )}
             </div>
@@ -182,7 +186,7 @@ export function LabelPrintModal({ open, row, onClose }: Props) {
                 className="gap-2"
               >
                 <Printer className="size-4" />
-                Générer
+                Générer {nbContenants > 1 ? `${nbContenants} étiquettes` : "l'étiquette"}
               </Button>
             </div>
           </div>

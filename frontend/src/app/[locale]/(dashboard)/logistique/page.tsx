@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import {
   Plus, Search, X, MoreHorizontal, Truck, Package,
-  Clock, CheckCheck, Loader2, ChevronRight, MapPin,
+  Clock, CheckCheck, Loader2, ChevronRight, MapPin, Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import {
-  BonLivraison, StatutBL,
+  BonLivraison, BonLivraisonItem, StatutBL,
   STATUT_BL_COLORS, STATUT_BL_LABELS, STATUT_BL_NEXT,
 } from './_components/types'
+import { printBl } from '@/lib/bl-print'
 import {
   getDeliveryNotes, createDeliveryNote, updateDeliveryStatus,
   type CreateDeliveryNoteInput,
@@ -201,9 +202,10 @@ function CreateBLModal({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LogistiquePage() {
-  const [bls,     setBls]     = useState<BonLivraison[]>([])
-  const [orders,  setOrders]  = useState<CommandeClientHeader[]>([])
-  const [loading, setLoading] = useState(true)
+  const [bls,      setBls]      = useState<BonLivraison[]>([])
+  const [blItems,  setBlItems]  = useState<BonLivraisonItem[]>([])
+  const [orders,   setOrders]   = useState<CommandeClientHeader[]>([])
+  const [loading,  setLoading]  = useState(true)
   const [modalOpen,    setModalOpen]    = useState(false)
   const [search,       setSearch]       = useState('')
   const [statutFilt,   setStatutFilt]   = useState<StatutBL | 'all'>('all')
@@ -219,8 +221,9 @@ export default function LogistiquePage() {
 
   useEffect(() => {
     Promise.all([getDeliveryNotes(), getSalesOrders()]).then(
-      ([{ bls: b }, { headers: h }]) => {
+      ([{ bls: b, items: its }, { headers: h }]) => {
         setBls(b)
+        setBlItems(its)
         setOrders(h)
         setLoading(false)
       },
@@ -256,9 +259,17 @@ export default function LogistiquePage() {
   async function handleSave(input: CreateDeliveryNoteInput): Promise<boolean> {
     const result = await createDeliveryNote(input)
     if (!result) return false
-    const { bls: b } = await getDeliveryNotes()
+    const { bls: b, items: its } = await getDeliveryNotes()
     setBls(b)
+    setBlItems(its)
     return true
+  }
+
+  function handlePrintBl(id: string) {
+    const bl  = bls.find((b) => b.id === id)
+    if (!bl) return
+    const its = blItems.filter((i) => i.blId === id)
+    printBl(bl, its)
   }
 
   async function handleAdvance(id: string, next: StatutBL) {
@@ -434,18 +445,27 @@ export default function LogistiquePage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right">
-                        {next && (
+                        <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => handleAdvance(bl.id, next)}
-                            disabled={advancingId === bl.id}
-                            title={`Passer à : ${STATUT_BL_LABELS[next]}`}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
+                            onClick={() => handlePrintBl(bl.id)}
+                            title="Imprimer le bon de livraison"
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted text-muted-foreground hover:text-foreground"
                           >
-                            {advancingId === bl.id
-                              ? <Loader2 className="size-3.5 animate-spin" />
-                              : <ChevronRight className="size-3.5" />}
+                            <Printer className="size-3.5" />
                           </button>
-                        )}
+                          {next && (
+                            <button
+                              onClick={() => handleAdvance(bl.id, next)}
+                              disabled={advancingId === bl.id}
+                              title={`Passer à : ${STATUT_BL_LABELS[next]}`}
+                              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-50"
+                            >
+                              {advancingId === bl.id
+                                ? <Loader2 className="size-3.5 animate-spin" />
+                                : <ChevronRight className="size-3.5" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

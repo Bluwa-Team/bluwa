@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   Package, CheckCircle2, BookCheck, AlertTriangle,
-  RotateCcw, Trash2, Loader2, Plus, Calculator,
+  RotateCcw, Trash2, Loader2, Plus, Calculator, Printer,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,8 @@ import {
   formatDlcStatus,
 } from '@/types/erp'
 import { DeclareOutputModal } from './_components/declare-output-modal'
-import { HelpPopover }        from '@/components/ui/help-popover'
+import { LotLabelModal }     from './_components/lot-label-modal'
+import { HelpPopover }       from '@/components/ui/help-popover'
 
 // ── Colonnes ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ export default function LotsProductionPage() {
   const [actingId,   setActingId]   = useState<string | null>(null)
   const [filter,     setFilter]     = useState<FilterTab>('ALL')
   const [showModal,  setShowModal]  = useState(false)
+  const [labelRow,   setLabelRow]   = useState<ProductionOutputRow | null>(null)
 
   const { widths: wO, startResize: srO, reset: rO, isCustomized: icO } =
     useResizableColumns('bluwa:cols:lots-production', OUTPUT_COLS)
@@ -449,7 +451,14 @@ export default function LotsProductionPage() {
                             </button>
                           )}
                           {output.status === 'POSTED' && (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            <button
+                              onClick={() => setLabelRow(output)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors whitespace-nowrap"
+                              title="Imprimer étiquettes Storage Unit"
+                            >
+                              <Printer className="size-3 shrink-0" />
+                              Étiquettes
+                            </button>
                           )}
                         </div>
                       </td>
@@ -471,13 +480,19 @@ export default function LotsProductionPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       {showModal && (
         <DeclareOutputModal
           onClose={() => setShowModal(false)}
           onSave={handleSave}
         />
       )}
+
+      <LotLabelModal
+        open={labelRow !== null}
+        row={labelRow}
+        onClose={() => setLabelRow(null)}
+      />
     </div>
   )
 }

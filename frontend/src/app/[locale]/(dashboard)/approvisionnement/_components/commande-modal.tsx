@@ -10,6 +10,7 @@ import {
   X, Loader2, Building2, Leaf, Check, Plus, Trash2, Printer, Lock,
 } from 'lucide-react'
 import { BCHeader, BCItem, TypeCommande } from './types'
+import { printBcDoc } from './bc-print'
 import type { Fournisseur } from '@/app/[locale]/(dashboard)/fournisseurs/_components/types'
 import type { Article, ArticleType } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { TYPE_LABELS } from '@/app/[locale]/(dashboard)/articles/_components/types'
@@ -48,7 +49,7 @@ interface Props {
   onSave: (
     header: Omit<BCHeader, 'id' | 'numero' | 'reception' | 'statut'>,
     items:  Omit<BCItem,   'id' | 'headerId'>[],
-  ) => Promise<boolean>
+  ) => Promise<BCHeader | null>
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -273,7 +274,14 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
 
   async function handleSave() {
     setSaving(true)
-    const ok = await onSave(
+    const printItems = items.map((i) => ({
+      article:         i.article.trim(),
+      quantite:        parseFloat(i.quantite),
+      unite:           i.unite.trim() || 'kg',
+      puHT:            parseFloat(i.puHT),
+      livraisonPrevue: i.livraisonPrevue,
+    }))
+    const result = await onSave(
       {
         type:        header.type,
         date:        new Date().toISOString().split('T')[0],
@@ -290,11 +298,14 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
         puHT:                  parseFloat(i.puHT),
         livraisonPrevue:       i.livraisonPrevue,
         dureeVie:              i.dureeVie !== '' ? parseInt(i.dureeVie, 10) : null,
-        purchaseRequisitionId: null,  // null à la création manuelle — rempli par le MRP
+        purchaseRequisitionId: null,
       })),
     )
     setSaving(false)
-    if (ok) onClose()
+    if (result) {
+      printBcDoc(result, printItems)
+      onClose()
+    }
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────

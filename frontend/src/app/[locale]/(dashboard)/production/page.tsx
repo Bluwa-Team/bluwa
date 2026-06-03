@@ -38,7 +38,8 @@ import {
   MOCK_OFS,
 } from './_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
-import { OFModal } from './_components/of-modal'
+import { OFModal }  from './_components/of-modal'
+import { printOf }  from '@/lib/of-print'
 
 // ── Colonnes tableau ─────────────────────────────────────────────────────────
 
@@ -604,7 +605,11 @@ export default function ProductionPage() {
                             >
                               <Pencil className="size-3.5" />
                             </button>
-                            <button className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                            <button
+                              onClick={() => printOf(of)}
+                              title="Imprimer l'ordre de fabrication"
+                              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            >
                               <Printer className="size-3.5" />
                             </button>
                           </div>

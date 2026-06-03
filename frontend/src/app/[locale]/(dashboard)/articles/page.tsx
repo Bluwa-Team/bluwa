@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   Plus, Search, Download, Upload, Printer,
@@ -24,6 +24,8 @@ import {
   TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from './_components/types'
 import { getArticles, createArticle, updateArticle } from '@/lib/actions/articles'
+import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
+import type { ArticleType, ArticleAppro, ArticleStatut } from './_components/types'
 
 const TYPES: Array<'TOUS' | ArticleType> = ['TOUS', 'MP', 'PSF', 'PF', 'AC', 'CS']
 const STATUTS: Array<'Tous' | ArticleStatut> = ['Tous', 'Actif', 'Bloque', 'EnCreation']
@@ -61,14 +63,17 @@ export default function ArticlesPage() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
 
-  const [articles, setArticles] = useState<Article[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState<'TOUS' | ArticleType>('TOUS')
-  const [filterStatut, setFilterStatut] = useState<'Tous' | ArticleStatut>('Tous')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editArticle, setEditArticle] = useState<Article | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [articles,      setArticles]      = useState<Article[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [search,        setSearch]        = useState('')
+  const [filterType,    setFilterType]    = useState<'TOUS' | ArticleType>('TOUS')
+  const [filterStatut,  setFilterStatut]  = useState<'Tous' | ArticleStatut>('Tous')
+  const [modalOpen,     setModalOpen]     = useState(false)
+  const [editArticle,   setEditArticle]   = useState<Article | null>(null)
+  const [selected,      setSelected]      = useState<Set<string>>(new Set())
+  const [importing,     setImporting]     = useState(false)
+  const [importBanner,  setImportBanner]  = useState<string | null>(null)
+  const importRef = useRef<HTMLInputElement>(null)
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:articles',
@@ -116,6 +121,90 @@ export default function ArticlesPage() {
     setModalOpen(true)
   }
 
+  // ── Export CSV ──────────────────────────────────────────────────────────────
+
+  function handleExport() {
+    downloadCsv('articles_bluwa.csv', articles.map((a) => ({
+      code:           a.code,
+      designation:    a.designation,
+      type:           a.type,
+      famille:        a.famille,
+      sousFamille:    a.sousFamille,
+      categorie:      a.categorie,
+      uniteStock:     a.uniteStock,
+      uniteVente:     a.uniteVente,
+      prixVente:      a.prixVente ?? '',
+      pmp:            a.pmp ?? '',
+      dureeVie:       a.dureeVie ?? '',
+      poidsUnitaire:  a.poidsUnitaire ?? '',
+      stockSecurite:  a.stockSecurite ?? '',
+      pointCommande:  a.pointCommande ?? '',
+      appro:          a.appro,
+      statut:         a.statut,
+      gestionLot:     a.gestionLot ? 'true' : 'false',
+      codeBarres:     a.codeBarres,
+    })))
+  }
+
+  function handleDownloadTemplate() {
+    downloadCsvTemplate('articles_modele.csv',
+      ['code', 'designation', 'type', 'famille', 'uniteStock', 'uniteVente', 'prixVente', 'dureeVie', 'appro', 'statut', 'gestionLot'],
+      {
+        code: 'MP-0001', designation: 'Fleurs d\'hibiscus séchées', type: 'MP',
+        famille: 'Matières premières', uniteStock: 'kg', uniteVente: 'kg',
+        prixVente: '2500', dureeVie: '365', appro: 'Achete', statut: 'Actif', gestionLot: 'true',
+      },
+    )
+  }
+
+  // ── Import CSV ──────────────────────────────────────────────────────────────
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    setImportBanner(null)
+
+    const { rows } = await parseCsvFile(file)
+    let created = 0
+    let errors  = 0
+
+    for (const row of rows) {
+      if (!row.designation) { errors++; continue }
+      const type = (['MP','AC','CS','PSF','PF'].includes(row.type) ? row.type : 'MP') as ArticleType
+      const code = row.code || generateCode(type)
+      const result = await createArticle({
+        code,
+        designation:   row.designation,
+        type,
+        famille:       row.famille       || '',
+        sousFamille:   row.sousFamille   || '',
+        categorie:     row.categorie     || '',
+        uniteStock:    row.uniteStock    || 'kg',
+        uniteVente:    row.uniteVente    || row.uniteStock || 'kg',
+        prixVente:     row.prixVente     ? parseFloat(row.prixVente)    : null,
+        dureeVie:      row.dureeVie      ? parseInt(row.dureeVie, 10)   : null,
+        poidsUnitaire: row.poidsUnitaire ? parseFloat(row.poidsUnitaire) : null,
+        stockSecurite: row.stockSecurite ? parseFloat(row.stockSecurite) : null,
+        appro:         (['Achete','Fabrique'].includes(row.appro) ? row.appro : 'Achete') as ArticleAppro,
+        statut:        (['Actif','Bloque','EnCreation'].includes(row.statut) ? row.statut : 'Actif') as ArticleStatut,
+        gestionLot:    row.gestionLot === 'true',
+      })
+      if (result) created++; else errors++
+    }
+
+    if (created > 0) {
+      const data = await getArticles()
+      setArticles(data)
+    }
+    setImporting(false)
+    setImportBanner(
+      `${created} article${created !== 1 ? 's' : ''} importé${created !== 1 ? 's' : ''}` +
+      (errors ? ` · ${errors} ligne${errors !== 1 ? 's' : ''} ignorée${errors !== 1 ? 's' : ''}` : ''),
+    )
+  }
+
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -150,14 +239,31 @@ export default function ArticlesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Upload className="size-3.5" />
-            {tCommon('import')}
+          <Button
+            variant="outline" size="sm" className="gap-1.5"
+            onClick={() => importRef.current?.click()}
+            disabled={importing}
+          >
+            {importing
+              ? <Loader2 className="size-3.5 animate-spin" />
+              : <Upload className="size-3.5" />}
+            {importing ? 'Import…' : tCommon('import')}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button
+            variant="outline" size="sm" className="gap-1.5"
+            onClick={handleExport}
+            disabled={articles.length === 0}
+          >
             <Download className="size-3.5" />
             {tCommon('export')}
           </Button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImportFile}
+          />
           {selected.size > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5">
               <Printer className="size-3.5" />
@@ -170,6 +276,22 @@ export default function ArticlesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Banner import */}
+      {importBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
+          <span>✓ {importBanner}</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDownloadTemplate}
+              className="text-xs underline underline-offset-2 text-emerald-700 hover:text-emerald-900"
+            >
+              Télécharger le modèle CSV
+            </button>
+            <button onClick={() => setImportBanner(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
+          </div>
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">

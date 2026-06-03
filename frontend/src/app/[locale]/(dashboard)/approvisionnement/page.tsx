@@ -20,6 +20,7 @@ import {
   ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd,
 } from './_components/types'
 import { CommandeModal }       from './_components/commande-modal'
+import { printBcDoc }         from './_components/bc-print'
 import { CommandeDetailModal } from './_components/commande-detail-modal'
 import { HelpPopover }         from '@/components/ui/help-popover'
 import {
@@ -180,7 +181,7 @@ export default function ApprovisionnementPage() {
   async function handleSaveCommande(
     headerData: Omit<BCHeader, 'id' | 'numero' | 'reception' | 'statut'>,
     newItems: Omit<BCItem, 'id' | 'headerId'>[],
-  ): Promise<boolean> {
+  ): Promise<BCHeader | null> {
     const input: CreatePurchaseOrderInput = {
       type:        headerData.type,
       date:        headerData.date,
@@ -198,12 +199,24 @@ export default function ApprovisionnementPage() {
       })),
     }
     const result = await createPurchaseOrder(input)
-    if (!result) return false
-    // Rafraîchir depuis Supabase
+    if (!result) return null
     const { headers, items } = await getPurchaseOrders()
     setBcHeaders(headers)
     setBcItems(items)
-    return true
+    return result
+  }
+
+  function handlePrintDoc(headerId: string) {
+    const h = bcHeaders.find((bh) => bh.id === headerId)
+    if (!h) return
+    const its = bcItems.filter((i) => i.headerId === headerId)
+    printBcDoc(h, its.map((i) => ({
+      article:         i.article,
+      quantite:        i.quantite,
+      unite:           i.unite || '',
+      puHT:            i.puHT,
+      livraisonPrevue: i.livraisonPrevue,
+    })))
   }
 
   const stats = useMemo(() => ({
@@ -889,7 +902,8 @@ export default function ApprovisionnementPage() {
 
                     <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
-                        title={c.type === 'BC' ? 'Télécharger le bon de commande' : "Télécharger le bon d'achat"}
+                        title={c.type === 'BC' ? 'Imprimer le bon de commande' : "Imprimer le bon d'achat"}
+                        onClick={() => handlePrintDoc(c.id)}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors ${
                           c.type === 'BC'
                             ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
