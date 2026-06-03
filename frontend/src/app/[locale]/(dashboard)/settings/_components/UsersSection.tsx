@@ -15,7 +15,9 @@ const ROLES: { value: UserRole; label: string; color: string }[] = [
   { value: 'viewer',   label: 'Lecteur',       color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'        },
 ]
 
-const roleInfo = (r: UserRole) => ROLES.find(x => x.value === r) ?? ROLES[4]
+const NO_ACCESS = { label: 'Aucun accès', color: 'bg-red-50 text-red-400 dark:bg-red-950/30 dark:text-red-400' }
+
+const roleInfo = (r: UserRole | null) => r ? (ROLES.find(x => x.value === r) ?? ROLES[4]) : NO_ACCESS
 
 function initials(name: string | null, email: string) {
   if (name) return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -192,11 +194,12 @@ function InviteForm({ onDone }: { onDone: () => void }) {
 
 // ── Section principale ────────────────────────────────────────────────────────
 export function UsersSection({
-  users, currentUserId, currentUserRole,
+  users, currentUserId, currentUserRole, activeFactoryId,
 }: {
-  users:           OrgUser[]
-  currentUserId:   string
-  currentUserRole: UserRole
+  users:            OrgUser[]
+  currentUserId:    string
+  currentUserRole:  UserRole
+  activeFactoryId:  string | null
 }) {
   const [showInvite, setShowInvite] = useState(false)
   const canManage = ['owner', 'admin'].includes(currentUserRole)
@@ -212,7 +215,12 @@ export function UsersSection({
           <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
             <ShieldCheck className="size-4 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h2 className="font-semibold text-sm">Utilisateurs</h2>
+          <div>
+            <h2 className="font-semibold text-sm">Utilisateurs</h2>
+            {!activeFactoryId && (
+              <p className="text-[11px] text-amber-500">Sélectionnez un site pour gérer les accès</p>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">{active.length} actif{active.length > 1 ? 's' : ''}</span>
         </div>
         {canManage && !showInvite && (
