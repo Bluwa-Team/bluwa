@@ -129,10 +129,10 @@ export async function completeOnboardingAction(input: {
     return { ok: false, error: profileError.message }
   }
 
-  // 4. Accès au site (owner accède à sa factory par défaut)
+  // 4. Accès au site avec rôle owner (rôle porté par user_site_access depuis migration 024)
   const { error: accessError } = await supabaseAdmin
     .from('user_site_access')
-    .insert({ user_id: user.id, factory_id: factory.id })
+    .insert({ user_id: user.id, factory_id: factory.id, role: 'owner' })
 
   if (accessError) {
     await supabaseAdmin.from('profiles').delete().eq('id', user.id)
