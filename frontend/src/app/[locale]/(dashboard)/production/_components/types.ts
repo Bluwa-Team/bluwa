@@ -107,10 +107,11 @@ export interface OrdreFabrication {
   numero: string             // OF-2026-042
   produitFini: string
   sku: string
+  typeArticle: 'PF' | 'PSF' // pour générer le numéro de lot (TYPE-YYYYMMDD-XX)
   qty: number                // quantité planifiée
   realise: number            // quantité réalisée
   unite: string
-  lotPF: string | null       // lot PF généré en fin de prod
+  lotPF: string | null       // lot généré en fin de prod — format TYPE-YYYYMMDD-XX
   ligne: string              // L1, L2…
   operateurPrep: string | null
   dateBesoin: string         // YYYY-MM-DD
@@ -262,10 +263,11 @@ export const MOCK_OFS: OrdreFabrication[] = [
     numero: 'OF-2026-042',
     produitFini: 'Bissap Pourpre Vanille 1L',
     sku: 'PF-BIS-002',
+    typeArticle: 'PF',
     qty: 150,
     realise: 150,
     unite: 'btl',
-    lotPF: 'LOT-PF-042',
+    lotPF: 'PF-20260522-42',
     ligne: 'L2',
     operateurPrep: 'Fatou N.',
     dateBesoin: '2026-05-22',
@@ -279,6 +281,7 @@ export const MOCK_OFS: OrdreFabrication[] = [
     numero: 'OF-2026-043',
     produitFini: 'Bissap Pourpre Gingembre 1L',
     sku: 'PF-BIS-003',
+    typeArticle: 'PF',
     qty: 180,
     realise: 80,
     unite: 'btl',
@@ -296,6 +299,7 @@ export const MOCK_OFS: OrdreFabrication[] = [
     numero: 'OF-2026-044',
     produitFini: 'Bissap Pourpre Menthe 1L',
     sku: 'PF-BIS-004',
+    typeArticle: 'PF',
     qty: 120,
     realise: 0,
     unite: 'btl',
@@ -313,6 +317,7 @@ export const MOCK_OFS: OrdreFabrication[] = [
     numero: 'OF-2026-045',
     produitFini: 'Bissap Pourpre Citronnelle 1L',
     sku: 'PF-BIS-005',
+    typeArticle: 'PF',
     qty: 100,
     realise: 0,
     unite: 'btl',
@@ -330,10 +335,11 @@ export const MOCK_OFS: OrdreFabrication[] = [
     numero: 'OF-2026-041',
     produitFini: 'Bissap Pourpre Original 1L',
     sku: 'PF-BIS-001',
+    typeArticle: 'PF',
     qty: 200,
     realise: 200,
     unite: 'btl',
-    lotPF: 'LOT-PF-041',
+    lotPF: 'PF-20260515-41',
     ligne: 'L1',
     operateurPrep: 'Mamadou D.',
     dateBesoin: '2026-05-15',

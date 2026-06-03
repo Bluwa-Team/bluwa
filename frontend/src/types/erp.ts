@@ -239,7 +239,7 @@ export interface ProductionOutput {
   status:              ProductionOutputStatus
   quantityProduced:    number
   quantityScrap:       number
-  productBatchNumber:  string   // LOT-FIN-YYYYMMDD-NN
+  productBatchNumber:  string   // TYPE-YYYYMMDD-XX  (ex. PF-20260603-01, PSF-20260603-01)
   expiryDate:          string   // ISO date
   declaredBy:          string   // auth.users.id
   declaredAt:          string   // ISO datetime UTC

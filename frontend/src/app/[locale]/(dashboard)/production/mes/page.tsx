@@ -82,10 +82,12 @@ function fmtDurationH(hours: number): string {
   return `${h}h${String(m).padStart(2, '0')}`
 }
 
+// Format : TYPE-YYYYMMDD-XX (ex. PF-20260603-01, PSF-20260603-01)
 function generateLotNumber(of: OrdreFabrication): string {
-  const seq = of.numero.split('-').pop() ?? '000'
+  const type  = of.typeArticle ?? 'PF'
+  const seq   = String(of.numero.split('-').pop() ?? '01').padStart(2, '0')
   const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-  return `LOT-PF-2026-${seq}-${today}`
+  return `${type}-${today}-${seq}`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────

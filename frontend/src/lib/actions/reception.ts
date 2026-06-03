@@ -153,8 +153,11 @@ export async function createGoodsReceipt(
     if (newItems.length > 0 && purchaseOrderId) {
       const { data: poItems } = await supabase
         .from('purchase_order_items')
-        .select('id, article_label, article_id, shelf_life_days')
+        .select('id, article_label, article_id, shelf_life_days, articles!article_id(type)')
         .eq('purchase_order_id', purchaseOrderId)
+
+      // Format date reception : YYYYMMDD
+      const dateStr = headerData.date.replace(/-/g, '')
 
       for (let idx = 0; idx < newItems.length; idx++) {
         const item = newItems[idx]
@@ -178,13 +181,10 @@ export async function createGoodsReceipt(
               })()
             : null)
 
-        // Numéro de lot interne
-        const abbr = item.article
-          .substring(0, 3)
-          .toUpperCase()
-          .replace(/[^A-Z]/g, '')
-        const seqPad = receiptNumber.split('-').pop() ?? String(idx + 1).padStart(4, '0')
-        const batchNumber = `LOT-${abbr}-${seqPad}${idx > 0 ? `-${idx + 1}` : ''}`
+        // Numéro de lot interne : TYPE-YYYYMMDD-XX
+        const articleType = ((poItem as any).articles as any)?.type ?? 'MP'
+        const seq         = String(idx + 1).padStart(2, '0')
+        const batchNumber = `${articleType}-${dateStr}-${seq}`
 
         await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,

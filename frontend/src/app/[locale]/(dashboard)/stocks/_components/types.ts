@@ -77,35 +77,35 @@ export const ETAT_LABELS: Record<EtatLot, string> = {
 
 export const MOCK_LOTS: LotStock[] = [
   {
-    id: '1', numero: 'LOT-2026-001', sku: 'MP-FAR-001', designation: 'Farine de blé T55',
+    id: '1', numero: 'MP-20260510-01', sku: 'MP-FAR-001', designation: 'Farine de blé T55',
     type: 'MP', quantite: 480, unite: 'Kg', pmp: 438, valeur: 210240,
     bcBa: 'BC-2026-040', reception: 'REC-2026-040', dateEntree: '2026-05-10',
     dlc: '2026-08-20', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
     seuilAlertePeremption: 30,   // 87 jours restants → OK
   },
   {
-    id: '2', numero: 'LOT-2026-002', sku: 'MP-ARA-002', designation: 'Arachides brutes',
+    id: '2', numero: 'MP-20260512-02', sku: 'MP-ARA-002', designation: 'Arachides brutes',
     type: 'MP', quantite: 180, unite: 'Kg', pmp: 720, valeur: 129600,
     bcBa: 'BA-2026-015', reception: 'REC-2026-015', dateEntree: '2026-02-16',
     dlc: '2026-06-21', origine: 'Informel', statutQC: 'Libere', etat: 'Dormant',
     seuilAlertePeremption: 30,   // 27 jours restants → ALERTE
   },
   {
-    id: '3', numero: 'LOT-2026-003', sku: 'AC-ETI-003', designation: 'Étiquettes anciennes',
+    id: '3', numero: 'AC-20260515-03', sku: 'AC-ETI-003', designation: 'Étiquettes anciennes',
     type: 'AC', quantite: 3500, unite: 'Unité', pmp: 12, valeur: 42000,
     bcBa: 'BC-2026-005', reception: 'REC-2026-005', dateEntree: '2025-11-23',
     dlc: '2026-05-17', origine: 'Formel', statutQC: 'Bloque', etat: 'Obsolete',
     seuilAlertePeremption: 14,   // expiré → CRITIQUE
   },
   {
-    id: '4', numero: 'LOT-2026-004', sku: 'PF-PAI-004', designation: 'Pain de mie',
+    id: '4', numero: 'PF-20260518-04', sku: 'PF-PAI-004', designation: 'Pain de mie',
     type: 'PF', quantite: 120, unite: 'Kg', pmp: 700, valeur: 84000,
     bcBa: 'BC-2026-038', reception: 'REC-2026-038', dateEntree: '2026-05-05',
     dlc: '2026-05-28', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
     seuilAlertePeremption: 7,    // 3 jours restants → ALERTE
   },
   {
-    id: '5', numero: 'LOT-2026-005', sku: 'PF-JUS-005', designation: 'Jus de bissap bouteille 1L',
+    id: '5', numero: 'PF-20260521-05', sku: 'PF-JUS-005', designation: 'Jus de bissap bouteille 1L',
     type: 'PF', quantite: 250, unite: 'Unité', pmp: 292, valeur: 73000,
     bcBa: 'BC-2026-033', reception: 'REC-2026-033', dateEntree: '2026-04-18',
     dlc: '2026-10-18', origine: 'Formel', statutQC: 'EnControle', etat: 'Disponible',
@@ -208,19 +208,19 @@ export const MOCK_INVENTORY_ITEMS: InventoryDocumentItem[] = [
   {
     id: 'ii-01', inventoryDocumentId: 'inv-002',
     articleId: 'a-1', articleCode: 'MP-FAR-001', articleDesignation: 'Farine de blé T55',
-    unite: 'Kg', batchNumber: 'LOT-2026-001',
+    unite: 'Kg', batchNumber: 'MP-20260510-01',
     bookQuantity: 480, countedQuantity: 472, differenceQuantity: -8,
   },
   {
     id: 'ii-02', inventoryDocumentId: 'inv-002',
     articleId: 'a-2', articleCode: 'MP-ARA-002', articleDesignation: 'Arachides brutes',
-    unite: 'Kg', batchNumber: 'LOT-2026-002',
+    unite: 'Kg', batchNumber: 'MP-20260512-02',
     bookQuantity: 180, countedQuantity: 180, differenceQuantity: 0,
   },
   {
     id: 'ii-03', inventoryDocumentId: 'inv-002',
     articleId: 'a-5', articleCode: 'PF-JUS-005', articleDesignation: 'Jus de bissap 1L',
-    unite: 'Unité', batchNumber: 'LOT-2026-005',
+    unite: 'Unité', batchNumber: 'PF-20260521-05',
     bookQuantity: 250, countedQuantity: 263, differenceQuantity: 13,
   },
   // INV-2026-0001 (POSTED) — écarts déjà imputés
@@ -233,7 +233,7 @@ export const MOCK_INVENTORY_ITEMS: InventoryDocumentItem[] = [
   {
     id: 'ii-05', inventoryDocumentId: 'inv-003',
     articleId: 'a-4', articleCode: 'PF-PAI-004', articleDesignation: 'Pain de mie',
-    unite: 'Kg', batchNumber: 'LOT-2026-004',
+    unite: 'Kg', batchNumber: 'PF-20260518-04',
     bookQuantity: 120, countedQuantity: 120, differenceQuantity: 0,
   },
 ]
@@ -246,21 +246,21 @@ export const MOCK_STOCK_MOVEMENTS: StockMovement[] = [
     articleId: 'a-1', articleCode: 'MP-FAR-001', articleDesignation: 'Farine de blé T55',
     unite: 'Kg', movementType: 'ENTRY_PO', quantity: 500,
     sourceDocumentType: 'PURCHASE_ORDER', sourceDocumentId: 'po-040',
-    batchNumber: 'LOT-2026-001', createdBy: 'user-1', createdAt: '2026-05-10T09:15:00Z',
+    batchNumber: 'MP-20260510-01', createdBy: 'user-1', createdAt: '2026-05-10T09:15:00Z',
   },
   {
     id: 'sm-002', organizationId: 'org-1', factoryId: 'fac-1',
     articleId: 'a-1', articleCode: 'MP-FAR-001', articleDesignation: 'Farine de blé T55',
     unite: 'Kg', movementType: 'CONSO_OF', quantity: 20,
     sourceDocumentType: 'PRODUCTION_ORDER', sourceDocumentId: 'of-041',
-    batchNumber: 'LOT-2026-001', createdBy: 'user-2', createdAt: '2026-05-15T11:00:00Z',
+    batchNumber: 'MP-20260510-01', createdBy: 'user-2', createdAt: '2026-05-15T11:00:00Z',
   },
   {
     id: 'sm-003', organizationId: 'org-1', factoryId: 'fac-1',
     articleId: 'a-5', articleCode: 'PF-JUS-005', articleDesignation: 'Jus de bissap 1L',
     unite: 'Unité', movementType: 'ENTRY_OF', quantity: 250,
     sourceDocumentType: 'PRODUCTION_ORDER', sourceDocumentId: 'of-045',
-    batchNumber: 'LOT-2026-005', createdBy: 'user-2', createdAt: '2026-05-21T15:30:00Z',
+    batchNumber: 'PF-20260521-05', createdBy: 'user-2', createdAt: '2026-05-21T15:30:00Z',
   },
   {
     id: 'sm-004', organizationId: 'org-1', factoryId: 'fac-1',

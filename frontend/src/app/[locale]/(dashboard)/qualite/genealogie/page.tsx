@@ -109,17 +109,17 @@ function downloadDossierPDF(result: SearchResult) {
 }
 
 const EXAMPLES = [
-  { label: 'Lot PF', code: 'LOT-PF-2025-0041' },
-  { label: 'Lot PF (Vanille)', code: 'LOT-PF-2025-0042' },
-  { label: 'Lot MP (Hibiscus)', code: 'LOT-MP-2025-0031' },
-  { label: 'Lot AC (Bouteilles)', code: 'LOT-AC-2025-0018' },
+  { label: 'Lot PF', code: 'PF-20250601-41' },
+  { label: 'Lot PF (Vanille)', code: 'PF-20250601-42' },
+  { label: 'Lot MP (Hibiscus)', code: 'MP-20250522-31' },
+  { label: 'Lot AC (Bouteilles)', code: 'AC-20250523-18' },
 ]
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function GenealogiePage() {
-  const [query, setQuery] = useState('LOT-PF-2025-0041')
-  const [result, setResult] = useState<SearchResult | null>(() => doSearch('LOT-PF-2025-0041'))
+  const [query, setQuery] = useState('PF-20250601-41')
+  const [result, setResult] = useState<SearchResult | null>(() => doSearch('PF-20250601-41'))
 
   function handleSearch() {
     setResult(doSearch(query))
@@ -157,7 +157,7 @@ export default function GenealogiePage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Ex : LOT-PF-2025-0041 ou LOT-MP-2025-0031"
+            placeholder="Ex : PF-20250601-41 ou MP-20250522-31"
             className="flex-1 h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <Button onClick={handleSearch} className="gap-2 shrink-0">

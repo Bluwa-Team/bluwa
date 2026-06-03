@@ -120,6 +120,7 @@ export interface ProductionOrderForDeclaration {
   articleLabel:         string
   articleSku:           string
   articleUnit:          string
+  articleType:          string   // 'PF' | 'PSF' — pour générer le numéro de lot
   articleShelfLifeDays: number | null   // pour auto-calculer la DLC
   quantityTarget:       number
   quantityProduced:     number
@@ -132,7 +133,7 @@ export async function getProductionOrdersForDeclaration(): Promise<ProductionOrd
     const { data, error } = await supabase
       .from('production_orders')
       .select(
-        'id, order_number, article_id, quantity_target, quantity_produced, status, articles!article_id(code, designation, unite_stock, duree_vie)',
+        'id, order_number, article_id, quantity_target, quantity_produced, status, articles!article_id(code, designation, unite_stock, duree_vie, type)',
       )
       .eq('organization_id', orgId)
       .in('status', ['RELEASED', 'IN_PROGRESS'])
@@ -146,6 +147,7 @@ export async function getProductionOrdersForDeclaration(): Promise<ProductionOrd
         designation: string
         unite_stock: string
         duree_vie: number | null
+        type: string
       } | null
       return {
         id:                   row.id as string,
@@ -154,6 +156,7 @@ export async function getProductionOrdersForDeclaration(): Promise<ProductionOrd
         articleLabel:         art?.designation    ?? '',
         articleSku:           art?.code           ?? '',
         articleUnit:          art?.unite_stock    ?? '',
+        articleType:          art?.type           ?? 'PF',
         articleShelfLifeDays: art?.duree_vie      ?? null,
         quantityTarget:       parseFloat(String(row.quantity_target   ?? 0)),
         quantityProduced:     parseFloat(String(row.quantity_produced ?? 0)),

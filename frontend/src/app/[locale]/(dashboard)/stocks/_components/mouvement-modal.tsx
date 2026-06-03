@@ -156,7 +156,7 @@ export function MouvementModal({ open, onClose, onSave, articles }: Props) {
                 </Field>
 
                 <Field label={t('movements.fields.lot')} required>
-                  <Input value={form.lot} onChange={(e) => set('lot', e.target.value)} placeholder="Ex: LOT-2026-0055" />
+                  <Input value={form.lot} onChange={(e) => set('lot', e.target.value)} placeholder="Ex: MP-20260603-01" />
                 </Field>
 
                 <Field label={form.type === 'Ajustement' ? t('movements.fields.quantityAdjust') : t('movements.fields.quantity')} required>
