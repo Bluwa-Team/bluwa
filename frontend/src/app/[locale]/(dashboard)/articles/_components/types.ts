@@ -16,6 +16,7 @@ export interface Article {
   dernierPrixAchat: number | null
   prixVente: number | null
   pmp: number | null
+  devise: string
   poidsUnitaire: number | null
   poidsUnite: string
   volumeUnitaire: number | null

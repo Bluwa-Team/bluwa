@@ -16,6 +16,7 @@ import {
 import {
   getReferentielValues, addReferentielValue, type ReferentielValue,
 } from '@/lib/actions/referentiel'
+import { DEVISES } from '@/config'
 
 interface Props {
   open: boolean
@@ -48,6 +49,7 @@ const EMPTY_FORM = {
   uniteStock: '',
   uniteVente: '',
   coeffConversion: 1,
+  devise: 'XOF',
   dernierPrixAchat: '',
   prixVente: '',
   poidsUnitaire: '',
@@ -137,6 +139,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         uniteStock: article.uniteStock,
         uniteVente: article.uniteVente,
         coeffConversion: article.coeffConversion,
+        devise: article.devise ?? 'XOF',
         dernierPrixAchat: article.dernierPrixAchat?.toString() ?? '',
         prixVente: article.prixVente?.toString() ?? '',
         poidsUnitaire: article.poidsUnitaire?.toString() ?? '',
@@ -371,9 +374,18 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                 <div>
                   <div className="flex items-baseline justify-between mb-3">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valorisation</h3>
-                    <span className="text-xs text-muted-foreground">Prix en FCFA</span>
                   </div>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                    <Field label="Devise">
+                      <Select value={form.devise} onValueChange={(v) => set('devise', v ?? 'XOF')}>
+                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {DEVISES.map((d) => (
+                            <SelectItem key={d.code} value={d.code}>{d.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
                     <Field label={t('modal.fields.lastPurchasePrice')}>
                       <Input
                         type="number"
