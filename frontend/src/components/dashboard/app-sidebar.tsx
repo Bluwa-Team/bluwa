@@ -29,6 +29,7 @@ import {
   LineChart,
   Users2,
   Layers,
+  ShieldCheck,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
@@ -164,6 +165,7 @@ export function AppSidebar({ orgName }: { orgName: string }) {
       label: t('qualite'),
       items: [
         { title: t('liberationLots'),   url: '/qualite',                 icon: FlaskConical,  disabled: false },
+        { title: t('planHaccp'),        url: '/qualite/haccp',           icon: ShieldCheck,   disabled: false },
         { title: t('nonConformitesQA'), url: '/qualite/non-conformites', icon: AlertTriangle, disabled: false },
         { title: t('genealogie'),       url: '/qualite/genealogie',      icon: GitBranch,     disabled: false },
         { title: t('gedQualite'),       url: '/qualite/ged',             icon: FileText,      disabled: false },

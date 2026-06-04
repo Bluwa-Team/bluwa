@@ -84,8 +84,8 @@ export const MOCK_BL: BonLivraison[] = [
 ]
 
 export const MOCK_BL_ITEMS: BonLivraisonItem[] = [
-  { id: 'bli1', blId: 'bl1', salesOrderItemId: 'ci3', articleId: 'a2', article: 'Bissap Pourpre Vanille 1L',   itemPosition: 1, quantiteCommandee: 300,  quantiteLivree: 300,  unite: 'btl', lot: 'LOT-BIS-001' },
-  { id: 'bli2', blId: 'bl2', salesOrderItemId: 'ci4', articleId: 'a1', article: 'Bissap Pourpre Original 1L',  itemPosition: 1, quantiteCommandee: 1200, quantiteLivree: 1200, unite: 'btl', lot: 'LOT-BIS-002' },
-  { id: 'bli3', blId: 'bl3', salesOrderItemId: 'ci5', articleId: 'a1', article: 'Bissap Pourpre Original 1L',  itemPosition: 1, quantiteCommandee: 2000, quantiteLivree: 2000, unite: 'btl', lot: 'LOT-BIS-003' },
-  { id: 'bli4', blId: 'bl3', salesOrderItemId: 'ci6', articleId: 'a2', article: 'Bissap Pourpre Vanille 1L',   itemPosition: 2, quantiteCommandee: 1000, quantiteLivree: 1000, unite: 'btl', lot: 'LOT-BIS-003' },
+  { id: 'bli1', blId: 'bl1', salesOrderItemId: 'ci3', articleId: 'a2', article: 'Bissap Pourpre Vanille 1L',   itemPosition: 1, quantiteCommandee: 300,  quantiteLivree: 300,  unite: 'btl', lot: 'PF-20260520-0001' },
+  { id: 'bli2', blId: 'bl2', salesOrderItemId: 'ci4', articleId: 'a1', article: 'Bissap Pourpre Original 1L',  itemPosition: 1, quantiteCommandee: 1200, quantiteLivree: 1200, unite: 'btl', lot: 'PF-20260521-0002' },
+  { id: 'bli3', blId: 'bl3', salesOrderItemId: 'ci5', articleId: 'a1', article: 'Bissap Pourpre Original 1L',  itemPosition: 1, quantiteCommandee: 2000, quantiteLivree: 2000, unite: 'btl', lot: 'PF-20260522-0003' },
+  { id: 'bli4', blId: 'bl3', salesOrderItemId: 'ci6', articleId: 'a2', article: 'Bissap Pourpre Vanille 1L',   itemPosition: 2, quantiteCommandee: 1000, quantiteLivree: 1000, unite: 'btl', lot: 'PF-20260522-0003' },
 ]

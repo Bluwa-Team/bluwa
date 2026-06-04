@@ -83,9 +83,10 @@ function fmtDurationH(hours: number): string {
 }
 
 function generateLotNumber(of: OrdreFabrication): string {
-  const seq = of.numero.split('-').pop() ?? '000'
-  const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-  return `LOT-PF-2026-${seq}-${today}`
+  const seq   = parseInt(of.numero.split('-').pop() ?? '1', 10)
+  const today = new Date()
+  const d     = today.toISOString().slice(0, 10).replace(/-/g, '')
+  return `PF-${d}-${String(seq).padStart(4, '0')}`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────

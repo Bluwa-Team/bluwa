@@ -23,9 +23,9 @@ function todayIso() {
   return new Date().toISOString().split('T')[0]
 }
 
-function suggestBatchNumber() {
+function suggestBatchNumber(articleType = 'PF') {
   const d = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  return `LOT-FIN-${d}-01`
+  return `${articleType}-${d}-0001`
 }
 
 function calcDlc(shelfLifeDays: number | null): string {
@@ -60,12 +60,13 @@ export function DeclareOutputModal({ onClose, onSave }: Props) {
     })
   }, [])
 
-  // Quand un OF est sélectionné → auto-fill DLC
+  // Quand un OF est sélectionné → auto-fill lot + DLC
   function handleSelectOf(id: string) {
     setOfId(id)
     const of = ofs.find((o) => o.id === id) ?? null
     setSelectedOf(of)
     if (of) {
+      setBatchNumber(suggestBatchNumber(of.articleType))
       setExpiryDate(calcDlc(of.articleShelfLifeDays))
     }
   }
@@ -268,7 +269,7 @@ export function DeclareOutputModal({ onClose, onSave }: Props) {
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
                   required
-                  placeholder="LOT-FIN-…"
+                  placeholder="PF-AAAAMMJJ-0001"
                   className="w-full h-9 px-3 text-sm rounded-lg border bg-background font-mono focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>

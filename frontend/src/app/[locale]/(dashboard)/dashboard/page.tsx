@@ -78,7 +78,7 @@ type AlertePrio = {
 
 const ALERTES_PRIORITAIRES: AlertePrio[] = [
   { id: 'a1', niveau: 'rouge', titre: 'Gousses de vanille : 3 kg restants',   detail: 'Sous stock de sécurité · OF Vanille à risque sous 5j', lien: '/stocks'            },
-  { id: 'a2', niveau: 'jaune', titre: 'Lot LOT-PFORI-039 · DLC dans 8j',      detail: '142 bouteilles · à prioriser sur ventes Dakar',        lien: '/stocks'            },
+  { id: 'a2', niveau: 'jaune', titre: 'Lot PF-20260524-0039 · DLC dans 8j',      detail: '142 bouteilles · à prioriser sur ventes Dakar',        lien: '/stocks'            },
   { id: 'a3', niveau: 'bleu',  titre: 'MRP : 4 composants à commander',       detail: 'Calcul à partir des OF planifiés · Voir suggestions',   lien: '/approvisionnement' },
   { id: 'a4', niveau: 'vert',  titre: 'Bouteilles 1L · réception confirmée',  detail: '2 400 u reçues · Verrerie Dakar · Lot OK',              lien: '/reception'         },
 ]

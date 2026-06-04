@@ -86,7 +86,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     description: 'Enregistrement des livraisons fournisseurs : saisie des quantités, numéros de lot, DLC, et déclenchement du contrôle qualité.',
     tips: [
       'Sélectionnez le BC/BA correspondant pour pré-remplir l\'article et la quantité attendue.',
-      'Le numéro de lot interne est généré automatiquement (ex. LOT-MP-2026-0031).',
+      'Le numéro de lot interne est généré automatiquement (ex. MP-20260522-0031).',
       'La DLC est calculée automatiquement si la durée de vie est renseignée sur l\'article.',
       'Chaque réception crée automatiquement un lot en "En contrôle" dans le module Qualité.',
       'Utilisez le bouton Étiquettes pour imprimer les étiquettes de traçabilité par contenant.',

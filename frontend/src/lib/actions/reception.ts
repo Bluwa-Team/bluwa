@@ -1,6 +1,7 @@
 'use server'
 
 import { getSupabaseWithOrg } from './helpers'
+import { generateBatchNumber } from '@/lib/batch-number'
 import type {
   ReceptionHeader, ReceptionItem,
   StatutReception, QualiteStatut, TypeFournisseur,
@@ -153,7 +154,7 @@ export async function createGoodsReceipt(
     if (newItems.length > 0 && purchaseOrderId) {
       const { data: poItems } = await supabase
         .from('purchase_order_items')
-        .select('id, article_label, article_id, shelf_life_days')
+        .select('id, article_label, article_id, shelf_life_days, articles!article_id(type)')
         .eq('purchase_order_id', purchaseOrderId)
 
       for (let idx = 0; idx < newItems.length; idx++) {
@@ -178,13 +179,10 @@ export async function createGoodsReceipt(
               })()
             : null)
 
-        // Numéro de lot interne
-        const abbr = item.article
-          .substring(0, 3)
-          .toUpperCase()
-          .replace(/[^A-Z]/g, '')
-        const seqPad = receiptNumber.split('-').pop() ?? String(idx + 1).padStart(4, '0')
-        const batchNumber = `LOT-${abbr}-${seqPad}${idx > 0 ? `-${idx + 1}` : ''}`
+        // Numéro de lot interne — format {TYPE}-{AAAAMMJJ}-{NNNN}
+        const articleType = ((poItem as any).articles as { type: string } | null)?.type ?? 'MP'
+        const seqBase     = parseInt(receiptNumber.split('-').pop() ?? '1', 10)
+        const batchNumber = generateBatchNumber(articleType, new Date(headerData.date), seqBase + idx)
 
         await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,

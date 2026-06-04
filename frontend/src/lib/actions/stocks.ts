@@ -171,7 +171,7 @@ export async function getLotStocks(): Promise<LotStock[]> {
 
       return {
         id:                    row.id as string,
-        numero:                (row.batch_number as string) || `LOT-${(row.id as string).substring(0, 8)}`,
+        numero:                (row.batch_number as string) || `XX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}−${(row.id as string).substring(0, 4)}`,
         sku:                   art?.code ?? '',
         designation:           art?.designation ?? '',
         type:                  (art?.type ?? 'MP') as ArticleType,

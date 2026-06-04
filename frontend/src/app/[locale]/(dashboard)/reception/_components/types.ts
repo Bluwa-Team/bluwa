@@ -160,9 +160,9 @@ export const MOCK_RECEPTION_HEADERS: ReceptionHeader[] = [
 ]
 
 export const MOCK_RECEPTION_ITEMS: ReceptionItem[] = [
-  { id: 'ri1', headerId: 'rh1', article: 'Gingembre frais',     quantite: 30,   unite: 'kg',    lot: 'LOT-GIN-001', lotFourn: 'MP-GIN-2604', dlc: '2026-05-15', humidite: null, codeBarres: null,           statutLot: 'EnControle' },
-  { id: 'ri2', headerId: 'rh2', article: 'Sucre cristallisé',    quantite: 500,  unite: 'kg',    lot: 'LOT-SUC-002', lotFourn: 'SN-A23-08',   dlc: '2027-05-09', humidite: null, codeBarres: null,           statutLot: 'EnControle' },
-  { id: 'ri3', headerId: 'rh3', article: 'Bouteilles verre 1L',  quantite: 1200, unite: 'Unité', lot: 'LOT-VER-003', lotFourn: 'VDO-260508',  dlc: null,         humidite: null, codeBarres: '8901234567890', statutLot: 'Bloque'     },
+  { id: 'ri1', headerId: 'rh1', article: 'Gingembre frais',     quantite: 30,   unite: 'kg',    lot: 'MP-20260515-0001', lotFourn: 'MP-GIN-2604', dlc: '2026-05-15', humidite: null, codeBarres: null,           statutLot: 'EnControle' },
+  { id: 'ri2', headerId: 'rh2', article: 'Sucre cristallisé',    quantite: 500,  unite: 'kg',    lot: 'MP-20260509-0002', lotFourn: 'SN-A23-08',   dlc: '2027-05-09', humidite: null, codeBarres: null,           statutLot: 'EnControle' },
+  { id: 'ri3', headerId: 'rh3', article: 'Bouteilles verre 1L',  quantite: 1200, unite: 'Unité', lot: 'AC-20260508-0003', lotFourn: 'VDO-260508',  dlc: null,         humidite: null, codeBarres: '8901234567890', statutLot: 'Bloque'     },
   { id: 'ri4', headerId: 'rh4', article: 'Sucre cristallisé',    quantite: 500,  unite: 'kg',    lot: null,          lotFourn: null,          dlc: null,         humidite: null, codeBarres: null,           statutLot: null         },
 ]
 
