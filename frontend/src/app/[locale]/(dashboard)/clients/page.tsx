@@ -149,7 +149,7 @@ export default function ClientsPage() {
         email:             row.email             || '',
         paiementMobile:    row.paiementMobile === 'true',
         grilleTarifaire:   [],
-      } as Client & { code: string })
+      } as Partial<Client> & { code: string })
       if (result) created++; else errors++
     }
 

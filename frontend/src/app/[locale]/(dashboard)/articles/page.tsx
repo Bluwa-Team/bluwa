@@ -25,7 +25,7 @@ import {
 } from './_components/types'
 import { getArticles, createArticle, updateArticle } from '@/lib/actions/articles'
 import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
-import type { ArticleType, ArticleAppro, ArticleStatut } from './_components/types'
+import type { ArticleAppro } from './_components/types'
 
 const TYPES: Array<'TOUS' | ArticleType> = ['TOUS', 'MP', 'PSF', 'PF', 'AC', 'CS']
 const STATUTS: Array<'Tous' | ArticleStatut> = ['Tous', 'Actif', 'Bloque', 'EnCreation']
