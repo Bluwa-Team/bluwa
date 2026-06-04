@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react'
 import {
   FlaskConical, CheckCircle2, XCircle, Clock, ShieldCheck,
-  Search, X, Loader2, Shield,
+  Search, X, Loader2, Shield, Microscope, Magnet,
+  ThermometerSun, AlertTriangle, ShoppingBag,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,54 +16,56 @@ import {
 } from '@/hooks/use-resizable-columns'
 import { DragDrop } from './_components/drag-drop'
 import {
-  QualityInspectionLot, LaboratoryResults,
+  QualityInspectionLot, LaboratoryResults, ResultatsMicrobiologiques,
   MOCK_QUALITY_INSPECTION_LOTS,
   STATUT_INSPECTION_LABELS, STATUT_INSPECTION_COLORS,
+  TYPE_ANALYSE_LABELS, TYPE_ANALYSE_COLORS,
+  MICROBIO_LABELS, MICROBIO_COLORS,
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
-  StatutInspectionLot, FluxLot,
+  StatutInspectionLot, FluxLot, TypeAnalyse,
 } from './_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const ANALYSTES = ['Fatou Diallo', 'Moussa Koné', 'Aminata Sow', 'Ousmane Ba', 'Ibrahim Diop']
-
-const EMPTY_ANALYSE = {
-  humidity_pct: '',
-  ph: '',
-  brix_degree: '',
-  temperature_c: '',
-  analyste: ANALYSTES[0],
-  commentaire: '',
-}
 
 const LOT_COLUMNS: ResizableColumn[] = [
   { id: 'codeLot',  defaultWidth: 175, minWidth: 140 },
   { id: 'flux',     defaultWidth: 110, minWidth: 90  },
   { id: 'type',     defaultWidth: 72,  minWidth: 55  },
-  { id: 'article',  defaultWidth: 200, minWidth: 150 },
-  { id: 'origine',  defaultWidth: 150, minWidth: 110 },
-  { id: 'date',     defaultWidth: 105, minWidth: 85  },
-  { id: 'quantite', defaultWidth: 90,  minWidth: 70  },
-  { id: 'statut',   defaultWidth: 130, minWidth: 110 },
+  { id: 'article',  defaultWidth: 190, minWidth: 140 },
+  { id: 'origine',  defaultWidth: 140, minWidth: 100 },
+  { id: 'tests',    defaultWidth: 200, minWidth: 160 },
+  { id: 'statut',   defaultWidth: 150, minWidth: 120 },
   { id: 'action',   defaultWidth: 95,  minWidth: 75  },
 ]
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string) {
-  return iso.split('T')[0]
+const TYPE_ANALYSE_ICONS: Record<TypeAnalyse, React.ElementType> = {
+  PHYSIQUE:         Magnet,
+  PHYSICO_CHIMIQUE: ThermometerSun,
+  CHIMIQUE:         FlaskConical,
+  MICROBIOLOGIQUE:  Microscope,
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+function Field({ label, required, children }: {
+  label: string; required?: boolean; children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+        {label}{required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
+      {children}
+    </div>
+  )
+}
 
 function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
-  label: string
-  value: string | number
-  icon: React.ElementType
-  bgClass: string
-  iconBg: string
-  iconColor: string
+  label: string; value: string | number
+  icon: React.ElementType; bgClass: string; iconBg: string; iconColor: string
 }) {
   return (
     <div className={`rounded-xl p-4 flex items-start gap-3 ${bgClass}`}>
@@ -77,46 +80,37 @@ function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
   )
 }
 
-function Field({ label, required, children }: {
-  label: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-      {children}
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CentreLiberationPage() {
-  const [lots, setLots] = useState<QualityInspectionLot[]>(MOCK_QUALITY_INSPECTION_LOTS)
-  const [search, setSearch] = useState('')
+  const [lots, setLots]               = useState<QualityInspectionLot[]>(MOCK_QUALITY_INSPECTION_LOTS)
+  const [search, setSearch]           = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutInspectionLot | 'Tous'>('Tous')
-  const [fluxFilter, setFluxFilter] = useState<FluxLot | 'Tous'>('Tous')
-  const [modalLotId, setModalLotId] = useState<string | null>(null)
-  const [analyse, setAnalyse] = useState(EMPTY_ANALYSE)
-  const [caFile, setCaFile] = useState<File | null>(null)
-  const [savingDecision, setSavingDecision] = useState<'Libere' | 'NonConforme' | null>(null)
+  const [fluxFilter, setFluxFilter]   = useState<FluxLot | 'Tous'>('Tous')
+  const [modalLotId, setModalLotId]   = useState<string | null>(null)
+  const [caFile, setCaFile]           = useState<File | null>(null)
+  const [savingDecision, setSavingDecision] = useState<'usage_interne' | 'marche' | 'rejeter' | null>(null)
+
+  // Formulaire d'analyse
+  const [physique, setPhysique]       = useState({ corps_etrangers: '', aspect: '' })
+  const [physicochem, setPhysicochem] = useState({ ph: '', brix: '', humidite: '', temperature: '' })
+  const [microbioForm, setMicrobioForm] = useState({
+    salmonella: '', listeria: '', ecoli: '', levures: '', flore_totale: '',
+    laboratoire: '', delaiJours: '5',
+  })
+  const [analyste, setAnalyste]       = useState(ANALYSTES[0])
+  const [commentaire, setCommentaire] = useState('')
 
   const { widths, startResize } = useResizableColumns('bluwa:cols:qualite-lots', LOT_COLUMNS)
-  const tableMinWidth = LOT_COLUMNS.reduce(
-    (sum, c) => sum + (widths[c.id] ?? c.defaultWidth ?? 0),
-    0,
-  )
+  const tableMinWidth = LOT_COLUMNS.reduce((s, c) => s + (widths[c.id] ?? c.defaultWidth ?? 0), 0)
 
   const stats = useMemo(() => {
-    const enControle   = lots.filter(l => l.status === 'En contrôle').length
-    const liberes      = lots.filter(l => l.status === 'Libéré').length
-    const nonConformes = lots.filter(l => l.status === 'Rejeté').length
-    const decided = liberes + nonConformes
-    return { enControle, liberes, nonConformes, taux: decided > 0 ? Math.round((liberes / decided) * 100) : 100 }
+    const enControle    = lots.filter(l => l.status === 'En contrôle').length
+    const usageInterne  = lots.filter(l => l.status === 'Libéré — Usage interne').length
+    const marche        = lots.filter(l => l.status === 'Libéré — Marché').length
+    const rejetes       = lots.filter(l => l.status === 'Rejeté').length
+    const decided = marche + rejetes
+    return { enControle, usageInterne, marche, rejetes, taux: decided > 0 ? Math.round((marche / decided) * 100) : 100 }
   }, [lots])
 
   const filtered = useMemo(() => {
@@ -137,37 +131,51 @@ export default function CentreLiberationPage() {
 
   function openAnalyse(id: string) {
     setModalLotId(id)
-    setAnalyse(EMPTY_ANALYSE)
+    setPhysique({ corps_etrangers: '', aspect: '' })
+    setPhysicochem({ ph: '', brix: '', humidite: '', temperature: '' })
+    setMicrobioForm({ salmonella:'', listeria:'', ecoli:'', levures:'', flore_totale:'', laboratoire:'', delaiJours:'5' })
+    setAnalyste(ANALYSTES[0])
+    setCommentaire('')
     setCaFile(null)
   }
 
-  const hasLabValue = !!(
-    analyse.humidity_pct.trim() ||
-    analyse.ph.trim() ||
-    analyse.brix_degree.trim() ||
-    analyse.temperature_c.trim()
-  )
-  const isAnalyseValid = hasLabValue && !!analyse.analyste
+  const hasPhysicochem = Object.values(physicochem).some(v => v.trim())
+  const isValid = hasPhysicochem && analyste
 
-  async function handleDecision(decision: 'Libere' | 'NonConforme') {
+  async function handleDecision(decision: 'usage_interne' | 'marche' | 'rejeter') {
     if (!modalLot) return
     setSavingDecision(decision)
     await new Promise(r => setTimeout(r, 700))
 
-    const newStatus: StatutInspectionLot = decision === 'Libere' ? 'Libéré' : 'Rejeté'
     const labResults: LaboratoryResults = {}
-    if (analyse.humidity_pct)  labResults.humidity_pct  = parseFloat(analyse.humidity_pct)
-    if (analyse.ph)             labResults.ph            = parseFloat(analyse.ph)
-    if (analyse.brix_degree)    labResults.brix_degree   = parseFloat(analyse.brix_degree)
-    if (analyse.temperature_c)  labResults.temperature_c = parseFloat(analyse.temperature_c)
-    const hasLab = Object.keys(labResults).length > 0
+    if (physicochem.ph)          labResults.ph            = parseFloat(physicochem.ph)
+    if (physicochem.brix)        labResults.brix_degree   = parseFloat(physicochem.brix)
+    if (physicochem.humidite)    labResults.humidity_pct  = parseFloat(physicochem.humidite)
+    if (physicochem.temperature) labResults.temperature_c = parseFloat(physicochem.temperature)
+
+    const newStatus: StatutInspectionLot =
+      decision === 'rejeter'       ? 'Rejeté' :
+      decision === 'usage_interne' ? 'Libéré — Usage interne' :
+                                     'Libéré — Marché'
+
+    const microbioResultats: ResultatsMicrobiologiques | null =
+      decision === 'marche' ? {
+        salmonella:   microbioForm.salmonella as 'absent' | 'présent' || undefined,
+        listeria:     microbioForm.listeria as 'absent' | 'présent' || undefined,
+        ecoli:        microbioForm.ecoli ? parseFloat(microbioForm.ecoli) : undefined,
+        levures:      microbioForm.levures ? parseFloat(microbioForm.levures) : undefined,
+        flore_totale: microbioForm.flore_totale ? parseFloat(microbioForm.flore_totale) : undefined,
+        laboratoire:  microbioForm.laboratoire || undefined,
+      } : null
 
     setLots(prev => prev.map(l => l.id === modalLot.id ? {
       ...l,
       status:            newStatus,
-      laboratoryResults: hasLab ? labResults : null,
-      decisionBy:        analyse.analyste,
-      decisionComments:  analyse.commentaire || null,
+      laboratoryResults: Object.keys(labResults).length ? labResults : l.laboratoryResults,
+      microbioStatus:    decision === 'marche' ? 'CONFORME' : l.microbioStatus,
+      microbioResultats: microbioResultats ?? l.microbioResultats,
+      decisionBy:        analyste,
+      decisionComments:  commentaire || null,
       decisionAt:        new Date().toISOString(),
     } : l))
 
@@ -176,9 +184,8 @@ export default function CentreLiberationPage() {
   }
 
   const STATUT_FILTER_OPTIONS: Array<StatutInspectionLot | 'Tous'> = [
-    'Tous', 'En contrôle', 'Libéré', 'Rejeté',
+    'Tous', 'En contrôle', 'Libéré — Usage interne', 'Libéré — Marché', 'Rejeté',
   ]
-  const FLUX_FILTER_OPTIONS: Array<FluxLot | 'Tous'> = ['Tous', 'Reception', 'Production']
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -194,45 +201,29 @@ export default function CentreLiberationPage() {
             <HelpPopover section="qualite" />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Validation et libération des lots en quarantaine
+            Validation multi-tests · Libération usage interne et mise sur marché
           </p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard
-          label="En contrôle"
-          value={stats.enControle}
-          icon={Clock}
-          bgClass="bg-amber-50"
-          iconBg="bg-amber-100"
-          iconColor="text-amber-600"
-        />
-        <StatCard
-          label="Libérés"
-          value={stats.liberes}
-          icon={CheckCircle2}
-          bgClass="bg-emerald-50"
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
-        />
-        <StatCard
-          label="Rejetés"
-          value={stats.nonConformes}
-          icon={XCircle}
-          bgClass="bg-red-50"
-          iconBg="bg-red-100"
-          iconColor="text-red-600"
-        />
-        <StatCard
-          label="Taux conformité"
-          value={`${stats.taux}%`}
-          icon={ShieldCheck}
-          bgClass="bg-blue-50"
-          iconBg="bg-blue-100"
-          iconColor="text-blue-600"
-        />
+        <StatCard label="En contrôle"      value={stats.enControle}   icon={Clock}       bgClass="bg-amber-50"   iconBg="bg-amber-100"   iconColor="text-amber-600" />
+        <StatCard label="Usage interne"    value={stats.usageInterne} icon={Shield}      bgClass="bg-blue-50"    iconBg="bg-blue-100"    iconColor="text-blue-600" />
+        <StatCard label="Libérés — Marché" value={stats.marche}       icon={ShoppingBag} bgClass="bg-emerald-50" iconBg="bg-emerald-100" iconColor="text-emerald-600" />
+        <StatCard label="Taux conformité"  value={`${stats.taux}%`}   icon={ShieldCheck} bgClass="bg-violet-50"  iconBg="bg-violet-100"  iconColor="text-violet-600" />
+      </div>
+
+      {/* Légende niveaux */}
+      <div className="rounded-lg border bg-muted/20 px-4 py-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">Usage interne</span>
+          Physico-chimique ✓ · Microbio en attente — utilisable en production, <strong className="text-foreground ml-1">non commercialisable</strong>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">Libéré Marché</span>
+          Tous tests conformes — <strong className="text-foreground ml-1">commercialisable</strong>
+        </span>
       </div>
 
       {/* Filters */}
@@ -247,25 +238,19 @@ export default function CentreLiberationPage() {
             className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
           />
           {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
+            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
               <X className="size-3.5" />
             </button>
           )}
         </div>
 
-        {/* Statut tabs */}
-        <div className="flex items-center rounded-lg border bg-background p-1 gap-0.5">
+        <div className="flex items-center rounded-lg border bg-background p-1 gap-0.5 flex-wrap">
           {STATUT_FILTER_OPTIONS.map(s => (
             <button
               key={s}
               onClick={() => setStatutFilter(s)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                statutFilter === s
-                  ? 'bg-foreground text-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                statutFilter === s ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {s === 'Tous' ? 'Tous' : STATUT_INSPECTION_LABELS[s]}
@@ -273,16 +258,13 @@ export default function CentreLiberationPage() {
           ))}
         </div>
 
-        {/* Flux tabs */}
         <div className="flex items-center rounded-lg border bg-background p-1 gap-0.5">
-          {FLUX_FILTER_OPTIONS.map(f => (
+          {(['Tous', 'Reception', 'Production'] as Array<FluxLot | 'Tous'>).map(f => (
             <button
               key={f}
               onClick={() => setFluxFilter(f)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                fluxFilter === f
-                  ? 'bg-foreground text-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                fluxFilter === f ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {f === 'Tous' ? 'Tous flux' : FLUX_LOT_LABELS[f]}
@@ -303,91 +285,82 @@ export default function CentreLiberationPage() {
           </colgroup>
           <thead>
             <tr className="bg-muted/40 border-b">
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                N° lot
-                <ColumnResizer columnId="codeLot" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Flux
-                <ColumnResizer columnId="flux" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Type
-                <ColumnResizer columnId="type" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Article
-                <ColumnResizer columnId="article" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Origine
-                <ColumnResizer columnId="origine" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Date entrée
-                <ColumnResizer columnId="date" onStart={startResize} />
-              </th>
-              <th className="relative text-right px-4 py-3 text-xs font-semibold tracking-wide">
-                Quantité
-                <ColumnResizer columnId="quantite" onStart={startResize} />
-              </th>
-              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">
-                Statut
-                <ColumnResizer columnId="statut" onStart={startResize} />
-              </th>
-              <th className="relative text-right px-4 py-3 text-xs font-semibold tracking-wide">
-                Action
-                <ColumnResizer columnId="action" onStart={startResize} />
-              </th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">N° lot<ColumnResizer columnId="codeLot" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Flux<ColumnResizer columnId="flux" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Type<ColumnResizer columnId="type" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Article<ColumnResizer columnId="article" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Origine<ColumnResizer columnId="origine" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Tests requis<ColumnResizer columnId="tests" onStart={startResize} /></th>
+              <th className="relative text-left px-4 py-3 text-xs font-semibold tracking-wide">Statut<ColumnResizer columnId="statut" onStart={startResize} /></th>
+              <th className="relative text-right px-4 py-3 text-xs font-semibold tracking-wide">Action<ColumnResizer columnId="action" onStart={startResize} /></th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Aucun lot ne correspond aux filtres.
-                </td>
-              </tr>
+              <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Aucun lot ne correspond aux filtres.</td></tr>
             ) : filtered.map(lot => (
               <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/20">
-                <td className="px-4 py-3 font-mono text-xs font-semibold truncate">
-                  {lot.batchNumber}
-                </td>
+
+                <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{lot.batchNumber}</td>
+
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    lot.flux === 'Reception'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-violet-100 text-violet-700'
+                    lot.flux === 'Reception' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
                   }`}>
                     {FLUX_LOT_LABELS[lot.flux]}
                   </span>
                 </td>
+
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[lot.articleType]}`}>
                     {lot.articleType}
                   </span>
                 </td>
+
                 <td className="px-4 py-3 text-sm truncate">{lot.articleDesignation}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground truncate">{lot.origine}</td>
-                <td className="px-4 py-3 text-sm">{formatDate(lot.createdAt)}</td>
-                <td className="px-4 py-3 text-right text-sm font-medium tabular-nums">
-                  {lot.quantite} {lot.unite}
+
+                {/* Tests requis */}
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1">
+                    {lot.typesAnalyse.map(t => {
+                      const Icon = TYPE_ANALYSE_ICONS[t]
+                      return (
+                        <span key={t} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${TYPE_ANALYSE_COLORS[t]}`}>
+                          <Icon className="size-2.5" />
+                          {t === 'PHYSICO_CHIMIQUE' ? 'P-C' : TYPE_ANALYSE_LABELS[t].slice(0, 5)}
+                        </span>
+                      )
+                    })}
+                    {/* Microbio status si requis */}
+                    {lot.microbioStatus && (
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${MICROBIO_COLORS[lot.microbioStatus]}`}>
+                        <Microscope className="size-2.5" />
+                        {lot.microbioStatus === 'PENDING' ? `⏳ ${lot.microbioDelaiJours}j` : lot.microbioStatus === 'CONFORME' ? '✓' : '✗'}
+                      </span>
+                    )}
+                  </div>
                 </td>
+
+                {/* Statut */}
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_INSPECTION_COLORS[lot.status]}`}>
                     {STATUT_INSPECTION_LABELS[lot.status]}
                   </span>
                 </td>
+
+                {/* Action */}
                 <td className="px-4 py-3 text-right">
                   {lot.status === 'En contrôle' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openAnalyse(lot.id)}
-                      className="h-7 px-2.5 text-xs gap-1.5"
-                    >
+                    <Button size="sm" variant="outline" onClick={() => openAnalyse(lot.id)} className="h-7 px-2.5 text-xs gap-1.5">
                       <FlaskConical className="size-3" />
                       Analyser
+                    </Button>
+                  )}
+                  {lot.status === 'Libéré — Usage interne' && lot.microbioStatus === 'PENDING' && (
+                    <Button size="sm" variant="outline" onClick={() => openAnalyse(lot.id)} className="h-7 px-2.5 text-xs gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50">
+                      <Microscope className="size-3" />
+                      Saisir microbio
                     </Button>
                   )}
                 </td>
@@ -397,7 +370,7 @@ export default function CentreLiberationPage() {
         </table>
       </div>
 
-      {/* Analyse modal */}
+      {/* Modal analyse */}
       <Dialog open={!!modalLotId} onOpenChange={v => !v && !savingDecision && setModalLotId(null)}>
         <DialogPortal>
           <DialogOverlay />
@@ -405,7 +378,7 @@ export default function CentreLiberationPage() {
             data-slot="dialog-content"
             className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
           >
-            <div className="w-[min(580px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
+            <div className="w-[min(620px,92vw)] max-h-[90vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
               {/* Header */}
               <div className="flex items-start justify-between p-5 border-b shrink-0">
@@ -422,144 +395,212 @@ export default function CentreLiberationPage() {
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setModalLotId(null)}
-                  disabled={!!savingDecision}
-                >
+                <Button variant="ghost" size="icon-sm" onClick={() => setModalLotId(null)} disabled={!!savingDecision}>
                   <X className="size-4" />
                 </Button>
               </div>
 
               {/* Body */}
-              <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div className="p-5 space-y-5 overflow-y-auto flex-1">
 
-                {/* Résultats laboratoire */}
-                <div>
-                  <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-3">
-                    Résultats laboratoire
-                    <span className="text-destructive ml-0.5">*</span>
-                    <span className="normal-case font-normal ml-1">(au moins un champ requis)</span>
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <Field label="Humidité (%)">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="100"
-                        value={analyse.humidity_pct}
-                        onChange={e => setAnalyse(p => ({ ...p, humidity_pct: e.target.value }))}
-                        placeholder="ex : 12.5"
-                      />
-                    </Field>
+                {/* Types de tests requis */}
+                {modalLot && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {modalLot.typesAnalyse.map(t => {
+                      const Icon = TYPE_ANALYSE_ICONS[t]
+                      return (
+                        <span key={t} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${TYPE_ANALYSE_COLORS[t]}`}>
+                          <Icon className="size-3" />
+                          {TYPE_ANALYSE_LABELS[t]}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* ── Section 1 : Physico-chimique ──────────────────────────── */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ThermometerSun className="size-4 text-blue-600" />
+                    <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+                      Contrôles physico-chimiques <span className="text-destructive">*</span>
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <Field label="pH">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="14"
-                        value={analyse.ph}
-                        onChange={e => setAnalyse(p => ({ ...p, ph: e.target.value }))}
-                        placeholder="ex : 3.7"
-                      />
+                      <Input type="number" step="0.01" min="0" max="14"
+                        value={physicochem.ph}
+                        onChange={e => setPhysicochem(p => ({ ...p, ph: e.target.value }))}
+                        placeholder="ex : 3.7" />
                     </Field>
                     <Field label="Brix (°Bx)">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={analyse.brix_degree}
-                        onChange={e => setAnalyse(p => ({ ...p, brix_degree: e.target.value }))}
-                        placeholder="ex : 12.2"
-                      />
+                      <Input type="number" step="0.1" min="0"
+                        value={physicochem.brix}
+                        onChange={e => setPhysicochem(p => ({ ...p, brix: e.target.value }))}
+                        placeholder="ex : 12.2" />
+                    </Field>
+                    <Field label="Humidité (%)">
+                      <Input type="number" step="0.1" min="0" max="100"
+                        value={physicochem.humidite}
+                        onChange={e => setPhysicochem(p => ({ ...p, humidite: e.target.value }))}
+                        placeholder="ex : 12.5" />
                     </Field>
                     <Field label="Température (°C)">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={analyse.temperature_c}
-                        onChange={e => setAnalyse(p => ({ ...p, temperature_c: e.target.value }))}
-                        placeholder="ex : 4.0"
-                      />
+                      <Input type="number" step="0.1"
+                        value={physicochem.temperature}
+                        onChange={e => setPhysicochem(p => ({ ...p, temperature: e.target.value }))}
+                        placeholder="ex : 4.0" />
                     </Field>
                   </div>
                 </div>
 
-                {/* Analyste */}
+                {/* ── Section 2 : Microbiologique ────────────────────────────── */}
+                {modalLot?.typesAnalyse.includes('MICROBIOLOGIQUE') && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Microscope className="size-4 text-purple-600" />
+                      <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+                        Résultats microbiologiques
+                      </p>
+                      <span className="text-xs text-purple-600 font-medium">(conditionne la mise sur marché)</span>
+                    </div>
+
+                    <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4 space-y-3">
+                      {/* Statut */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-muted-foreground">Résultats disponibles ?</p>
+                        <div className="flex gap-2">
+                          {(['oui', 'non'] as const).map(v => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => setMicrobioForm(p => ({ ...p, disponibles: v }))}
+                              className="px-3 py-1 text-xs font-medium rounded-md border transition-colors bg-background hover:bg-muted"
+                            >
+                              {v === 'oui' ? 'Oui — saisir les résultats' : 'Non — en attente labo'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Salmonella (absent/présent)">
+                          <select
+                            value={microbioForm.salmonella}
+                            onChange={e => setMicrobioForm(p => ({ ...p, salmonella: e.target.value }))}
+                            className="w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            <option value="">— Non renseigné —</option>
+                            <option value="absent">Absent ✓</option>
+                            <option value="présent">Présent ✗</option>
+                          </select>
+                        </Field>
+                        <Field label="Listeria (absent/présent)">
+                          <select
+                            value={microbioForm.listeria}
+                            onChange={e => setMicrobioForm(p => ({ ...p, listeria: e.target.value }))}
+                            className="w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            <option value="">— Non renseigné —</option>
+                            <option value="absent">Absent ✓</option>
+                            <option value="présent">Présent ✗</option>
+                          </select>
+                        </Field>
+                        <Field label="E. coli (UFC/g)">
+                          <Input type="number" step="1" min="0"
+                            value={microbioForm.ecoli}
+                            onChange={e => setMicrobioForm(p => ({ ...p, ecoli: e.target.value }))}
+                            placeholder="ex : 0 (norme : < 10)" />
+                        </Field>
+                        <Field label="Levures/Moisissures (UFC/g)">
+                          <Input type="number" step="1" min="0"
+                            value={microbioForm.levures}
+                            onChange={e => setMicrobioForm(p => ({ ...p, levures: e.target.value }))}
+                            placeholder="ex : 12 (norme : < 100)" />
+                        </Field>
+                        <Field label="Flore totale (UFC/g ou mL)">
+                          <Input type="number" step="1" min="0"
+                            value={microbioForm.flore_totale}
+                            onChange={e => setMicrobioForm(p => ({ ...p, flore_totale: e.target.value }))}
+                            placeholder="ex : 8" />
+                        </Field>
+                        <Field label="Laboratoire">
+                          <Input
+                            value={microbioForm.laboratoire}
+                            onChange={e => setMicrobioForm(p => ({ ...p, laboratoire: e.target.value }))}
+                            placeholder="ex : Labo INH Lomé" />
+                        </Field>
+                      </div>
+
+                      <div className="flex items-start gap-2 rounded-md bg-purple-100/60 px-3 py-2 text-xs text-purple-800">
+                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                        <span>La mise sur marché est conditionnée aux résultats microbiologiques.
+                        Sans résultats microbio conformes, seule la libération <strong>Usage interne</strong> est possible.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Certificat d'Analyse ──────────────────────────────────── */}
+                <Field label="Certificat d'Analyse (CA)">
+                  <DragDrop label="Glisser le certificat PDF ici" file={caFile} onFile={setCaFile} />
+                </Field>
+
+                {/* ── Analyste + Commentaire ────────────────────────────────── */}
                 <Field label="Analyste responsable" required>
                   <select
-                    value={analyse.analyste}
-                    onChange={e => setAnalyse(p => ({ ...p, analyste: e.target.value }))}
+                    value={analyste}
+                    onChange={e => setAnalyste(e.target.value)}
                     className="w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    {ANALYSTES.map(a => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
+                    {ANALYSTES.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
                 </Field>
 
-                {/* Certificat d'Analyse */}
-                <Field label="Certificat d'Analyse (CA)">
-                  <DragDrop
-                    label="Glisser le certificat d'analyse PDF ici"
-                    file={caFile}
-                    onFile={setCaFile}
-                  />
-                </Field>
-
-                {/* Commentaire */}
                 <Field label="Commentaire / Observations">
                   <textarea
-                    value={analyse.commentaire}
-                    onChange={e => setAnalyse(p => ({ ...p, commentaire: e.target.value }))}
+                    value={commentaire}
+                    onChange={e => setCommentaire(e.target.value)}
                     placeholder="Résultats, remarques, observations..."
-                    rows={3}
+                    rows={2}
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                   />
                 </Field>
-
-                {/* Info */}
-                <div className="flex items-start gap-2.5 rounded-lg border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
-                  <Shield className="size-4 shrink-0 mt-0.5" />
-                  <span>
-                    La <strong className="text-foreground">libération</strong> déverrouille le lot pour le MRP et les ordres de fabrication.
-                    Le <strong className="text-foreground">rejet</strong> crée automatiquement une fiche NC dans le registre.
-                  </span>
-                </div>
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center gap-2 p-4 border-t shrink-0">
-                <Button
-                  variant="outline"
-                  onClick={() => setModalLotId(null)}
-                  disabled={!!savingDecision}
-                >
+              {/* Footer — 3 actions */}
+              <div className="flex items-center gap-2 p-4 border-t shrink-0 flex-wrap">
+                <Button variant="outline" onClick={() => setModalLotId(null)} disabled={!!savingDecision}>
                   Annuler
                 </Button>
                 <div className="flex-1" />
                 <Button
-                  onClick={() => handleDecision('NonConforme')}
-                  disabled={!isAnalyseValid || !!savingDecision}
+                  onClick={() => handleDecision('rejeter')}
+                  disabled={!isValid || !!savingDecision}
                   variant="destructive"
                   className="gap-1.5"
                 >
-                  {savingDecision === 'NonConforme'
+                  {savingDecision === 'rejeter'
                     ? <><Loader2 className="size-4 animate-spin" />Traitement…</>
-                    : <><XCircle className="size-4" />Rejeter</>
-                  }
+                    : <><XCircle className="size-4" />Rejeter</>}
                 </Button>
                 <Button
-                  onClick={() => handleDecision('Libere')}
-                  disabled={!isAnalyseValid || !!savingDecision}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                  onClick={() => handleDecision('usage_interne')}
+                  disabled={!isValid || !!savingDecision}
+                  className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  {savingDecision === 'Libere'
+                  {savingDecision === 'usage_interne'
                     ? <><Loader2 className="size-4 animate-spin" />Libération…</>
-                    : <><CheckCircle2 className="size-4" />Libérer le lot</>
-                  }
+                    : <><Shield className="size-4" />Libérer — Usage interne</>}
+                </Button>
+                <Button
+                  onClick={() => handleDecision('marche')}
+                  disabled={!isValid || !!savingDecision}
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {savingDecision === 'marche'
+                    ? <><Loader2 className="size-4 animate-spin" />Libération…</>
+                    : <><CheckCircle2 className="size-4" />Libérer — Marché</>}
                 </Button>
               </div>
             </div>

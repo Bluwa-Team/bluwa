@@ -168,7 +168,6 @@ export function AppSidebar({ orgName }: { orgName: string }) {
         { title: t('planHaccp'),        url: '/qualite/haccp',           icon: ShieldCheck,   disabled: false },
         { title: t('nonConformitesQA'), url: '/qualite/non-conformites', icon: AlertTriangle, disabled: false },
         { title: t('genealogie'),       url: '/qualite/genealogie',      icon: GitBranch,     disabled: false },
-        { title: t('gedQualite'),       url: '/qualite/ged',             icon: FileText,      disabled: false },
       ],
     },
     // ── 8. Pilotage ────────────────────────────────────────────────────────────
