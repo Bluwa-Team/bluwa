@@ -29,7 +29,7 @@ import {
 } from '../mrp/_components/types'
 import {
   getPurchaseOrders, getPurchaseRequisitions, getArticleStrategies,
-  createPurchaseOrder, type CreatePurchaseOrderInput,
+  createPurchaseOrder, convertRequisition, type CreatePurchaseOrderInput,
 } from '@/lib/actions/approvisionnement'
 
 type Tab = 'da' | 'commandes' | 'strategie'
@@ -113,7 +113,8 @@ function TypeBadge({ type }: { type: 'BC' | 'BA' }) {
 
 export default function ApprovisionnementPage() {
   const locale = useLocale()
-  const [tab, setTab] = useState<Tab>('commandes')
+  const [tab,       setTab]       = useState<Tab>('commandes')
+  const [prefillDa, setPrefillDa] = useState<PurchaseRequisitionRow | null>(null)
   // State Header/Item — la vue aplatie est dérivée par useMemo
   const [bcHeaders, setBcHeaders] = useState<BCHeader[]>([])
   const [bcItems,   setBcItems]   = useState<BCItem[]>([])
@@ -200,6 +201,18 @@ export default function ApprovisionnementPage() {
     }
     const result = await createPurchaseOrder(input)
     if (!result) return null
+
+    // Si conversion depuis une DA, mettre à jour son statut
+    if (prefillDa) {
+      await convertRequisition(prefillDa.id, result.id)
+      setDaRows((prev) => prev.map((d) =>
+        d.id === prefillDa.id
+          ? { ...d, status: 'CONVERTED' as const, convertedToOrderId: result.id, convertedOrderNumber: result.numero }
+          : d,
+      ))
+      setPrefillDa(null)
+    }
+
     const { headers, items } = await getPurchaseOrders()
     setBcHeaders(headers)
     setBcItems(items)
@@ -309,8 +322,8 @@ export default function ApprovisionnementPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: 'da'        as Tab, label: 'Demandes d\'achat',        count: daStats.pending > 0 ? daStats.pending : undefined },
           { key: 'commandes' as Tab, label: 'Commandes fournisseurs',   count: undefined },
+          { key: 'da'        as Tab, label: 'Suggestions MRP',          count: daStats.pending > 0 ? daStats.pending : undefined },
           { key: 'strategie' as Tab, label: 'Stratégie de stock',       count: undefined },
         ] as { key: Tab; label: string; count: number | undefined }[]).map(({ key, label, count }) => (
           <button
@@ -480,7 +493,7 @@ export default function ApprovisionnementPage() {
                           </span>
                         ) : da.status === 'PENDING' ? (
                           <button
-                            onClick={() => setTab('commandes')}
+                            onClick={() => { setPrefillDa(da); setModalOpen(true) }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors whitespace-nowrap"
                           >
                             Créer BC/BA
@@ -506,10 +519,9 @@ export default function ApprovisionnementPage() {
                 Demandes d'achat issues du MRP
               </p>
               <p className="text-xs text-violet-700 dark:text-violet-400 leading-relaxed">
-                Ces demandes sont générées automatiquement par le calcul MRP à partir des besoins nets en matières premières.
-                Convertissez-les en Bon de Commande (BC) ou Bon d'Achat (BA) dans l'onglet{' '}
-                <strong>Commandes fournisseurs</strong>.
-                La traçabilité <span className="font-mono">OF → DA → BC/BA</span> est maintenue automatiquement.
+                Ces suggestions sont générées automatiquement par le calcul MRP à partir des besoins nets en matières premières.
+                Cliquez sur <strong>Créer BC/BA</strong> pour ouvrir un bon de commande pré-rempli (article, quantité, date).
+                La traçabilité <span className="font-mono">OF → Suggestion → BC/BA</span> est maintenue automatiquement.
               </p>
             </div>
           </div>
@@ -924,7 +936,8 @@ export default function ApprovisionnementPage() {
 
       <CommandeModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setPrefillDa(null) }}
+        prefill={prefillDa}
         onSave={handleSaveCommande}
       />
 

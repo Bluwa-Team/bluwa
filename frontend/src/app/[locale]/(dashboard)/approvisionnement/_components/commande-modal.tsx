@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
-  X, Loader2, Building2, Leaf, Check, Plus, Trash2, Printer, Lock,
+  X, Loader2, Building2, Leaf, Check, Plus, Trash2, Printer, Lock, Link2,
 } from 'lucide-react'
 import { BCHeader, BCItem, TypeCommande } from './types'
 import { printBcDoc } from './bc-print'
 import type { Fournisseur } from '@/app/[locale]/(dashboard)/fournisseurs/_components/types'
 import type { Article, ArticleType } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { TYPE_LABELS } from '@/app/[locale]/(dashboard)/articles/_components/types'
+import type { PurchaseRequisitionRow } from '@/app/[locale]/(dashboard)/mrp/_components/types'
 import { DEVISES } from '@/config'
 import { getFournisseurs } from '@/lib/actions/fournisseurs'
 import { getArticles }     from '@/lib/actions/articles'
@@ -31,21 +32,23 @@ type HeaderForm = {
 }
 
 type ItemForm = {
-  _key:            string
-  articleId:       string   // ID pour l'auto-complétion — non transmis à BCItem
-  article:         string   // Désignation → stockée dans BCItem
-  quantite:        string
-  unite:           string
-  puHT:            string
-  livraisonPrevue: string
-  dureeVie:        string
+  _key:                  string
+  articleId:             string         // ID pour l'auto-complétion — non transmis à BCItem
+  article:               string         // Désignation → stockée dans BCItem
+  quantite:              string
+  unite:                 string
+  puHT:                  string
+  livraisonPrevue:       string
+  dureeVie:              string
+  purchaseRequisitionId: string | null  // traçabilité DA → BC
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-  open:    boolean
-  onClose: () => void
+  open:     boolean
+  onClose:  () => void
+  prefill?: PurchaseRequisitionRow | null
   onSave: (
     header: Omit<BCHeader, 'id' | 'numero' | 'reception' | 'statut'>,
     items:  Omit<BCItem,   'id' | 'headerId'>[],
@@ -65,14 +68,15 @@ const EMPTY_HEADER: HeaderForm = {
 
 function newItemRow(livraisonDefaut = ''): ItemForm {
   return {
-    _key:            Math.random().toString(36).slice(2),
-    articleId:       '',
-    article:         '',
-    quantite:        '',
-    unite:           'kg',
-    puHT:            '',
-    livraisonPrevue: livraisonDefaut,
-    dureeVie:        '',
+    _key:                  Math.random().toString(36).slice(2),
+    articleId:             '',
+    article:               '',
+    quantite:              '',
+    unite:                 'kg',
+    puHT:                  '',
+    livraisonPrevue:       livraisonDefaut,
+    dureeVie:              '',
+    purchaseRequisitionId: null,
   }
 }
 
@@ -121,7 +125,7 @@ function SectionTitle({ num, label, badge }: { num: string; label: string; badge
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export function CommandeModal({ open, onClose, onSave }: Props) {
+export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
   // ── Form state ──────────────────────────────────────────────────────────────
   const [header, setHeader] = useState<HeaderForm>(EMPTY_HEADER)
   const [items,  setItems]  = useState<ItemForm[]>([newItemRow()])
@@ -142,8 +146,24 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
   useEffect(() => {
     if (!open) return
     setHeader(EMPTY_HEADER)
-    setItems([newItemRow()])
     setContratLocked(false)
+
+    // Pré-remplissage depuis une DA MRP
+    if (prefill) {
+      setItems([{
+        _key:                  Math.random().toString(36).slice(2),
+        articleId:             prefill.articleId ?? '',
+        article:               prefill.articleLabel,
+        quantite:              String(prefill.quantityRequired),
+        unite:                 prefill.unitLabel,
+        puHT:                  '',
+        livraisonPrevue:       prefill.requestedDeliveryDate,
+        dureeVie:              '',
+        purchaseRequisitionId: prefill.id,
+      }])
+    } else {
+      setItems([newItemRow()])
+    }
 
     setLoadingRef(true)
     Promise.all([getFournisseurs(), getArticles()]).then(([frs, arts]) => {
@@ -298,7 +318,7 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
         puHT:                  parseFloat(i.puHT),
         livraisonPrevue:       i.livraisonPrevue,
         dureeVie:              i.dureeVie !== '' ? parseInt(i.dureeVie, 10) : null,
-        purchaseRequisitionId: null,
+        purchaseRequisitionId: i.purchaseRequisitionId ?? null,
       })),
     )
     setSaving(false)
@@ -349,6 +369,18 @@ export function CommandeModal({ open, onClose, onSave }: Props) {
 
             {/* ── Body ───────────────────────────────────────────────────── */}
             <div className="overflow-y-auto flex-1 p-5 space-y-6">
+
+              {/* Bannière conversion DA */}
+              {prefill && (
+                <div className="flex items-center gap-2.5 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-xs text-violet-800">
+                  <Link2 className="size-3.5 shrink-0 text-violet-600" />
+                  <span>
+                    Conversion de <strong className="font-mono">{prefill.requisitionNumber}</strong>
+                    {' '}· Article et quantité pré-remplis depuis la suggestion MRP.
+                    Choisissez le fournisseur pour finaliser.
+                  </span>
+                </div>
+              )}
 
               {/* ① EN-TÊTE */}
               <section className="space-y-4">

@@ -303,6 +303,26 @@ export async function createPurchaseOrder(
   }
 }
 
+// ── Convertir une DA en commande fournisseur ──────────────────────────────────
+
+export async function convertRequisition(
+  requisitionId: string,
+  orderId: string,
+): Promise<boolean> {
+  try {
+    const { supabase } = await getSupabaseWithOrg()
+    const { error } = await supabase
+      .from('purchase_requisitions')
+      .update({ status: 'CONVERTED', converted_to_order_id: orderId })
+      .eq('id', requisitionId)
+    if (error) throw error
+    return true
+  } catch (e) {
+    console.error('[convertRequisition]', e)
+    return false
+  }
+}
+
 // ── Contrats cadre (conservé) ─────────────────────────────────────────────────
 
 export async function getContratActifByFournisseur(
