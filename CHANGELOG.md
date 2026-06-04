@@ -5,6 +5,134 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-06-04] — Session 18 — Module Qualité multi-tests, généalogie enrichie, HACCP créatif, GED retirée
+
+### Contexte
+Session longue incluant : lecture complète du frontend, roadmap backend avec le CTO, appels commerciaux (Natuthé Kinkéliba, contact INH Lomé), et refonte du module Qualité suite aux retours terrain de l'Institut National d'Hygiène de Lomé.
+
+---
+
+### Module Qualité — Libération lots (`qualite/page.tsx` + `_components/types.ts`)
+
+#### Deux niveaux de libération (retour INH Lomé)
+- **Avant** : un seul statut `Libéré` — aucune distinction entre libération usage interne et autorisation de vente
+- **Après** : deux niveaux distincts alignés sur la réglementation agro-alimentaire :
+  - **Libéré — Usage interne** : contrôles physico-chimiques OK, microbiologie en attente → utilisable en production, **non commercialisable**
+  - **Libéré — Marché** : tous les tests conformes (dont microbiologie) → **peut être vendu**
+
+#### 4 types d'analyse par article
+- Nouveau type `TypeAnalyse` : `PHYSIQUE | PHYSICO_CHIMIQUE | CHIMIQUE | MICROBIOLOGIQUE`
+- Chaque lot affiche ses types de tests requis avec badges colorés dans la table
+- Statut microbiologique visible en ligne : `⏳ 3j` si résultats en attente
+
+#### Statut microbiologique
+- Nouveau type `MicrobioStatus` : `PENDING | CONFORME | NON_CONFORME`
+- Type `ResultatsMicrobiologiques` : Salmonella, Listeria, E. coli (UFC/g), levures/moisissures, flore totale, laboratoire, dates prélèvement/résultats
+- Helper `peutEtreVendu()` — retourne `true` uniquement si statut `Libéré — Marché`
+
+#### Modal restructuré
+- **Avant** : 4 champs fixes (pH, Brix, humidité, température) identiques pour tous les articles
+- **Après** : 2 sections dédiées :
+  - **Physico-chimique** : pH, Brix, humidité, température
+  - **Microbiologique** : Salmonella (absent/présent), Listeria, E. coli, levures, flore totale, laboratoire
+- 3 boutons de décision : **Rejeter** / **Libérer Usage interne** / **Libérer Marché**
+- Bannière d'alerte microbiologique : *"La mise sur marché est conditionnée aux résultats microbiologiques"*
+
+#### KPIs enrichis
+- Avant : En contrôle / Libérés / Rejetés / Taux conformité
+- Après : En contrôle / **Usage interne** / **Libérés Marché** / Taux conformité
+
+---
+
+### Module Généalogie — Contrôles qualité intégrés (`genealogie/page.tsx` + `types.ts`)
+
+#### Nouveaux types
+- `QcResultats` : pH, Brix, humidité, température
+- `ControleProduction` : paramètre, valeur, limite, ok (booléen), PCC associé
+- `GenealogieLien` enrichi : `qcResultats`, `qcDecisionPar`, `qcDecisionAt`, `qcCommentaires`, `ncNumero`
+- `GenealogiePF` enrichi : `controlesProduction[]`
+
+#### Affichage contrôles de production
+- Section **"Contrôles de production"** avec tableau des paramètres PCC : T° pasteurisation, durée, pH embouteillage, Brix, T° conditionnement, détection corps étrangers
+- Badge PCC associé à chaque paramètre (ex: PCC 2, PCC 4)
+- Icône ✓ vert / ✗ rouge selon conformité à la limite critique
+
+#### Affichage QC à la réception par ingrédient
+- Pour chaque lot MP/AC dans la généalogie : résultats labo (pH, Brix, humidité, T°), décision (qui / quand), commentaire
+- Fond coloré selon statut : amber = en contrôle, vert = libéré, rouge = non-conforme
+- Badge NC affiché si une non-conformité a été ouverte sur le lot
+
+#### Export dossier de lot enrichi
+- Le TXT exporté inclut maintenant les contrôles de production et les résultats QC de chaque ingrédient
+
+---
+
+### Plan HACCP — Modaux de création (`haccp/page.tsx`)
+
+- **Avant** : page 100% lecture seule, données mock figées
+- **Après** : 3 modaux de création opérationnels + état React lifté au niveau page
+
+#### Modal "Ajouter un PCC"
+- Étape (select dynamique depuis la liste des étapes), type de danger B/C/P, description
+- Limite critique, méthode + fréquence de surveillance, responsable
+- Action corrective, méthode de vérification
+- Numéro PCC auto-calculé (`PCC N+1`) affiché dans le header du modal
+- Bouton rouge "Créer le PCC" + mise à jour automatique du KPI
+
+#### Modal "Ajouter un danger"
+- Étape (select), type B/C/P (sélecteur visuel), description du danger
+- Gravité G et Probabilité P : sélecteurs 1/2/3 avec couleurs (vert/amber/rouge)
+- Score G×P calculé en temps réel avec alerte si ≥ 7 → "Classification PCC recommandée"
+- Mesure de maîtrise, checkbox "Classer comme PCC"
+
+#### Modal "Ajouter une étape"
+- Nom, description, checkbox "Contient un PCC"
+- Ajout d'une étape PCC met automatiquement `hasCcp = true` sur l'étape dans le flux
+
+#### Compteurs KPI mis à jour en temps réel
+- Étapes, PCC, Dangers identifiés, Dangers critiques (G×P ≥ 7) se mettent à jour à chaque ajout
+
+---
+
+### GED Qualité — Retirée du ERP
+
+#### Décision
+- Workflow d'approbation multi-rôles (Brouillon → Vérification → Approbation → Publié) trop lourd pour les PME agro Phase 1
+- Upload fichier non fonctionnel (pas de Supabase Storage)
+- Faible adoption attendue côté utilisateurs terrain (PME 5-25 personnes)
+
+#### Actions
+- Entrée retirée de la sidebar (`app-sidebar.tsx`)
+- Route `/qualite/ged` toujours présente en codebase (base pour futur produit)
+- `ged-types.ts` simplifié (DocumentQualite avec lien externe, statut Actif/Archivé, alertes révision)
+- `ged/page.tsx` remplacé par version légère "liens externes" — non accessible depuis la navigation
+
+#### Stratégie future
+- Pas de "Bluwa GED" en produit séparé (marché saturé : Google Drive, SharePoint, Notion)
+- Si besoin futur = module léger réintégré dans ERP uniquement si demande client explicite
+- Extensions naturelles dans 3 ans : Bluwa Finance (OHADA), Bluwa RH, Bluwa Analytics, Bluwa Mobile
+
+---
+
+### Roadmap technique — Excel mis à jour
+
+Fichier `Bluwa_Roadmap_Technique_Backend.xlsx` :
+- **Bloc G** (6 tâches) — Spécifications Qualité par Article : table `article_quality_specs` avec `type_analyse`, `bloquant_marche`, `delai_resultats_jours`, formulaire dynamique par article, validation automatique vs limites, suggestion NC si hors spec
+- **Bloc H** (7 tâches) — Microbiologie & Mise sur le Marché : colonnes `microbio_status` / `microbio_date`, deux niveaux de libération en DB, blocage vente si microbio PENDING, généalogie enrichie, seed specs micro articles pilotes
+- Total : **63 tâches** en 8 blocs (A→H)
+
+---
+
+### Commercial (4 juin 2026)
+
+- **Africube** : LOI + NDA envoyés via Yousign — en attente signature Ayité Ajavon
+- **Natuthé Kinkéliba** (Togo — infusion) : call effectué, co-fondateur intéressé, retour après discussion interne — profil Growth (traçabilité + analyse de marge)
+- **Choco Togo** : co-fondatrice ne répond plus — relance à faire sur angle "traçabilité cacao"
+- **INH Lomé** : contact stratégique (experte food safety) — retours produit précieux, contrainte agent public (pas de commission commerciale possible)
+- **Stratégie marché confirmée** : Afrique de l'Ouest uniquement — France/Canada = marché ERP saturé, coût acquisition 5-10× plus élevé
+
+---
+
 ## [2026-06-01] — Session 17 — Lecture frontend, corrections bugs, UX sidebar, guide modules v1.2
 
 ### Lecture frontend — 7 bugs identifiés
