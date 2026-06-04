@@ -101,7 +101,7 @@
     }
   },
   "articles": {
-    "title": "Référentiel Articles (MDM)",
+    "title": "Référentiel Articles",
     "subtitle": "Règle de codification : {pattern}",
     "badge": "Système actif",
     "new": "Nouvel article",

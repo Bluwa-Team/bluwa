@@ -101,7 +101,7 @@
     }
   },
   "articles": {
-    "title": "Items Master Data (MDM)",
+    "title": "Items Master Data",
     "subtitle": "Codification rule: {pattern}",
     "badge": "System active",
     "new": "New item",

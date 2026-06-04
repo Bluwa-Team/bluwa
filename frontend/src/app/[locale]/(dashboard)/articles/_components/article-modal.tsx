@@ -6,9 +6,16 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SelectWithAdd } from '@/components/ui/select-with-add'
 import { MultiStepForm } from '@/components/ui/multi-step-form'
 import { useTranslations } from 'next-intl'
-import { Article, ArticleType, ArticleStatut, ArticleAppro, FAMILLES } from './types'
+import {
+  Article, ArticleType, ArticleStatut, ArticleAppro, FAMILLES,
+  UNITES_STOCK_DEFAUT, UNITES_MESURE_DEFAUT,
+} from './types'
+import {
+  getReferentielValues, addReferentielValue, type ReferentielValue,
+} from '@/lib/actions/referentiel'
 
 interface Props {
   open: boolean
@@ -44,7 +51,9 @@ const EMPTY_FORM = {
   dernierPrixAchat: '',
   prixVente: '',
   poidsUnitaire: '',
+  poidsUnite: 'kg',
   volumeUnitaire: '',
+  volumeUnite: 'L',
   dureeVie: '',
   stockSecurite: '',
   pointCommande: '',
@@ -64,6 +73,48 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [referentiel, setReferentiel] = useState<ReferentielValue[]>([])
+
+  // Charge les valeurs de référentiel personnalisées de l'organisation
+  useEffect(() => {
+    if (!open) return
+    getReferentielValues().then(setReferentiel)
+  }, [open])
+
+  function refValues(kind: ReferentielValue['kind'], parent?: string | null): string[] {
+    return referentiel
+      .filter((r) => r.kind === kind && (parent === undefined || (r.parent ?? null) === (parent ?? null)))
+      .map((r) => r.value)
+  }
+
+  async function addRef(
+    kind: ReferentielValue['kind'],
+    value: string,
+    parent?: string | null,
+  ): Promise<boolean> {
+    const created = await addReferentielValue({ kind, value, parent: parent ?? null })
+    if (!created) return false
+    setReferentiel((prev) =>
+      prev.some((r) => r.id === created.id) ? prev : [...prev, created],
+    )
+    return true
+  }
+
+  // Listes fusionnées : valeurs par défaut (codées) + référentiel personnalisé
+  const familleOptions = useMemo(() => {
+    const merged = new Set([...Object.keys(FAMILLES), ...refValues('article_famille')])
+    return Array.from(merged)
+  }, [referentiel])
+
+  const uniteStockOptions = useMemo(() => {
+    const merged = new Set([...UNITES_STOCK_DEFAUT, ...refValues('unite_stock')])
+    return Array.from(merged)
+  }, [referentiel])
+
+  const uniteMesureOptions = useMemo(() => {
+    const merged = new Set([...UNITES_MESURE_DEFAUT, ...refValues('unite_mesure')])
+    return Array.from(merged)
+  }, [referentiel])
 
   const STEPS = [
     { title: t('modal.steps.identification'), description: t('modal.steps.identificationDesc') },
@@ -89,7 +140,9 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         dernierPrixAchat: article.dernierPrixAchat?.toString() ?? '',
         prixVente: article.prixVente?.toString() ?? '',
         poidsUnitaire: article.poidsUnitaire?.toString() ?? '',
+        poidsUnite: article.poidsUnite ?? 'kg',
         volumeUnitaire: article.volumeUnitaire?.toString() ?? '',
+        volumeUnite: article.volumeUnite ?? 'L',
         dureeVie: article.dureeVie?.toString() ?? '',
         stockSecurite: article.stockSecurite?.toString() ?? '',
         pointCommande: article.pointCommande?.toString() ?? '',
@@ -117,14 +170,16 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
   }
 
   const sousFamilleOptions = useMemo(() => {
-    if (!form.famille || !FAMILLES[form.famille]) return []
-    return Object.keys(FAMILLES[form.famille].sousFamilles)
-  }, [form.famille])
+    if (!form.famille) return []
+    const base = FAMILLES[form.famille] ? Object.keys(FAMILLES[form.famille].sousFamilles) : []
+    return Array.from(new Set([...base, ...refValues('article_sous_famille', form.famille)]))
+  }, [form.famille, referentiel])
 
   const categorieOptions = useMemo(() => {
     if (!form.famille || !form.sousFamille) return []
-    return FAMILLES[form.famille]?.sousFamilles[form.sousFamille] ?? []
-  }, [form.famille, form.sousFamille])
+    const base = FAMILLES[form.famille]?.sousFamilles[form.sousFamille] ?? []
+    return Array.from(new Set([...base, ...refValues('article_categorie', form.sousFamille)]))
+  }, [form.famille, form.sousFamille, referentiel])
 
   function isStepValid() {
     if (step === 1) return !!form.designation && !!form.type
@@ -240,43 +295,37 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                     </Select>
                   </Field>
                   <Field label={t('modal.fields.family')}>
-                    <Select value={form.famille} onValueChange={(v) => setFamille(v ?? '')}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner une famille" /></SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(FAMILLES).map((f) => (
-                          <SelectItem key={f} value={f}>{f}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SelectWithAdd
+                      value={form.famille}
+                      onValueChange={(v) => setFamille(v)}
+                      options={familleOptions}
+                      placeholder="Sélectionner une famille"
+                      addPlaceholder="Nouvelle famille"
+                      onAdd={(v) => addRef('article_famille', v)}
+                    />
                   </Field>
                   <Field label="Sous-famille">
-                    <Select
+                    <SelectWithAdd
                       value={form.sousFamille}
-                      onValueChange={(v) => setSousFamille(v ?? '')}
-                      disabled={sousFamilleOptions.length === 0}
-                    >
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                      <SelectContent>
-                        {sousFamilleOptions.map((sf) => (
-                          <SelectItem key={sf} value={sf}>{sf}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onValueChange={(v) => setSousFamille(v)}
+                      options={sousFamilleOptions}
+                      placeholder={form.famille ? 'Sélectionner…' : 'Choisir une famille d\'abord'}
+                      addPlaceholder="Nouvelle sous-famille"
+                      disabled={!form.famille}
+                      onAdd={(v) => addRef('article_sous_famille', v, form.famille)}
+                    />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Catégorie">
-                      <Select
+                      <SelectWithAdd
                         value={form.categorie}
-                        onValueChange={(v) => set('categorie', v ?? '')}
-                        disabled={categorieOptions.length === 0}
-                      >
-                        <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                        <SelectContent>
-                          {categorieOptions.map((c) => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onValueChange={(v) => set('categorie', v)}
+                        options={categorieOptions}
+                        placeholder={form.sousFamille ? 'Sélectionner…' : 'Choisir une sous-famille d\'abord'}
+                        addPlaceholder="Nouvelle catégorie"
+                        disabled={!form.sousFamille}
+                        onAdd={(v) => addRef('article_categorie', v, form.sousFamille)}
+                      />
                     </Field>
                   </div>
                 </div>
@@ -289,10 +338,24 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Unités</h3>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-4">
                     <Field label={t('modal.fields.stockUnit')} required>
-                      <Input value={form.uniteStock} onChange={(e) => set('uniteStock', e.target.value)} placeholder="KG, SACHET…" />
+                      <SelectWithAdd
+                        value={form.uniteStock}
+                        onValueChange={(v) => set('uniteStock', v)}
+                        options={uniteStockOptions}
+                        placeholder="kg, sachet…"
+                        addPlaceholder="Nouvelle unité"
+                        onAdd={(v) => addRef('unite_stock', v)}
+                      />
                     </Field>
                     <Field label={t('modal.fields.saleUnit')}>
-                      <Input value={form.uniteVente} onChange={(e) => set('uniteVente', e.target.value)} placeholder="T, CARTON…" />
+                      <SelectWithAdd
+                        value={form.uniteVente}
+                        onValueChange={(v) => set('uniteVente', v)}
+                        options={uniteStockOptions}
+                        placeholder="t, carton…"
+                        addPlaceholder="Nouvelle unité"
+                        onAdd={(v) => addRef('unite_stock', v)}
+                      />
                     </Field>
                     <Field label={t('modal.fields.convCoeff')}>
                       <Input
@@ -341,12 +404,48 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Caractéristiques physiques</h3>
-                  <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-                    <Field label={t('modal.fields.weight')}>
-                      <Input type="number" value={form.poidsUnitaire} onChange={(e) => set('poidsUnitaire', e.target.value)} placeholder="0.00" />
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <Field label="Poids unitaire">
+                      <div className="flex items-start gap-2">
+                        <Input
+                          type="number"
+                          value={form.poidsUnitaire}
+                          onChange={(e) => set('poidsUnitaire', e.target.value)}
+                          placeholder="0.00"
+                          className="flex-1"
+                        />
+                        <div className="w-32 shrink-0">
+                          <SelectWithAdd
+                            value={form.poidsUnite}
+                            onValueChange={(v) => set('poidsUnite', v)}
+                            options={uniteMesureOptions}
+                            placeholder="kg"
+                            addPlaceholder="Unité"
+                            onAdd={(v) => addRef('unite_mesure', v)}
+                          />
+                        </div>
+                      </div>
                     </Field>
-                    <Field label={t('modal.fields.volume')}>
-                      <Input type="number" value={form.volumeUnitaire} onChange={(e) => set('volumeUnitaire', e.target.value)} placeholder="0.00" />
+                    <Field label="Volume unitaire">
+                      <div className="flex items-start gap-2">
+                        <Input
+                          type="number"
+                          value={form.volumeUnitaire}
+                          onChange={(e) => set('volumeUnitaire', e.target.value)}
+                          placeholder="0.00"
+                          className="flex-1"
+                        />
+                        <div className="w-32 shrink-0">
+                          <SelectWithAdd
+                            value={form.volumeUnite}
+                            onValueChange={(v) => set('volumeUnite', v)}
+                            options={uniteMesureOptions}
+                            placeholder="L"
+                            addPlaceholder="Unité"
+                            onAdd={(v) => addRef('unite_mesure', v)}
+                          />
+                        </div>
+                      </div>
                     </Field>
                   </div>
                 </div>

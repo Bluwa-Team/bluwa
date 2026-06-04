@@ -17,7 +17,9 @@ export interface Article {
   prixVente: number | null
   pmp: number | null
   poidsUnitaire: number | null
+  poidsUnite: string
   volumeUnitaire: number | null
+  volumeUnite: string
   dureeVie: number | null
   stockSecurite: number | null
   pointCommande: number | null
@@ -59,6 +61,10 @@ export const FAMILLES: Record<string, { sousFamilles: Record<string, string[]> }
     },
   },
 }
+
+// Unités par défaut (fusionnées avec le référentiel de l'organisation)
+export const UNITES_STOCK_DEFAUT = ['kg', 'g', 't', 'L', 'mL', 'unité', 'sachet', 'carton', 'palette', 'sac']
+export const UNITES_MESURE_DEFAUT = ['kg', 'g', 't', 'L', 'mL', 'm³', 'cl']
 
 export const TYPE_LABELS: Record<ArticleType, string> = {
   MP: 'Matière première',
