@@ -1,4 +1,4 @@
-export type OrgStatus = 'active' | 'suspended' | 'trial' | 'churned'
+export type OrgStatus = 'active' | 'suspended' | 'trial' | 'churned' | 'archived'
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED'
 export type UserRole = 'SUPER_ADMIN' | 'PLANT_MANAGER' | 'OPERATOR' | 'QUALITY_AUDITOR'
 

@@ -29,9 +29,11 @@ export default async function DashboardLayout({
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name')
+    .select('name, status')
     .eq('id', profile.organization_id)
     .maybeSingle()
+
+  if (org?.status === 'archived') redirect(`/${locale}/archived`)
 
   const canUseAgent = profile.role === 'owner' || profile.role === 'admin'
 

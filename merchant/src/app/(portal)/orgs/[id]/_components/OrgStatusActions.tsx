@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/modal'
 import { OrgStatus } from '@/types/merchant'
-import { CheckCircle2, PauseCircle, XCircle, Loader2 } from 'lucide-react'
+import { CheckCircle2, PauseCircle, XCircle, Archive, Loader2 } from 'lucide-react'
 import { updateOrgStatus } from '@/lib/db-client'
 
 const ACTIONS: { label: string; status: OrgStatus; icon: React.ReactNode; color: string; description: string }[] = [
@@ -28,6 +28,13 @@ const ACTIONS: { label: string; status: OrgStatus; icon: React.ReactNode; color:
     icon: <XCircle className="w-4 h-4" />,
     color: 'text-red-700 hover:bg-red-50 border-red-200',
     description: 'Marquer ce client comme perdu définitivement.',
+  },
+  {
+    label: 'Archiver',
+    status: 'archived',
+    icon: <Archive className="w-4 h-4" />,
+    color: 'text-gray-500 hover:bg-gray-50 border-gray-200',
+    description: 'Désactiver l\'accès et archiver l\'organisation. Les données sont conservées. Irréversible depuis l\'app.',
   },
 ]
 
