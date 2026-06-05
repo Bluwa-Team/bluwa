@@ -17,7 +17,7 @@ function toProductionOutputRow(row: Record<string, unknown>): ProductionOutputRo
   } | null
 
   const order = row.production_orders as {
-    order_number: string
+    of_number: string
   } | null
 
   const produced = parseFloat(String(row.quantity_produced ?? 0))
@@ -80,7 +80,7 @@ async function resolveFactoryId(supabase: SupabaseClient, orgId: string): Promis
 }
 
 const SELECT_FRAGMENT =
-  '*, articles!article_id(designation, code, unite_stock), production_orders!production_order_id(order_number)'
+  '*, articles!article_id(designation, code, unite_stock), production_orders!production_order_id(of_number)'
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
@@ -133,7 +133,7 @@ export async function getProductionOrdersForDeclaration(): Promise<ProductionOrd
     const { data, error } = await supabase
       .from('production_orders')
       .select(
-        'id, order_number, article_id, quantity_target, quantity_produced, status, articles!article_id(code, designation, unite_stock, duree_vie, type)',
+        'id, of_number, article_id, quantity_target, quantity_produced, status, articles!article_id(code, designation, unite_stock, duree_vie, type)',
       )
       .eq('organization_id', orgId)
       .in('status', ['RELEASED', 'IN_PROGRESS'])
@@ -151,7 +151,7 @@ export async function getProductionOrdersForDeclaration(): Promise<ProductionOrd
       } | null
       return {
         id:                   row.id as string,
-        orderNumber:          row.order_number as string,
+        orderNumber:          row.of_number as string,
         articleId:            row.article_id as string,
         articleLabel:         art?.designation    ?? '',
         articleSku:           art?.code           ?? '',

@@ -46,19 +46,21 @@ function toOf(row: Record<string, unknown>): OrdreFabrication {
   const archive = status === 'CANCELLED' || status === 'COMPLETED'
 
   return {
-    id:              row.id as string,
-    numero:          row.order_number as string,
-    produitFini:     article?.designation ?? '',
-    sku:             article?.code ?? '',
-    qty:             Number(row.quantity_target)   || 0,
-    realise:         Number(row.quantity_produced) || 0,
-    unite:           article?.unite_stock ?? 'u',
+    id:            row.id as string,
+    // Le vrai nom de colonne en DB est of_number
+    numero:        (row.of_number as string) ?? '',
+    produitFini:   article?.designation ?? '',
+    sku:           article?.code ?? '',
+    qty:           Number(row.quantity_target)   || 0,
+    realise:       Number(row.quantity_produced) || 0,
+    unite:         article?.unite_stock ?? 'u',
     lotPF,
-    ligne:           (row.ligne as string | null) ?? '',
-    operateurPrep:   (row.operateur as string | null) ?? null,
-    dateBesoin:      ((row.end_date   as string) ?? '').split('T')[0],
-    debutPlanif:     ((row.start_date as string) ?? '').split('T')[0],
-    picking:         (row.picking as 'AValider' | 'Valide' | null) ?? 'AValider',
+    ligne:         (row.ligne as string | null) ?? '',
+    operateurPrep: (row.operateur as string | null) ?? null,
+    // scheduled_start_date est la date de début planifiée
+    debutPlanif:   (row.scheduled_start_date as string) ?? '',
+    dateBesoin:    (row.scheduled_start_date as string) ?? '',
+    picking:       (row.picking as 'AValider' | 'Valide' | null) ?? 'AValider',
     statut,
     archive,
   }
@@ -90,13 +92,12 @@ export async function getProductionOrders(): Promise<OrdreFabrication[]> {
 
 export async function createProductionOrder(
   of_: Omit<OrdreFabrication, 'id' | 'numero'> & { articleId?: string },
-  articleId?: string,
 ): Promise<OrdreFabrication | null> {
   try {
     const { supabase, orgId, factoryId } = await getSupabaseWithOrg()
 
-    // Résoudre article_id depuis le sku si non fourni
-    let artId = articleId ?? of_.articleId
+    // Résoudre article_id depuis le sku
+    let artId = of_.articleId
     if (!artId && of_.sku) {
       const { data: art } = await supabase
         .from('articles')
@@ -108,35 +109,34 @@ export async function createProductionOrder(
     }
     if (!artId) throw new Error('article_id introuvable pour sku: ' + of_.sku)
 
-    // Générer le numéro d'OF
+    // Générer le numéro d'OF : OF-YYYY-NNNN
     const year = new Date().getFullYear()
     const { count } = await supabase
       .from('production_orders')
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', orgId)
     const seq = String((count ?? 0) + 1).padStart(4, '0')
-    const orderNumber = `OF-${year}-${seq}`
+    const ofNumber = `OF-${year}-${seq}`
 
     const { data, error } = await supabase
       .from('production_orders')
       .insert({
-        organization_id:   orgId,
-        factory_id:        factoryId,
-        article_id:        artId,
-        order_number:      orderNumber,
-        quantity_target:   of_.qty,
-        quantity_produced: 0,
-        status:            uiToDb(of_.statut),
-        start_date:        of_.debutPlanif || new Date().toISOString().split('T')[0],
-        end_date:          of_.dateBesoin  || new Date().toISOString().split('T')[0],
-        ligne:             of_.ligne   || null,
-        operateur:         of_.operateurPrep || null,
-        picking:           of_.picking ?? 'AValider',
+        organization_id:      orgId,
+        factory_id:           factoryId,
+        article_id:           artId,
+        of_number:            ofNumber,
+        quantity_target:      of_.qty,
+        quantity_produced:    0,
+        status:               uiToDb(of_.statut),
+        scheduled_start_date: of_.debutPlanif || new Date().toISOString().split('T')[0],
+        ligne:                of_.ligne    || null,
+        operateur:            of_.operateurPrep || null,
+        picking:              of_.picking ?? 'AValider',
       })
-      .select(`*, articles!article_id ( code, designation, unite_stock ), production_outputs ( product_batch_number )`)
+      .select('*, articles!article_id ( code, designation, unite_stock ), production_outputs ( product_batch_number )')
       .single()
     if (error) throw error
-    return data ? toOf(data) : null
+    return data ? toOf(data as unknown as Record<string, unknown>) : null
   } catch (e) {
     console.error('[createProductionOrder]', e)
     return null
@@ -153,23 +153,22 @@ export async function updateProductionOrder(
     const { supabase, orgId } = await getSupabaseWithOrg()
 
     const patch: Record<string, unknown> = {}
-    if (of_.qty       !== undefined) patch.quantity_target   = of_.qty
-    if (of_.statut    !== undefined) patch.status            = uiToDb(of_.statut)
-    if (of_.debutPlanif !== undefined) patch.start_date      = of_.debutPlanif
-    if (of_.dateBesoin  !== undefined) patch.end_date        = of_.dateBesoin
-    if (of_.ligne       !== undefined) patch.ligne           = of_.ligne || null
-    if (of_.operateurPrep !== undefined) patch.operateur     = of_.operateurPrep || null
-    if (of_.picking     !== undefined) patch.picking         = of_.picking
+    if (of_.qty           !== undefined) patch.quantity_target      = of_.qty
+    if (of_.statut        !== undefined) patch.status               = uiToDb(of_.statut)
+    if (of_.debutPlanif   !== undefined) patch.scheduled_start_date = of_.debutPlanif
+    if (of_.ligne         !== undefined) patch.ligne                = of_.ligne || null
+    if (of_.operateurPrep !== undefined) patch.operateur            = of_.operateurPrep || null
+    if (of_.picking       !== undefined) patch.picking              = of_.picking
 
     const { data, error } = await supabase
       .from('production_orders')
       .update(patch)
       .eq('id', id)
       .eq('organization_id', orgId)
-      .select(`*, articles!article_id ( code, designation, unite_stock ), production_outputs ( product_batch_number )`)
+      .select('*, articles!article_id ( code, designation, unite_stock ), production_outputs ( product_batch_number )')
       .single()
     if (error) throw error
-    return data ? toOf(data) : null
+    return data ? toOf(data as unknown as Record<string, unknown>) : null
   } catch (e) {
     console.error('[updateProductionOrder]', e)
     return null
