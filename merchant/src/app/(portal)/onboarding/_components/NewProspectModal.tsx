@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/modal'
 import { Loader2, CheckCircle2 } from 'lucide-react'
 import { STAGE_CHECKLISTS } from '../OnboardingBoard'
+import { createProspect } from '@/lib/db-client'
 
 const COUNTRIES = ['Sénégal', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Guinée', 'Mauritanie', 'Niger', 'Togo', 'Bénin', 'Cameroun']
 
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export function NewProspectModal({ open, onClose }: Props) {
+  const router = useRouter()
   const [form, setForm] = useState({
     org_name: '',
     country: '',
@@ -22,6 +25,7 @@ export function NewProspectModal({ open, onClose }: Props) {
   })
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -30,14 +34,28 @@ export function NewProspectModal({ open, onClose }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 700))
-    setLoading(false)
-    setDone(true)
-    setTimeout(() => {
-      setDone(false)
-      setForm({ org_name: '', country: '', plan_target: 'Growth', assigned_to: 'john@bluwa.io', notes: '' })
-      onClose()
-    }, 1200)
+    setError(null)
+    try {
+      await createProspect(
+        form.org_name.trim(),
+        form.country || null,
+        form.plan_target,
+        form.assigned_to || null,
+        form.notes || null,
+        STAGE_CHECKLISTS.prospect,
+      )
+      setDone(true)
+      router.refresh()
+      setTimeout(() => {
+        setDone(false)
+        setForm({ org_name: '', country: '', plan_target: 'Growth', assigned_to: 'john@bluwa.io', notes: '' })
+        onClose()
+      }, 1200)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -123,6 +141,7 @@ export function NewProspectModal({ open, onClose }: Props) {
             >
               Annuler
             </button>
+            {error && <p className="text-xs text-red-600 col-span-2">{error}</p>}
             <button
               type="submit"
               disabled={!form.org_name || loading}

@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/modal'
 import { SubscriptionPlan } from '@/types/merchant'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { updateFactoryPlan } from '@/lib/db-client'
 
 interface Props {
   factoryId: string
@@ -13,11 +15,13 @@ interface Props {
   currentPlanId: string | null
 }
 
-export function AssignPlanForm({ factoryId: _factoryId, factoryName, plans, currentPlanId }: Props) {
+export function AssignPlanForm({ factoryId, factoryName, plans, currentPlanId }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [selectedId, setSelectedId] = useState(currentPlanId ?? '')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const currentPlan = plans.find((p) => p.id === currentPlanId)
   const selectedPlan = plans.find((p) => p.id === selectedId)
@@ -25,14 +29,17 @@ export function AssignPlanForm({ factoryId: _factoryId, factoryName, plans, curr
   async function handleConfirm() {
     if (!selectedId || selectedId === currentPlanId) return
     setLoading(true)
-    // Simulation — à remplacer par appel Supabase
-    await new Promise((r) => setTimeout(r, 700))
-    setLoading(false)
-    setDone(true)
-    setTimeout(() => {
-      setDone(false)
-      setOpen(false)
-    }, 1200)
+    setError(null)
+    try {
+      await updateFactoryPlan(factoryId, selectedId)
+      setDone(true)
+      router.refresh()
+      setTimeout(() => { setDone(false); setOpen(false) }, 1200)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -110,6 +117,7 @@ export function AssignPlanForm({ factoryId: _factoryId, factoryName, plans, curr
               })}
             </div>
 
+            {error && <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => setOpen(false)}
