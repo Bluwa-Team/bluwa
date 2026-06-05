@@ -173,6 +173,18 @@ export async function inviteUser(email: string, role: UserRole) {
   return { success: true, userId: data.user.id }
 }
 
+// ── Supprimer un utilisateur ──────────────────────────────────────────────────
+export async function deleteUser(targetId: string) {
+  const { userId } = await assertAdmin()
+  if (targetId === userId) return { error: 'Impossible de supprimer votre propre compte.' }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(targetId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings')
+  return { success: true }
+}
+
 // ── Envoyer un reset de mot de passe ─────────────────────────────────────────
 export async function sendPasswordReset(email: string) {
   await assertAdmin()

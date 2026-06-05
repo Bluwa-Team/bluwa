@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { UserPlus, KeyRound, ShieldCheck, UserX, UserCheck, ChevronDown } from 'lucide-react'
+import { UserPlus, KeyRound, ShieldCheck, UserX, UserCheck, ChevronDown, Trash2 } from 'lucide-react'
 import {
-  updateUserRole, toggleUserActive, inviteUser, sendPasswordReset,
+  updateUserRole, toggleUserActive, inviteUser, sendPasswordReset, deleteUser,
   type OrgUser, type UserRole,
 } from '@/lib/actions/users'
 
@@ -62,6 +62,14 @@ function UserRow({
     startTransition(async () => {
       const res = await sendPasswordReset(user.email)
       flash(res?.error ? res.error : 'Email de réinitialisation envoyé.')
+    })
+  }
+
+  function handleDelete() {
+    if (!confirm(`Supprimer définitivement le compte de ${user.full_name ?? user.email} ? Cette action est irréversible.`)) return
+    startTransition(async () => {
+      const res = await deleteUser(user.id)
+      if (res?.error) flash(res.error)
     })
   }
 
@@ -127,9 +135,17 @@ function UserRow({
             onClick={handleToggleActive}
             disabled={pending}
             title={user.is_active ? 'Désactiver' : 'Réactiver'}
-            className={`p-1.5 rounded-lg transition-colors ${user.is_active ? 'text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'}`}
+            className={`p-1.5 rounded-lg transition-colors ${user.is_active ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30' : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'}`}
           >
             {user.is_active ? <UserX className="size-3.5" /> : <UserCheck className="size-3.5" />}
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={pending}
+            title="Supprimer définitivement"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
+            <Trash2 className="size-3.5" />
           </button>
         </div>
       )}
