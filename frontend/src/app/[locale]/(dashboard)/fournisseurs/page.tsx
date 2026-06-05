@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Plus, Search, Download, Upload, Pencil, Loader2 } from 'lucide-react'
+import { Plus, Search, Download, Upload, Pencil, Loader2, RotateCcw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  useResizableColumns, ColumnResizer, type ResizableColumn,
+} from '@/hooks/use-resizable-columns'
 import { FournisseurModal } from './_components/fournisseur-modal'
 import {
   Fournisseur, FournisseurQualification, FournisseurStatut,
@@ -19,6 +22,20 @@ import Link from 'next/link'
 
 const QUALIFICATIONS: Array<'Tous' | FournisseurQualification> = ['Tous', 'Agree', 'AQualifier', 'Suspendu']
 const STATUTS: Array<'Tous' | FournisseurStatut> = ['Tous', 'Formel', 'Informel']
+
+// `name` flexes pour remplir l'espace ; les autres colonnes sont redimensionnables.
+const FOURNISSEUR_COLUMNS: ResizableColumn[] = [
+  { id: 'code', defaultWidth: 140, minWidth: 96 },
+  { id: 'name', defaultWidth: null },
+  { id: 'structureType', defaultWidth: 110, minWidth: 80 },
+  { id: 'qualification', defaultWidth: 120, minWidth: 90 },
+  { id: 'category', defaultWidth: 200, minWidth: 120 },
+  { id: 'country', defaultWidth: 120, minWidth: 80 },
+  { id: 'currency', defaultWidth: 80, minWidth: 60 },
+  { id: 'score', defaultWidth: 100, minWidth: 80 },
+  { id: 'actions', defaultWidth: 80 },
+]
+const NAME_MIN = 200
 
 function generateCode(pays: string, seq: number): string {
   const paysCode = pays
@@ -52,6 +69,15 @@ export default function FournisseursPage() {
   const [importing,     setImporting]     = useState(false)
   const [importBanner,  setImportBanner]  = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+
+  const { widths, startResize, reset, isCustomized } = useResizableColumns(
+    'bluwa:cols:fournisseurs',
+    FOURNISSEUR_COLUMNS,
+  )
+  const tableMinWidth = FOURNISSEUR_COLUMNS.reduce(
+    (sum, c) => sum + (c.defaultWidth == null ? NAME_MIN : (widths[c.id] ?? c.defaultWidth)),
+    0,
+  )
 
   useEffect(() => {
     getFournisseurs().then((data) => { setFournisseurs(data); setLoading(false) })
@@ -249,30 +275,71 @@ export default function FournisseursPage() {
           </SelectContent>
         </Select>
 
-        <span className="text-sm text-muted-foreground ml-auto">{countLabel}</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {isCustomized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs text-muted-foreground"
+              onClick={reset}
+            >
+              <RotateCcw className="size-3.5" />
+              {t('resetColumns')}
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">{countLabel}</span>
+        </div>
       </div>
 
       {/* Tableau */}
       <div className="rounded-lg border overflow-x-auto">
-        <div className="min-w-[1000px]">
-          <Table className="table-fixed w-full">
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-[140px] font-semibold text-xs tracking-wide">{t('columns.code')}</TableHead>
-                <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
-                <TableHead className="w-[110px] font-semibold text-xs tracking-wide">{t('columns.structureType')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.qualification')}</TableHead>
-                <TableHead className="w-[200px] font-semibold text-xs tracking-wide">{t('columns.category')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.country')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs tracking-wide">{t('columns.currency')}</TableHead>
-                <TableHead className="w-[100px] font-semibold text-xs tracking-wide text-center">{t('columns.score')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
+        <Table className="table-fixed" style={{ minWidth: tableMinWidth }}>
+          <colgroup>
+            {FOURNISSEUR_COLUMNS.map((c) => (
+              <col
+                key={c.id}
+                style={c.defaultWidth == null ? undefined : { width: widths[c.id] }}
+              />
+            ))}
+          </colgroup>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.code')}
+                <ColumnResizer columnId="code" onStart={startResize} />
+              </TableHead>
+              <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.structureType')}
+                <ColumnResizer columnId="structureType" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.qualification')}
+                <ColumnResizer columnId="qualification" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.category')}
+                <ColumnResizer columnId="category" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.country')}
+                <ColumnResizer columnId="country" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.currency')}
+                <ColumnResizer columnId="currency" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide text-center">
+                {t('columns.score')}
+                <ColumnResizer columnId="score" onStart={startResize} />
+              </TableHead>
+              <TableHead className="font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="size-4 animate-spin" />
                       {t('loading')}
@@ -281,7 +348,7 @@ export default function FournisseursPage() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     {t('empty')}
                   </TableCell>
                 </TableRow>
@@ -324,9 +391,8 @@ export default function FournisseursPage() {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </div>
+          </TableBody>
+        </Table>
       </div>
 
       <FournisseurModal

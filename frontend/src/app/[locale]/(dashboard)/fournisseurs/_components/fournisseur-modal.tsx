@@ -37,8 +37,9 @@ const TOTAL_STEPS = 2
 const EMPTY_FORM = {
   raisonSociale: '',
   statut: 'Formel' as FournisseurStatut,
-  qualification: 'AQualifier' as FournisseurQualification,
+  qualification: '' as FournisseurQualification | '',
   categorie: '',
+  categorieAutre: '',
   devise: 'XOF',
   contactPrincipal: '',
   telephone: '',
@@ -67,11 +68,14 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
     if (!open) return
     setStep(1)
     if (fournisseur) {
+      // Catégorie hors liste → on bascule sur « Autres » + détail libre
+      const inList = CATEGORIES_FOURNISSEUR.includes(fournisseur.categorie)
       setForm({
         raisonSociale: fournisseur.raisonSociale,
         statut: fournisseur.statut,
         qualification: fournisseur.qualification,
-        categorie: fournisseur.categorie,
+        categorie: inList ? fournisseur.categorie : (fournisseur.categorie ? 'Autres' : ''),
+        categorieAutre: inList ? '' : (fournisseur.categorie ?? ''),
         devise: fournisseur.devise,
         contactPrincipal: fournisseur.contactPrincipal,
         telephone: fournisseur.telephone,
@@ -91,8 +95,12 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
   }
 
   function isStepValid() {
-    if (step === 1) return !!form.raisonSociale && !!form.categorie
-    return true
+    if (step === 1) {
+      if (!form.raisonSociale || !form.qualification || !form.categorie) return false
+      if (form.categorie === 'Autres' && !form.categorieAutre.trim()) return false
+      return true
+    }
+    return !!form.contactPrincipal && !!form.telephone && !!form.pays
   }
 
   async function handleNext() {
@@ -100,7 +108,16 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
       setStep((s) => s + 1)
     } else {
       setSaving(true)
-      const ok = await onSave(form)
+      // Catégorie « Autres » → on enregistre le détail saisi
+      const categorie = form.categorie === 'Autres' && form.categorieAutre.trim()
+        ? form.categorieAutre.trim()
+        : form.categorie
+      const { categorieAutre, ...rest } = form
+      const ok = await onSave({
+        ...rest,
+        qualification: form.qualification as FournisseurQualification,
+        categorie,
+      })
       setSaving(false)
       if (ok) onClose()
     }
@@ -161,9 +178,13 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label={t('detail.fields.qualification')}>
-                    <Select value={form.qualification} onValueChange={(v) => set('qualification', v ?? 'AQualifier')}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <Field label={t('detail.fields.qualification')} required>
+                    <Select value={form.qualification} onValueChange={(v) => set('qualification', v ?? '')}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionner…">
+                          {(value: string) => value ? t(`qualifications.${value}` as any) : 'Sélectionner…'}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
                         {QUALIFICATION_OPTIONS.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -191,6 +212,17 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
                       </SelectContent>
                     </Select>
                   </Field>
+                  {form.categorie === 'Autres' && (
+                    <div className="col-span-2">
+                      <Field label="Préciser la catégorie" required>
+                        <Input
+                          value={form.categorieAutre}
+                          onChange={(e) => set('categorieAutre', e.target.value)}
+                          placeholder="Ex: Prestataire maintenance"
+                        />
+                      </Field>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -200,10 +232,10 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contacts</h3>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-                    <Field label={t('detail.fields.mainContact')}>
+                    <Field label={t('detail.fields.mainContact')} required>
                       <Input value={form.contactPrincipal} onChange={(e) => set('contactPrincipal', e.target.value)} placeholder="Prénom Nom" />
                     </Field>
-                    <Field label={t('detail.fields.phone')}>
+                    <Field label={t('detail.fields.phone')} required>
                       <Input value={form.telephone} onChange={(e) => set('telephone', e.target.value)} placeholder="+221 77 000 00 00" />
                     </Field>
                     <Field label={t('detail.fields.email')}>
@@ -218,9 +250,9 @@ export function FournisseurModal({ open, onClose, fournisseur, onSave }: Props) 
                     <Field label={t('detail.fields.city')}>
                       <Input value={form.ville} onChange={(e) => set('ville', e.target.value)} placeholder="Ex: Dakar" />
                     </Field>
-                    <Field label={t('detail.fields.country')}>
+                    <Field label={t('detail.fields.country')} required>
                       <Select value={form.pays} onValueChange={(v) => set('pays', v ?? '')}>
-                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                         <SelectContent>
                           {PAYS_AFRIQUE_OUEST.map((p) => (
                             <SelectItem key={p} value={p}>{p}</SelectItem>

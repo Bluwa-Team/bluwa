@@ -315,6 +315,7 @@
     "loading": "Chargement des fournisseurs…",
     "empty": "Aucun fournisseur ne correspond aux filtres sélectionnés.",
     "allCategories": "Toutes catégories",
+    "resetColumns": "Réinitialiser les colonnes",
     "qualifications": {
       "Agree": "Agréé",
       "AQualifier": "À qualifier",
@@ -359,7 +360,7 @@
         "logistics": "Mode logistique",
         "qualification": "Qualification",
         "mobilePayment": "Paiement mobile",
-        "mobilePaymentAccepted": "Accepté",
+        "mobilePaymentAccepted": "Paiement mobile accepté",
         "mainContact": "Contact principal",
         "phone": "Téléphone",
         "email": "Email",

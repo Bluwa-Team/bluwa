@@ -315,6 +315,7 @@
     "loading": "Loading suppliers…",
     "empty": "No suppliers match the selected filters.",
     "allCategories": "All categories",
+    "resetColumns": "Reset columns",
     "qualifications": {
       "Agree": "Approved",
       "AQualifier": "To qualify",
@@ -359,7 +360,7 @@
         "logistics": "Logistics mode",
         "qualification": "Qualification",
         "mobilePayment": "Mobile payment",
-        "mobilePaymentAccepted": "Accepted",
+        "mobilePaymentAccepted": "Mobile payment accepted",
         "mainContact": "Main contact",
         "phone": "Phone",
         "email": "Email",
