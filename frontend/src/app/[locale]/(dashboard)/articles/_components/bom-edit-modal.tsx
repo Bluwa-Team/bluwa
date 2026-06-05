@@ -71,7 +71,7 @@ function ComponentSelector({
   return (
     <div className="relative flex-1 min-w-0">
       {open ? (
-        <div className="flex flex-col rounded-md border border-ring bg-background shadow-sm z-10">
+        <div className="flex flex-col rounded-md border border-ring bg-background shadow-sm z-10 overflow-hidden">
           <div className="flex items-center gap-1.5 px-2 border-b">
             <Search className="size-3.5 text-muted-foreground shrink-0" />
             <input
