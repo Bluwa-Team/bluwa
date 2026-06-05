@@ -50,7 +50,7 @@ function toProductionOutputRow(row: Record<string, unknown>): ProductionOutputRo
     articleLabel:        article?.designation ?? '',
     articleSku:          article?.code        ?? '',
     articleUnit:         article?.unite_stock ?? '',
-    orderNumber:         order?.order_number  ?? '',
+    orderNumber:         order?.of_number  ?? '',
     tauxRebut,
   }
 }
