@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/modal'
 import { OrgStatus } from '@/types/merchant'
 import { CheckCircle2, PauseCircle, XCircle, Loader2 } from 'lucide-react'
+import { updateOrgStatus } from '@/lib/db-client'
 
 const ACTIONS: { label: string; status: OrgStatus; icon: React.ReactNode; color: string; description: string }[] = [
   {
@@ -30,21 +32,26 @@ const ACTIONS: { label: string; status: OrgStatus; icon: React.ReactNode; color:
 ]
 
 export function OrgStatusActions({ orgId, currentStatus }: { orgId: string; currentStatus: OrgStatus }) {
+  const router = useRouter()
   const [pending, setPending] = useState<(typeof ACTIONS)[0] | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function applyStatus() {
     if (!pending) return
     setLoading(true)
-    // Simulation — à remplacer par appel Supabase
-    await new Promise((r) => setTimeout(r, 700))
-    setLoading(false)
-    setDone(true)
-    setTimeout(() => {
-      setDone(false)
-      setPending(null)
-    }, 1200)
+    setError(null)
+    try {
+      await updateOrgStatus(orgId, pending.status)
+      setDone(true)
+      router.refresh()
+      setTimeout(() => { setDone(false); setPending(null) }, 1200)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const availableActions = ACTIONS.filter((a) => a.status !== currentStatus)
@@ -84,6 +91,7 @@ export function OrgStatusActions({ orgId, currentStatus }: { orgId: string; curr
               Nouveau statut : <span className="font-semibold text-gray-900">{pending?.label}</span>
             </p>
             <div className="flex gap-2 pt-1">
+              {error && <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>}
               <button
                 onClick={() => setPending(null)}
                 disabled={loading}

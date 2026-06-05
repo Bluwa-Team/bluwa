@@ -4,6 +4,8 @@ import { TicketStatus, TicketPriority, TicketMessage } from '@/types/merchant'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { TicketReplyForm } from './TicketReplyForm'
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
   open:        'bg-blue-100 text-blue-700',
@@ -29,8 +31,9 @@ const STATUS_ICONS: Record<TicketStatus, React.ReactNode> = {
 
 export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const tickets = await getTickets()
-  const ticket  = tickets.find((t) => t.id === id)
+  const [tickets, supabase] = await Promise.all([getTickets(), createClient()])
+  const { data: { user } } = await supabase.auth.getUser()
+  const ticket = tickets.find((t) => t.id === id)
   if (!ticket) notFound()
 
   const org = (ticket as typeof ticket & { org?: { id: string; name: string } }).org
@@ -90,7 +93,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
       {/* Messages */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">
-          Conversation ({ticket.messages.length} message{ticket.messages.length > 1 ? 's' : ''})
+          Conversation ({(ticket.messages as TicketMessage[]).length} message{(ticket.messages as TicketMessage[]).length > 1 ? 's' : ''})
         </h2>
         {(ticket.messages as TicketMessage[]).map((msg) => {
           const isInternal = msg.is_internal
@@ -125,6 +128,14 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           )
         })}
       </div>
+
+      {/* Formulaire réponse */}
+      <TicketReplyForm
+        ticketId={ticket.id}
+        currentMessages={ticket.messages as TicketMessage[]}
+        currentStatus={status}
+        authorEmail={user?.email ?? 'agent@bluwa.io'}
+      />
     </div>
   )
 }

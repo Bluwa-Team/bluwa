@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MerchantOrg, OrgStatus } from '@/types/merchant'
+import { MerchantOrg, OrgStatus, SubscriptionPlan } from '@/types/merchant'
 import { formatDate } from '@/lib/utils'
 import { Building2, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ const STATUS_LABELS: Record<OrgStatus, string> = {
   churned: 'Churned',
 }
 
-export function OrgsClient({ orgs }: { orgs: MerchantOrg[] }) {
+export function OrgsClient({ orgs, plans }: { orgs: MerchantOrg[]; plans: SubscriptionPlan[] }) {
   const [showNew, setShowNew] = useState(false)
 
   return (
@@ -99,7 +99,7 @@ export function OrgsClient({ orgs }: { orgs: MerchantOrg[] }) {
         </div>
       </div>
 
-      <NewOrgModal open={showNew} onClose={() => setShowNew(false)} />
+      <NewOrgModal open={showNew} onClose={() => setShowNew(false)} plans={plans} />
     </>
   )
 }
