@@ -19,7 +19,8 @@
       "name": "merchant",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3002
+      "port": 3002,
+      "cwd": "merchant"
     },
     {
       "name": "academy",
