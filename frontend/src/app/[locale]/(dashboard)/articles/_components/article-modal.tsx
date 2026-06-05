@@ -11,7 +11,7 @@ import { MultiStepForm } from '@/components/ui/multi-step-form'
 import { useTranslations } from 'next-intl'
 import {
   Article, ArticleType, ArticleStatut, ArticleAppro, FAMILLES,
-  UNITES_STOCK_DEFAUT, UNITES_MESURE_DEFAUT,
+  UNITES_STOCK_DEFAUT, UNITES_MESURE_DEFAUT, UNITES_ACHAT_DEFAUT,
 } from './types'
 import {
   getReferentielValues, addReferentielValue, type ReferentielValue,
@@ -49,6 +49,8 @@ const EMPTY_FORM = {
   uniteStock: '',
   uniteVente: '',
   coeffConversion: 1,
+  uniteAchat: '',
+  coeffConversionAchat: 1,
   devise: 'XOF',
   dernierPrixAchat: '',
   prixVente: '',
@@ -118,6 +120,11 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
     return Array.from(merged)
   }, [referentiel])
 
+  const uniteAchatOptions = useMemo(() => {
+    const merged = new Set([...UNITES_ACHAT_DEFAUT, ...refValues('unite_stock')])
+    return Array.from(merged)
+  }, [referentiel])
+
   const STEPS = [
     { title: t('modal.steps.identification'), description: t('modal.steps.identificationDesc') },
     { title: t('modal.steps.units'), description: t('modal.steps.unitsDesc') },
@@ -139,6 +146,8 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         uniteStock: article.uniteStock,
         uniteVente: article.uniteVente,
         coeffConversion: article.coeffConversion,
+        uniteAchat: article.uniteAchat ?? '',
+        coeffConversionAchat: article.coeffConversionAchat ?? 1,
         devise: article.devise ?? 'XOF',
         dernierPrixAchat: article.dernierPrixAchat?.toString() ?? '',
         prixVente: article.prixVente?.toString() ?? '',
@@ -200,6 +209,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         const ok = await onSave({
           ...form,
           type: form.type as ArticleType,
+          coeffConversionAchat: form.coeffConversionAchat || 1,
           dernierPrixAchat: form.dernierPrixAchat ? parseFloat(form.dernierPrixAchat) : null,
           prixVente: form.prixVente ? parseFloat(form.prixVente) : null,
           poidsUnitaire: form.poidsUnitaire ? parseFloat(form.poidsUnitaire) : null,
@@ -378,6 +388,49 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                     </Field>
                   </div>
                 </div>
+
+                {form.appro === 'Achete' && (
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Unité d&apos;achat</h3>
+                    <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                      <Field label="Unité d'achat">
+                        <SelectWithAdd
+                          value={form.uniteAchat}
+                          onValueChange={(v) => set('uniteAchat', v)}
+                          options={uniteAchatOptions}
+                          placeholder="boite, kg, sac…"
+                          addPlaceholder="Nouvelle unité"
+                          onAdd={(v) => addRef('unite_stock', v)}
+                        />
+                      </Field>
+                      <Field label="Coefficient de conversion">
+                        <Input
+                          type="number"
+                          min="0.0001"
+                          step="any"
+                          value={form.coeffConversionAchat}
+                          onChange={(e) => set('coeffConversionAchat', parseFloat(e.target.value) || 1)}
+                          placeholder="3552"
+                        />
+                      </Field>
+                      <div className="flex items-end pb-1">
+                        {form.uniteAchat && form.uniteStock ? (
+                          <p className="text-xs text-muted-foreground leading-tight">
+                            1 <span className="font-semibold text-foreground">{form.uniteAchat}</span>
+                            {' = '}
+                            <span className="font-semibold text-foreground">{form.coeffConversionAchat}</span>
+                            {' '}
+                            <span className="font-semibold text-foreground">{form.uniteStock}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground leading-tight">
+                            Ex : 1 boite = 3 552 g
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-baseline justify-between mb-3">
