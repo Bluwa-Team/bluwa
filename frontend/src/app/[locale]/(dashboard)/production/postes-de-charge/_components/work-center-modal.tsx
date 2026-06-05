@@ -26,6 +26,18 @@ const EMPTY: WorkCenterInput = {
   efficiencyPercentage: 100,
 }
 
+/** Code auto : 3 premières lettres du nom + 4 chiffres aléatoires (ex : CUV-1234) */
+function generateWorkCenterCode(name: string): string {
+  const prefix = name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .slice(0, 3)
+    .toUpperCase() || 'PDC'
+  const digits = String(Math.floor(1000 + Math.random() * 9000))
+  return `${prefix}-${digits}`
+}
+
 function Field({ label, required, helper, children }: {
   label: string; required?: boolean; helper?: string; children: React.ReactNode
 }) {
@@ -78,7 +90,11 @@ export function WorkCenterModal({ open, onClose, workCenter, onSave }: Props) {
     setSaving(true)
     setError('')
     try {
-      await onSave(form)
+      // Code auto-généré à la création ; conservé tel quel en édition
+      const code = workCenter
+        ? form.code
+        : (form.code?.trim() || generateWorkCenterCode(form.name))
+      await onSave({ ...form, code })
       onClose()
     } catch (e) {
       setError('Une erreur est survenue. Vérifiez que le nom est unique.')
@@ -128,12 +144,12 @@ export function WorkCenterModal({ open, onClose, workCenter, onSave }: Props) {
                     placeholder="ex : Cuve inox 500L"
                   />
                 </Field>
-                <Field label="Code court" helper="Identifiant machine unique (optionnel)">
+                <Field label="Code court" helper="Généré automatiquement depuis le nom">
                   <Input
-                    value={form.code ?? ''}
-                    onChange={(e) => set('code', e.target.value.toUpperCase())}
-                    placeholder="ex : CUVE-01"
-                    className="font-mono uppercase"
+                    value={workCenter ? (form.code ?? '') : ''}
+                    placeholder={workCenter ? '' : 'Généré automatiquement'}
+                    disabled
+                    className="font-mono uppercase bg-muted text-muted-foreground"
                   />
                 </Field>
               </div>

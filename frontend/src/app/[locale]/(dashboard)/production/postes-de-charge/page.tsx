@@ -54,14 +54,12 @@ export default function PostesDeChargePage() {
   async function handleSave(data: WorkCenterInput) {
     if (selected) {
       const updated = await updateWorkCenter(selected.id, data)
-      if (updated) {
-        setWorkCenters((prev) => prev.map((w) => w.id === updated.id ? updated : w))
-      }
+      if (!updated) throw new Error('update failed')
+      setWorkCenters((prev) => prev.map((w) => w.id === updated.id ? updated : w))
     } else {
       const created = await createWorkCenter(data)
-      if (created) {
-        setWorkCenters((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
-      }
+      if (!created) throw new Error('create failed')
+      setWorkCenters((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
     }
   }
 
