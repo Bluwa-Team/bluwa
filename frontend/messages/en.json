@@ -192,6 +192,7 @@
     "empty": "No clients match the selected filters.",
     "allStatuses": "All statuses",
     "allSectors": "All sectors",
+    "resetColumns": "Reset columns",
     "types": {
       "Grossiste": "Wholesaler",
       "Detaillant": "Retailer",

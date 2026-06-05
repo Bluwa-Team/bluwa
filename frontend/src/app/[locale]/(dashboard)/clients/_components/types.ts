@@ -28,6 +28,7 @@ export interface Client {
   incoterm: string
   transport: string
   limiteCredit: number | null
+  devise: string
   conditionPaiement: string
   paiementMobile: boolean
   contactPrincipal: string

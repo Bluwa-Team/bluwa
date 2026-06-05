@@ -2,13 +2,16 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Download, Upload, Pencil, Loader2 } from 'lucide-react'
+import { Plus, Search, Download, Upload, Pencil, Loader2, RotateCcw } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  useResizableColumns, ColumnResizer, type ResizableColumn,
+} from '@/hooks/use-resizable-columns'
 import { ClientModal } from './_components/client-modal'
 import {
   Client, ClientStatut, ClientType,
@@ -19,6 +22,19 @@ import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
 
 const TYPES: Array<'Tous' | ClientType> = ['Tous', 'Grossiste', 'Detaillant', 'Institutionnel', 'ONG', 'Export', 'Autre']
 
+// `name` flexes pour remplir l'espace ; les autres colonnes sont redimensionnables.
+const CLIENT_COLUMNS: ResizableColumn[] = [
+  { id: 'code', defaultWidth: 140, minWidth: 96 },
+  { id: 'name', defaultWidth: null },
+  { id: 'type', defaultWidth: 130, minWidth: 90 },
+  { id: 'country', defaultWidth: 120, minWidth: 80 },
+  { id: 'paymentTerm', defaultWidth: 160, minWidth: 100 },
+  { id: 'creditLimit', defaultWidth: 150, minWidth: 110 },
+  { id: 'status', defaultWidth: 96, minWidth: 70 },
+  { id: 'actions', defaultWidth: 80 },
+]
+const NAME_MIN = 220
+
 function generateCode(pays: string, seq: number): string {
   const paysCode = pays
     ? pays.normalize('NFD').replace(/[̀-ͯ]/g, '').slice(0, 3).toUpperCase()
@@ -26,9 +42,9 @@ function generateCode(pays: string, seq: number): string {
   return `CLT-${paysCode}-${String(seq).padStart(3, '0')}`
 }
 
-function fmt(n: number | null, locale: string) {
+function fmt(n: number | null, locale: string, devise = 'XOF') {
   if (n === null) return <span className="text-muted-foreground">N/A</span>
-  return `${formatNumber(n, locale)} XOF`
+  return `${formatNumber(n, locale)} ${devise}`
 }
 
 export default function ClientsPage() {
@@ -47,6 +63,15 @@ export default function ClientsPage() {
   const [importing,    setImporting]    = useState(false)
   const [importBanner, setImportBanner] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+
+  const { widths, startResize, reset, isCustomized } = useResizableColumns(
+    'bluwa:cols:clients',
+    CLIENT_COLUMNS,
+  )
+  const tableMinWidth = CLIENT_COLUMNS.reduce(
+    (sum, c) => sum + (c.defaultWidth == null ? NAME_MIN : (widths[c.id] ?? c.defaultWidth)),
+    0,
+  )
 
   useEffect(() => {
     getClients().then((data) => { setClients(data); setLoading(false) })
@@ -99,6 +124,7 @@ export default function ClientsPage() {
       transport:         c.transport,
       conditionPaiement: c.conditionPaiement,
       limiteCredit:      c.limiteCredit ?? '',
+      devise:            c.devise,
       contactPrincipal:  c.contactPrincipal,
       telephone:         c.telephone,
       email:             c.email,
@@ -140,10 +166,11 @@ export default function ClientsPage() {
         langue:            row.langue            || 'Français',
         ville:             row.ville             || '',
         pays:              row.pays              || 'Sénégal',
-        incoterm:          row.incoterm          || 'EXW',
-        transport:         row.transport         || 'Route',
-        conditionPaiement: row.conditionPaiement || 'Comptant',
+        incoterm:          row.incoterm          || '',
+        transport:         row.transport         || '',
+        conditionPaiement: row.conditionPaiement || '',
         limiteCredit:      row.limiteCredit      ? parseFloat(row.limiteCredit) : null,
+        devise:            row.devise            || 'XOF',
         contactPrincipal:  row.contactPrincipal  || '',
         telephone:         row.telephone         || '',
         email:             row.email             || '',
@@ -249,29 +276,67 @@ export default function ClientsPage() {
           </SelectContent>
         </Select>
 
-        <span className="text-sm text-muted-foreground ml-auto">{countLabel}</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {isCustomized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs text-muted-foreground"
+              onClick={reset}
+            >
+              <RotateCcw className="size-3.5" />
+              {t('resetColumns')}
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">{countLabel}</span>
+        </div>
       </div>
 
       {/* Tableau */}
       <div className="rounded-lg border overflow-x-auto">
-        <div className="min-w-[1050px]">
-          <Table className="table-fixed w-full">
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-[140px] font-semibold text-xs tracking-wide">{t('columns.code')}</TableHead>
-                <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
-                <TableHead className="w-[130px] font-semibold text-xs tracking-wide">{t('columns.type')}</TableHead>
-                <TableHead className="w-[120px] font-semibold text-xs tracking-wide">{t('columns.country')}</TableHead>
-                <TableHead className="w-[160px] font-semibold text-xs tracking-wide">{t('columns.paymentTerm')}</TableHead>
-                <TableHead className="w-[150px] font-semibold text-xs tracking-wide text-right">{t('columns.creditLimit')}</TableHead>
-                <TableHead className="w-[90px] font-semibold text-xs tracking-wide">{t('columns.status')}</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
+        <Table className="table-fixed" style={{ minWidth: tableMinWidth }}>
+          <colgroup>
+            {CLIENT_COLUMNS.map((c) => (
+              <col
+                key={c.id}
+                style={c.defaultWidth == null ? undefined : { width: widths[c.id] }}
+              />
+            ))}
+          </colgroup>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.code')}
+                <ColumnResizer columnId="code" onStart={startResize} />
+              </TableHead>
+              <TableHead className="font-semibold text-xs tracking-wide">{t('columns.name')}</TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.type')}
+                <ColumnResizer columnId="type" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.country')}
+                <ColumnResizer columnId="country" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.paymentTerm')}
+                <ColumnResizer columnId="paymentTerm" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide text-right">
+                {t('columns.creditLimit')}
+                <ColumnResizer columnId="creditLimit" onStart={startResize} />
+              </TableHead>
+              <TableHead className="relative font-semibold text-xs tracking-wide">
+                {t('columns.status')}
+                <ColumnResizer columnId="status" onStart={startResize} />
+              </TableHead>
+              <TableHead className="font-semibold text-xs tracking-wide text-right pr-4">{t('columns.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="size-4 animate-spin" />
                       {t('loading')}
@@ -280,7 +345,7 @@ export default function ClientsPage() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     {t('empty')}
                   </TableCell>
                 </TableRow>
@@ -304,7 +369,7 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-sm">{c.pays}</TableCell>
                     <TableCell className="text-sm">{c.conditionPaiement || <span className="text-muted-foreground">N/A</span>}</TableCell>
-                    <TableCell className="text-right text-sm font-mono">{fmt(c.limiteCredit, locale)}</TableCell>
+                    <TableCell className="text-right text-sm font-mono">{fmt(c.limiteCredit, locale, c.devise)}</TableCell>
                     <TableCell>
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_COLORS[c.statut]}`}>
                         {t(`statuts.${c.statut}` as any)}
@@ -320,9 +385,8 @@ export default function ClientsPage() {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </div>
+          </TableBody>
+        </Table>
       </div>
 
       <ClientModal

@@ -192,6 +192,7 @@
     "empty": "Aucun client ne correspond aux filtres sélectionnés.",
     "allStatuses": "Tous statuts",
     "allSectors": "Tous secteurs",
+    "resetColumns": "Réinitialiser les colonnes",
     "types": {
       "Grossiste": "Grossiste",
       "Detaillant": "Détaillant",

@@ -13,6 +13,7 @@ import {
   SECTEURS, LANGUES, CONDITIONS_PAIEMENT,
   TRANSPORTS, INCOTERMS_CLIENT, PAYS_CLIENTS,
 } from './types'
+import { DEVISES } from '@/config'
 
 interface Props {
   open: boolean
@@ -49,6 +50,7 @@ const EMPTY_FORM = {
   incoterm: '',
   transport: '',
   limiteCredit: '',
+  devise: 'XOF',
   conditionPaiement: '',
   paiementMobile: false,
 }
@@ -86,6 +88,7 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
         incoterm: client.incoterm,
         transport: client.transport,
         limiteCredit: client.limiteCredit?.toString() ?? '',
+        devise: client.devise ?? 'XOF',
         conditionPaiement: client.conditionPaiement,
         paiementMobile: client.paiementMobile,
       })
@@ -100,7 +103,7 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
 
   function isStepValid() {
     if (step === 1) return !!form.raisonSociale && !!form.type
-    if (step === 2) return true
+    if (step === 2) return !!form.contactPrincipal && !!form.telephone && !!form.pays
     return true
   }
 
@@ -169,7 +172,11 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
                 </Field>
                 <Field label={t('modal.fields.type')} required>
                   <Select value={form.type} onValueChange={(v) => set('type', v ?? '')}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Choisir un type" /></SelectTrigger>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choisir un type">
+                        {(value: string) => value ? t(`types.${value}` as any) : 'Choisir un type'}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {CLIENT_TYPE_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -214,10 +221,10 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contacts</h3>
                   <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-                    <Field label={t('modal.fields.mainContact')}>
+                    <Field label={t('modal.fields.mainContact')} required>
                       <Input value={form.contactPrincipal} onChange={(e) => set('contactPrincipal', e.target.value)} placeholder="Prénom Nom" />
                     </Field>
-                    <Field label={t('modal.fields.phone')}>
+                    <Field label={t('modal.fields.phone')} required>
                       <Input value={form.telephone} onChange={(e) => set('telephone', e.target.value)} placeholder="+221 77 000 00 00" />
                     </Field>
                     <Field label={t('modal.fields.email')}>
@@ -231,9 +238,9 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
                     <Field label={t('modal.fields.city')}>
                       <Input value={form.ville} onChange={(e) => set('ville', e.target.value)} placeholder="Ex: Dakar" />
                     </Field>
-                    <Field label={t('modal.fields.country')}>
+                    <Field label={t('modal.fields.country')} required>
                       <Select value={form.pays} onValueChange={(v) => set('pays', v ?? '')}>
-                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                         <SelectContent>
                           {PAYS_CLIENTS.map((p) => (
                             <SelectItem key={p} value={p}>{p}</SelectItem>
@@ -277,12 +284,29 @@ export function ClientModal({ open, onClose, client, onSave }: Props) {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Crédit & paiement</h3>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <Field label={t('modal.fields.creditLimit')}>
-                      <Input
-                        type="number"
-                        value={form.limiteCredit}
-                        onChange={(e) => set('limiteCredit', e.target.value)}
-                        placeholder="Ex: 5 000 000"
-                      />
+                      <div className="flex items-start gap-2">
+                        <Input
+                          type="number"
+                          value={form.limiteCredit}
+                          onChange={(e) => set('limiteCredit', e.target.value)}
+                          placeholder="Ex: 5 000 000"
+                          className="flex-1"
+                        />
+                        <div className="w-28 shrink-0">
+                          <Select value={form.devise} onValueChange={(v) => set('devise', v ?? 'XOF')}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue>
+                                {(value: string) => value || 'XOF'}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DEVISES.map((d) => (
+                                <SelectItem key={d.code} value={d.code}>{d.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </Field>
                     <Field label={t('modal.fields.paymentTerm')}>
                       <Select value={form.conditionPaiement} onValueChange={(v) => set('conditionPaiement', v ?? '')}>
