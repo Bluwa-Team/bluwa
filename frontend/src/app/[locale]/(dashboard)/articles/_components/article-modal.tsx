@@ -275,7 +275,11 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                   <Field label={t('modal.fields.type')} required>
                     <Select value={form.type} onValueChange={(v) => set('type', v ?? '')}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Choisir un type" />
+                        <SelectValue placeholder="Choisir un type">
+                          {(value: string) => value
+                            ? `${value} · ${TYPE_LABELS_T[value as ArticleType]}`
+                            : 'Choisir un type'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {(Object.keys(TYPE_LABELS_T) as ArticleType[]).map((tp) => (
@@ -289,7 +293,11 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                   </Field>
                   <Field label={t('modal.fields.status')}>
                     <Select value={form.statut} onValueChange={(v) => set('statut', v ?? '')}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(value: string) => value ? t(`statuts.${value}` as any) : ''}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="EnCreation">{t('statuts.EnCreation')}</SelectItem>
                         <SelectItem value="Actif">{t('statuts.Actif')}</SelectItem>
@@ -473,7 +481,11 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                     </Field>
                     <Field label={t('modal.fields.appro')}>
                       <Select value={form.appro} onValueChange={(v) => set('appro', v ?? '')}>
-                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full">
+                          <SelectValue>
+                            {(value: string) => value ? t(`appro.${value}` as any) : ''}
+                          </SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Achete">{t('appro.Achete')}</SelectItem>
                           <SelectItem value="Fabrique">{t('appro.Fabrique')}</SelectItem>
