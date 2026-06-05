@@ -206,10 +206,33 @@ export default function ArticleDetailPage() {
 
             <Section title="Unités et conversion" icon={Package}>
               <InfoRow label={t('modal.fields.stockUnit')} value={<span className="font-mono font-semibold">{article.uniteStock}</span>} />
-              <InfoRow label={t('modal.fields.saleUnit')} value={<span className="font-mono">{article.uniteVente}</span>} />
-              <InfoRow label={t('modal.fields.convCoeff')} value={
-                `1 ${article.uniteVente} = ${article.coeffConversion} ${article.uniteStock}`
-              } />
+              {article.appro === 'Achete' && (
+                <>
+                  <InfoRow label="Unité d'achat" value={
+                    article.uniteAchat
+                      ? <span className="font-mono">{article.uniteAchat}</span>
+                      : null
+                  } />
+                  <InfoRow label="Conversion achat" value={
+                    article.uniteAchat
+                      ? <span className="font-mono text-xs">
+                          1 <span className="font-semibold">{article.uniteAchat}</span>
+                          {' = '}
+                          <span className="font-semibold">{article.coeffConversionAchat}</span>
+                          {' '}{article.uniteStock}
+                        </span>
+                      : null
+                  } />
+                </>
+              )}
+              {article.uniteVente && (
+                <>
+                  <InfoRow label={t('modal.fields.saleUnit')} value={<span className="font-mono">{article.uniteVente}</span>} />
+                  <InfoRow label={t('modal.fields.convCoeff')} value={
+                    `1 ${article.uniteVente} = ${article.coeffConversion} ${article.uniteStock}`
+                  } />
+                </>
+              )}
             </Section>
 
             <Section title="Valorisation" icon={TrendingUp}>
