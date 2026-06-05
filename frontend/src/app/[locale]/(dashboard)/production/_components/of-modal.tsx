@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
@@ -18,27 +18,23 @@ import {
   STATUT_OF_LABELS,
   STATUT_OF_COLORS,
 } from './types'
-import {
-  MOCK_BOMS,
-  getBOMByArticleCode,
-} from '../../articles/_components/bom'
+import { getPFArticles } from '@/lib/actions/articles'
+import { getBomByArticleId } from '@/lib/actions/bom'
 
 // ── Types locaux ──────────────────────────────────────────────────────────────
 
 interface Props {
   open:    boolean
   onClose: () => void
-  of?:     OrdreFabrication | null   // présent = mode édition
+  of?:     OrdreFabrication | null
   onSave:  (of: Omit<OrdreFabrication, 'id' | 'numero'>) => Promise<boolean>
 }
 
-type BomRow = {
-  ingredientCode: string
-  designation: string
-  unite: string
-  qtyPerUnit: number  // taux de base (par btl), conservé pour recalcul
-  qty: string         // quantité affichée et éditable
-}
+type PFArticle = { id: string; code: string; designation: string; uniteStock: string }
+
+type BomBase = { ingredientCode: string; designation: string; unite: string; qtyPerUnit: number }
+
+type BomRow = BomBase & { qty: string }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -89,9 +85,8 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-// Quantité totale pour nbBtl bouteilles — arrondie à l'entier pour les unités
-function fmtBomQty(qtyPerUnit: number, unite: string, nbBtl: number): string {
-  const val = qtyPerUnit * nbBtl
+function fmtBomQty(qtyPerUnit: number, unite: string, nbUnits: number): string {
+  const val = qtyPerUnit * nbUnits
   return unite === 'u' ? String(Math.round(val)) : val.toFixed(3)
 }
 
@@ -100,7 +95,7 @@ function fmtBomQty(qtyPerUnit: number, unite: string, nbBtl: number): string {
 const TODAY = new Date().toISOString().split('T')[0]
 
 const EMPTY = {
-  sku:        MOCK_BOMS[0].articleCode,
+  sku:        '',
   qty:        '100',
   ligne:      LIGNE_OPTIONS[0].value,
   operateur:  OPERATEUR_OPTIONS[0],
@@ -111,9 +106,24 @@ const EMPTY = {
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 export function OFModal({ open, onClose, of, onSave }: Props) {
-  const [form, setForm] = useState(EMPTY)
-  const [bomRows, setBomRows] = useState<BomRow[]>([])
-  const [saving, setSaving] = useState(false)
+  const [form, setForm]           = useState(EMPTY)
+  const [bomBase, setBomBase]     = useState<BomBase[]>([])
+  const [bomRows, setBomRows]     = useState<BomRow[]>([])
+  const [pfArticles, setPFArticles] = useState<PFArticle[]>([])
+  const [loadingBom, setLoadingBom] = useState(false)
+  const [saving, setSaving]       = useState(false)
+
+  // Charge les articles PF/PSF actifs à l'ouverture du modal
+  useEffect(() => {
+    if (!open) return
+    getPFArticles().then((articles) => {
+      setPFArticles(articles)
+      // Initialise le SKU par défaut uniquement en mode création
+      if (!of && articles.length > 0) {
+        setForm((prev) => ({ ...prev, sku: articles[0].code }))
+      }
+    })
+  }, [open, of])
 
   // Reset ou pré-remplir à chaque ouverture
   useEffect(() => {
@@ -128,25 +138,36 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
         coutEstime: '0',
       })
     } else {
-      setForm(EMPTY)
+      setForm((prev) => ({ ...EMPTY, sku: prev.sku }))
     }
   }, [open, of])
 
-  // Recharge BOM depuis la source canonique (bom.ts) à chaque changement de SKU ou de quantité.
-  // Cette connexion garantit que le modal OF et l'onglet Nomenclatures partagent la même source.
+  // Charge la BOM Supabase à chaque changement de SKU
+  const loadBom = useCallback(async (sku: string) => {
+    const article = pfArticles.find((a) => a.code === sku)
+    if (!article) { setBomBase([]); setBomRows([]); return }
+
+    setLoadingBom(true)
+    const { ingredients } = await getBomByArticleId(article.id)
+    const base: BomBase[] = ingredients.map((i) => ({
+      ingredientCode: i.ingredientCode,
+      designation:    i.designation,
+      unite:          i.unite,
+      qtyPerUnit:     i.qtyPerUnit,
+    }))
+    setBomBase(base)
+    setLoadingBom(false)
+  }, [pfArticles])
+
+  useEffect(() => {
+    if (form.sku) loadBom(form.sku)
+  }, [form.sku, loadBom])
+
+  // Recalcule les quantités affichées quand bomBase ou qty change
   useEffect(() => {
     const qty = Math.max(0, parseInt(form.qty, 10) || 0)
-    const { ingredients } = getBOMByArticleCode(form.sku)
-    setBomRows(
-      ingredients.map((i) => ({
-        ingredientCode: i.ingredientCode,
-        designation:    i.designation,
-        unite:          i.unite,
-        qtyPerUnit:     i.qtyPerUnit,
-        qty:            fmtBomQty(i.qtyPerUnit, i.unite, qty),
-      })),
-    )
-  }, [form.sku, form.qty])
+    setBomRows(bomBase.map((b) => ({ ...b, qty: fmtBomQty(b.qtyPerUnit, b.unite, qty) })))
+  }, [bomBase, form.qty])
 
   function set(key: keyof typeof EMPTY, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -158,25 +179,13 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
 
   function resetBomRows() {
     const qty = Math.max(0, parseInt(form.qty, 10) || 0)
-    const { ingredients } = getBOMByArticleCode(form.sku)
-    setBomRows(
-      ingredients.map((i) => ({
-        ingredientCode: i.ingredientCode,
-        designation:    i.designation,
-        unite:          i.unite,
-        qtyPerUnit:     i.qtyPerUnit,
-        qty:            fmtBomQty(i.qtyPerUnit, i.unite, qty),
-      })),
-    )
+    setBomRows(bomBase.map((b) => ({ ...b, qty: fmtBomQty(b.qtyPerUnit, b.unite, qty) })))
   }
 
-  // Produit sélectionné — source : MOCK_BOMS (même source que l'onglet Nomenclatures)
-  const produit = MOCK_BOMS.find((b) => b.articleCode === form.sku)!
-  const qty = Math.max(0, parseInt(form.qty, 10) || 0)
+  const produit   = pfArticles.find((a) => a.code === form.sku)
+  const qty       = Math.max(0, parseInt(form.qty, 10) || 0)
   const debutPlanif = subtractWorkDays(form.dateBesoin, LEAD_TIME_DAYS)
-  const isValid = qty > 0 && !!form.dateBesoin && !!form.ligne && !!form.operateur
-
-  // Détecte si au moins une ligne BOM a été modifiée manuellement
+  const isValid   = qty > 0 && !!form.dateBesoin && !!form.ligne && !!form.operateur && !!form.sku
   const bomIsCustomized = bomRows.some(
     (r) => r.qty !== fmtBomQty(r.qtyPerUnit, r.unite, qty),
   )
@@ -185,12 +194,11 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
     if (!isValid) return
     setSaving(true)
     const ok = await onSave({
-      produitFini:   produit.articleDesignation,
+      produitFini:   produit?.designation ?? form.sku,
       sku:           form.sku,
       qty,
-      // En mode édition, on préserve l'avancement et le statut courants
       realise:       of?.realise       ?? 0,
-      unite:         of?.unite         ?? 'btl',
+      unite:         of?.unite         ?? produit?.uniteStock ?? 'u',
       lotPF:         of?.lotPF         ?? null,
       ligne:         form.ligne,
       operateurPrep: form.operateur,
@@ -235,16 +243,24 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
               {/* Produit + Quantité */}
               <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                 <Field label="Produit Fini" required>
-                  <NativeSelect value={form.sku} onChange={(v) => set('sku', v)}>
-                    {MOCK_BOMS.map((b) => (
-                      <option key={b.articleCode} value={b.articleCode}>
-                        {b.articleDesignation}
-                      </option>
-                    ))}
+                  <NativeSelect
+                    value={form.sku}
+                    onChange={(v) => set('sku', v)}
+                    disabled={pfArticles.length === 0}
+                  >
+                    {pfArticles.length === 0 ? (
+                      <option value="">Chargement…</option>
+                    ) : (
+                      pfArticles.map((a) => (
+                        <option key={a.id} value={a.code}>
+                          {a.designation}
+                        </option>
+                      ))
+                    )}
                   </NativeSelect>
                 </Field>
 
-                <Field label="Quantité (bouteilles 1L)" required>
+                <Field label="Quantité" required>
                   <Input
                     type="number"
                     min="1"
@@ -319,7 +335,7 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
                   </li>
                   <li>
                     • Cadence ligne : gamme standardisée pour{' '}
-                    <strong>{qty > 0 ? qty : '—'} bouteilles</strong>
+                    <strong>{qty > 0 ? qty : '—'} {produit?.uniteStock ?? 'u'}</strong>
                   </li>
                   <li>
                     • <strong>Début planifié auto :</strong>{' '}
@@ -340,7 +356,7 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
                     <p className="text-sm font-semibold text-stone-800">
                       Composants à approcher
                     </p>
-                    {bomRows.length > 0 && (
+                    {!loadingBom && bomRows.length > 0 && (
                       <span className="text-[11px] text-stone-500 bg-stone-200 px-1.5 py-0.5 rounded-full">
                         {bomRows.length} ingrédient{bomRows.length > 1 ? 's' : ''}
                       </span>
@@ -357,7 +373,12 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
                   )}
                 </div>
 
-                {qty === 0 ? (
+                {loadingBom ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground pl-1">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Chargement de la nomenclature…
+                  </div>
+                ) : qty === 0 ? (
                   <p className="text-sm text-muted-foreground pl-1 italic">
                     Saisissez une quantité pour voir les besoins composants.
                   </p>
@@ -381,10 +402,7 @@ export function OFModal({ open, onClose, of, onSave }: Props) {
                         const computed = fmtBomQty(row.qtyPerUnit, row.unite, qty)
                         const isEdited = row.qty !== computed
                         return (
-                          <div
-                            key={row.ingredientCode}
-                            className="flex items-center gap-x-3"
-                          >
+                          <div key={row.ingredientCode} className="flex items-center gap-x-3">
                             <span className="w-[80px] shrink-0 font-mono text-[11px] text-stone-500 truncate">
                               {row.ingredientCode}
                             </span>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -61,8 +62,8 @@ export default function LoginPage() {
       <form onSubmit={handleLogin} className="w-full" style={{ maxWidth: '400px' }}>
         <div className="p-6">
           <div className="text-center">
-            <Link href="/" aria-label="Accueil" className="text-xl font-bold tracking-tight">
-              Bluwa
+            <Link href="/" aria-label="Accueil" className="inline-block">
+              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} priority />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">Connexion</h1>
             <p className="text-muted-foreground text-sm">Bienvenue, connectez-vous à votre espace</p>

@@ -56,6 +56,28 @@ export async function getArticles(): Promise<Article[]> {
   }
 }
 
+export async function getPFArticles(): Promise<{ id: string; code: string; designation: string; uniteStock: string }[]> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('articles')
+      .select('id, code, designation, unite_stock')
+      .eq('organization_id', orgId)
+      .in('type', ['PF', 'PSF'])
+      .eq('statut', 'Actif')
+      .order('code')
+    if (error) throw error
+    return (data ?? []).map((r) => ({
+      id:          r.id as string,
+      code:        r.code as string,
+      designation: r.designation as string,
+      uniteStock:  (r.unite_stock as string) ?? '',
+    }))
+  } catch {
+    return []
+  }
+}
+
 export async function getArticleById(id: string): Promise<Article | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
