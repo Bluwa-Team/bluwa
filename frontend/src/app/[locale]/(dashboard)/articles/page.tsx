@@ -24,8 +24,27 @@ import {
   TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from './_components/types'
 import { getArticles, createArticle, updateArticle } from '@/lib/actions/articles'
-import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
+import { downloadCsv } from '@/lib/csv-utils'
+import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import type { ArticleAppro } from './_components/types'
+
+const ARTICLE_CSV_FIELDS: CsvField[] = [
+  { key: 'designation', label: 'Désignation', required: true },
+  { key: 'code', label: 'Code / SKU' },
+  { key: 'type', label: 'Type (MP, PSF, PF, AC, CS)' },
+  { key: 'famille', label: 'Famille' },
+  { key: 'sousFamille', label: 'Sous-famille' },
+  { key: 'categorie', label: 'Catégorie' },
+  { key: 'uniteStock', label: 'Unité de stock' },
+  { key: 'uniteVente', label: 'Unité de vente' },
+  { key: 'prixVente', label: 'Prix de vente' },
+  { key: 'dureeVie', label: 'Durée de vie (jours)' },
+  { key: 'poidsUnitaire', label: 'Poids unitaire' },
+  { key: 'stockSecurite', label: 'Stock de sécurité' },
+  { key: 'appro', label: 'Approvisionnement (Achete, Fabrique)' },
+  { key: 'statut', label: 'Statut' },
+  { key: 'gestionLot', label: 'Gestion par lot (true/false)' },
+]
 
 const TYPES: Array<'TOUS' | ArticleType> = ['TOUS', 'MP', 'PSF', 'PF', 'AC', 'CS']
 const STATUTS: Array<'Tous' | ArticleStatut> = ['Tous', 'Actif', 'Bloque', 'EnCreation']
@@ -71,9 +90,7 @@ export default function ArticlesPage() {
   const [modalOpen,     setModalOpen]     = useState(false)
   const [editArticle,   setEditArticle]   = useState<Article | null>(null)
   const [selected,      setSelected]      = useState<Set<string>>(new Set())
-  const [importing,     setImporting]     = useState(false)
-  const [importBanner,  setImportBanner]  = useState<string | null>(null)
-  const importRef = useRef<HTMLInputElement>(null)
+  const [mapperOpen,    setMapperOpen]    = useState(false)
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:articles',
@@ -146,27 +163,9 @@ export default function ArticlesPage() {
     })))
   }
 
-  function handleDownloadTemplate() {
-    downloadCsvTemplate('articles_modele.csv',
-      ['code', 'designation', 'type', 'famille', 'uniteStock', 'uniteVente', 'prixVente', 'dureeVie', 'appro', 'statut', 'gestionLot'],
-      {
-        code: 'MP-0001', designation: 'Fleurs d\'hibiscus séchées', type: 'MP',
-        famille: 'Matières premières', uniteStock: 'kg', uniteVente: 'kg',
-        prixVente: '2500', dureeVie: '365', appro: 'Achete', statut: 'Actif', gestionLot: 'true',
-      },
-    )
-  }
+  // ── Import CSV (mapper de colonnes) ───────────────────────────────────────────
 
-  // ── Import CSV ──────────────────────────────────────────────────────────────
-
-  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setImporting(true)
-    setImportBanner(null)
-
-    const { rows } = await parseCsvFile(file)
+  async function importArticleRows(rows: Record<string, string>[]) {
     let created = 0
     let errors  = 0
 
@@ -198,11 +197,7 @@ export default function ArticlesPage() {
       const data = await getArticles()
       setArticles(data)
     }
-    setImporting(false)
-    setImportBanner(
-      `${created} article${created !== 1 ? 's' : ''} importé${created !== 1 ? 's' : ''}` +
-      (errors ? ` · ${errors} ligne${errors !== 1 ? 's' : ''} ignorée${errors !== 1 ? 's' : ''}` : ''),
-    )
+    return { created, errors }
   }
 
   function toggleSelect(id: string) {
@@ -241,13 +236,10 @@ export default function ArticlesPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline" size="sm" className="gap-1.5"
-            onClick={() => importRef.current?.click()}
-            disabled={importing}
+            onClick={() => setMapperOpen(true)}
           >
-            {importing
-              ? <Loader2 className="size-3.5 animate-spin" />
-              : <Upload className="size-3.5" />}
-            {importing ? 'Import…' : tCommon('import')}
+            <Upload className="size-3.5" />
+            {tCommon('import')}
           </Button>
           <Button
             variant="outline" size="sm" className="gap-1.5"
@@ -257,13 +249,6 @@ export default function ArticlesPage() {
             <Download className="size-3.5" />
             {tCommon('export')}
           </Button>
-          <input
-            ref={importRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImportFile}
-          />
           {selected.size > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5">
               <Printer className="size-3.5" />
@@ -276,22 +261,6 @@ export default function ArticlesPage() {
           </Button>
         </div>
       </div>
-
-      {/* Banner import */}
-      {importBanner && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
-          <span>✓ {importBanner}</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleDownloadTemplate}
-              className="text-xs underline underline-offset-2 text-emerald-700 hover:text-emerald-900"
-            >
-              Télécharger le modèle CSV
-            </button>
-            <button onClick={() => setImportBanner(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
-          </div>
-        </div>
-      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">
@@ -504,6 +473,14 @@ export default function ArticlesPage() {
         onClose={() => setModalOpen(false)}
         article={editArticle}
         onSave={handleSave}
+      />
+
+      <CsvImportMapper
+        open={mapperOpen}
+        onClose={() => setMapperOpen(false)}
+        fields={ARTICLE_CSV_FIELDS}
+        entityLabel="articles"
+        onImport={importArticleRows}
       />
     </div>
   )

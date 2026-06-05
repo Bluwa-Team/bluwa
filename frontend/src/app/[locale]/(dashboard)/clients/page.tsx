@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Download, Upload, Pencil, Loader2, RotateCcw } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
@@ -18,7 +18,28 @@ import {
   CLIENT_TYPE_COLORS, STATUT_COLORS, SECTEURS,
 } from './_components/types'
 import { getClients, createClient, updateClient } from '@/lib/actions/clients'
-import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
+import { downloadCsv } from '@/lib/csv-utils'
+import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
+
+const CLIENT_CSV_FIELDS: CsvField[] = [
+  { key: 'raisonSociale', label: 'Raison sociale', required: true },
+  { key: 'code', label: 'Code' },
+  { key: 'type', label: 'Type (Grossiste, Detaillant, ...)' },
+  { key: 'statut', label: 'Statut (Actif/Inactif)' },
+  { key: 'secteur', label: 'Secteur' },
+  { key: 'langue', label: 'Langue' },
+  { key: 'contactPrincipal', label: 'Contact principal' },
+  { key: 'telephone', label: 'Téléphone' },
+  { key: 'email', label: 'Email' },
+  { key: 'ville', label: 'Ville' },
+  { key: 'pays', label: 'Pays' },
+  { key: 'incoterm', label: 'Incoterm' },
+  { key: 'transport', label: 'Transport' },
+  { key: 'conditionPaiement', label: 'Condition de paiement' },
+  { key: 'limiteCredit', label: 'Limite de crédit' },
+  { key: 'devise', label: 'Devise' },
+  { key: 'paiementMobile', label: 'Paiement mobile (true/false)' },
+]
 
 const TYPES: Array<'Tous' | ClientType> = ['Tous', 'Grossiste', 'Detaillant', 'Institutionnel', 'ONG', 'Export', 'Autre']
 
@@ -60,9 +81,7 @@ export default function ClientsPage() {
   const [filterSecteur,setFilterSecteur]= useState('Tous')
   const [modalOpen,    setModalOpen]    = useState(false)
   const [editClient,   setEditClient]   = useState<Client | null>(null)
-  const [importing,    setImporting]    = useState(false)
-  const [importBanner, setImportBanner] = useState<string | null>(null)
-  const importRef = useRef<HTMLInputElement>(null)
+  const [mapperOpen,   setMapperOpen]   = useState(false)
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:clients',
@@ -132,26 +151,7 @@ export default function ClientsPage() {
     })))
   }
 
-  function handleDownloadTemplate() {
-    downloadCsvTemplate('clients_modele.csv',
-      ['code','raisonSociale','type','secteur','ville','pays','telephone','email','conditionPaiement','incoterm','transport','limiteCredit'],
-      {
-        code: 'CLI-0001', raisonSociale: 'Supermarché Avenir', type: 'Grossiste',
-        secteur: 'Distribution', ville: 'Dakar', pays: 'Sénégal',
-        telephone: '+221 77 123 45 67', email: 'contact@avenir.sn',
-        conditionPaiement: '30j', incoterm: 'EXW', transport: 'Route', limiteCredit: '500000',
-      },
-    )
-  }
-
-  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setImporting(true)
-    setImportBanner(null)
-
-    const { rows } = await parseCsvFile(file)
+  async function importClientRows(rows: Record<string, string>[]) {
     let created = 0; let errors = 0
     for (const row of rows) {
       if (!row.raisonSociale) { errors++; continue }
@@ -181,11 +181,7 @@ export default function ClientsPage() {
     }
 
     if (created > 0) { const data = await getClients(); setClients(data) }
-    setImporting(false)
-    setImportBanner(
-      `${created} client${created !== 1 ? 's' : ''} importé${created !== 1 ? 's' : ''}` +
-      (errors ? ` · ${errors} ligne${errors !== 1 ? 's' : ''} ignorée${errors !== 1 ? 's' : ''}` : ''),
-    )
+    return { created, errors }
   }
 
   const count = filtered.length
@@ -202,32 +198,21 @@ export default function ClientsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={() => importRef.current?.click()} disabled={importing}>
-            {importing ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
-            {importing ? 'Import…' : tCommon('import')}
+            onClick={() => setMapperOpen(true)}>
+            <Upload className="size-3.5" />
+            {tCommon('import')}
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5"
             onClick={handleExport} disabled={clients.length === 0}>
             <Download className="size-3.5" />
             {tCommon('export')}
           </Button>
-          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImportFile} />
           <Button size="sm" className="gap-1.5" onClick={() => { setEditClient(null); setModalOpen(true) }}>
             <Plus className="size-4" />
             {t('new')}
           </Button>
         </div>
       </div>
-
-      {importBanner && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
-          <span>✓ {importBanner}</span>
-          <div className="flex items-center gap-3">
-            <button onClick={handleDownloadTemplate} className="text-xs underline underline-offset-2 text-emerald-700 hover:text-emerald-900">Télécharger le modèle CSV</button>
-            <button onClick={() => setImportBanner(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
-          </div>
-        </div>
-      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">
@@ -394,6 +379,14 @@ export default function ClientsPage() {
         onClose={() => setModalOpen(false)}
         client={editClient}
         onSave={handleSave}
+      />
+
+      <CsvImportMapper
+        open={mapperOpen}
+        onClose={() => setMapperOpen(false)}
+        fields={CLIENT_CSV_FIELDS}
+        entityLabel="clients"
+        onImport={importClientRows}
       />
     </div>
   )

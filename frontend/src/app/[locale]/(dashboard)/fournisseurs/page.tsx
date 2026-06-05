@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Search, Download, Upload, Pencil, Loader2, RotateCcw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -17,8 +17,25 @@ import {
   CATEGORIES_FOURNISSEUR, scoreColor,
 } from './_components/types'
 import { getFournisseurs, createFournisseur, updateFournisseur } from '@/lib/actions/fournisseurs'
-import { downloadCsv, downloadCsvTemplate, parseCsvFile } from '@/lib/csv-utils'
+import { downloadCsv } from '@/lib/csv-utils'
+import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import Link from 'next/link'
+
+const FOURNISSEUR_CSV_FIELDS: CsvField[] = [
+  { key: 'raisonSociale', label: 'Raison sociale', required: true },
+  { key: 'code', label: 'Code' },
+  { key: 'statut', label: 'Statut (Formel/Informel)' },
+  { key: 'qualification', label: 'Qualification (Agree, AQualifier, Suspendu)' },
+  { key: 'categorie', label: 'Catégorie' },
+  { key: 'devise', label: 'Devise' },
+  { key: 'contactPrincipal', label: 'Contact principal' },
+  { key: 'telephone', label: 'Téléphone' },
+  { key: 'email', label: 'Email' },
+  { key: 'ville', label: 'Ville' },
+  { key: 'pays', label: 'Pays' },
+  { key: 'modeLogistique', label: 'Mode logistique' },
+  { key: 'paiementMobile', label: 'Paiement mobile (true/false)' },
+]
 
 const QUALIFICATIONS: Array<'Tous' | FournisseurQualification> = ['Tous', 'Agree', 'AQualifier', 'Suspendu']
 const STATUTS: Array<'Tous' | FournisseurStatut> = ['Tous', 'Formel', 'Informel']
@@ -66,9 +83,7 @@ export default function FournisseursPage() {
   const [filterCategorie, setFilterCategorie] = useState('Toutes')
   const [modalOpen,     setModalOpen]     = useState(false)
   const [editFournisseur, setEditFournisseur] = useState<Fournisseur | null>(null)
-  const [importing,     setImporting]     = useState(false)
-  const [importBanner,  setImportBanner]  = useState<string | null>(null)
-  const importRef = useRef<HTMLInputElement>(null)
+  const [mapperOpen,    setMapperOpen]    = useState(false)
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:fournisseurs',
@@ -130,26 +145,7 @@ export default function FournisseursPage() {
     })))
   }
 
-  function handleDownloadTemplate() {
-    downloadCsvTemplate('fournisseurs_modele.csv',
-      ['code','raisonSociale','statut','qualification','categorie','devise','contactPrincipal','telephone','email','ville','pays','modeLogistique'],
-      {
-        code: 'FOU-0001', raisonSociale: 'Coop. Bissap Kaolack', statut: 'Formel',
-        qualification: 'Agree', categorie: 'Matières premières', devise: 'XOF',
-        contactPrincipal: 'Aliou Diop', telephone: '+221 77 987 65 43',
-        email: 'coop@bissap.sn', ville: 'Kaolack', pays: 'Sénégal', modeLogistique: 'Route',
-      },
-    )
-  }
-
-  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setImporting(true)
-    setImportBanner(null)
-
-    const { rows } = await parseCsvFile(file)
+  async function importFournisseurRows(rows: Record<string, string>[]) {
     let created = 0; let errors = 0
     for (const row of rows) {
       if (!row.raisonSociale) { errors++; continue }
@@ -167,7 +163,7 @@ export default function FournisseursPage() {
         email:            row.email            || '',
         ville:            row.ville            || '',
         pays:             row.pays             || 'Sénégal',
-        modeLogistique:   row.modeLogistique   || 'Route',
+        modeLogistique:   row.modeLogistique   || '',
         scoreFilabilite:  row.scoreFilabilite  ? parseFloat(row.scoreFilabilite) : null,
         paiementMobile:   row.paiementMobile === 'true',
       } as Fournisseur & { code: string })
@@ -175,11 +171,7 @@ export default function FournisseursPage() {
     }
 
     if (created > 0) { const data = await getFournisseurs(); setFournisseurs(data) }
-    setImporting(false)
-    setImportBanner(
-      `${created} fournisseur${created !== 1 ? 's' : ''} importé${created !== 1 ? 's' : ''}` +
-      (errors ? ` · ${errors} ligne${errors !== 1 ? 's' : ''} ignorée${errors !== 1 ? 's' : ''}` : ''),
-    )
+    return { created, errors }
   }
 
   function openEdit(f: Fournisseur) {
@@ -201,32 +193,21 @@ export default function FournisseursPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={() => importRef.current?.click()} disabled={importing}>
-            {importing ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
-            {importing ? 'Import…' : tCommon('import')}
+            onClick={() => setMapperOpen(true)}>
+            <Upload className="size-3.5" />
+            {tCommon('import')}
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5"
             onClick={handleExport} disabled={fournisseurs.length === 0}>
             <Download className="size-3.5" />
             {tCommon('export')}
           </Button>
-          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImportFile} />
           <Button size="sm" className="gap-1.5" onClick={() => { setEditFournisseur(null); setModalOpen(true) }}>
             <Plus className="size-4" />
             {t('new')}
           </Button>
         </div>
       </div>
-
-      {importBanner && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
-          <span>✓ {importBanner}</span>
-          <div className="flex items-center gap-3">
-            <button onClick={handleDownloadTemplate} className="text-xs underline underline-offset-2 text-emerald-700 hover:text-emerald-900">Télécharger le modèle CSV</button>
-            <button onClick={() => setImportBanner(null)} className="text-emerald-600 hover:text-emerald-900">✕</button>
-          </div>
-        </div>
-      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-3">
@@ -400,6 +381,14 @@ export default function FournisseursPage() {
         onClose={() => setModalOpen(false)}
         fournisseur={editFournisseur}
         onSave={handleSave}
+      />
+
+      <CsvImportMapper
+        open={mapperOpen}
+        onClose={() => setMapperOpen(false)}
+        fields={FOURNISSEUR_CSV_FIELDS}
+        entityLabel="fournisseurs"
+        onImport={importFournisseurRows}
       />
     </div>
   )
