@@ -57,6 +57,19 @@ export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'cancelled'
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
 
+export type PaymentMethod = 'virement' | 'wave' | 'orange_money' | 'mtn_momo' | 'moov_money' | 'especes' | 'cheque' | 'stripe'
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  virement:     'Virement bancaire',
+  wave:         'Wave',
+  orange_money: 'Orange Money',
+  mtn_momo:     'MTN MoMo',
+  moov_money:   'Moov Money',
+  especes:      'Espèces',
+  cheque:       'Chèque',
+  stripe:       'Stripe',
+}
+
 export type PlanEngagement = 'monthly' | 'annual'
 export type OrgSize = 'tpe' | 'pme' | 'grande'
 export type ServiceType = 'formation' | 'support_prioritaire' | 'audit_conseil' | 'migration_donnees'
@@ -78,11 +91,14 @@ export interface InstallationFee {
   id: string
   factory_id: string
   size: InstallationSize
-  amount_xof: number                  // Équivalent XOF pour reporting consolidé
-  amount_local?: number               // Montant dans la devise du client
+  amount_xof: number
+  amount_local?: number
   currency?: CurrencyCode
   status: 'pending' | 'partial' | 'paid'
   paid_at: string | null
+  payment_method: PaymentMethod | null
+  payment_reference: string | null
+  payment_note: string | null
   notes: string | null
   created_at: string
 }
@@ -145,12 +161,15 @@ export interface Invoice {
   id: string
   factory_id: string
   subscription_id: string
-  amount_xof: number                  // Équivalent XOF
-  amount_local?: number               // Montant dans la devise du client
+  amount_xof: number
+  amount_local?: number
   currency?: CurrencyCode
   status: InvoiceStatus
   due_at: string
   paid_at: string | null
+  payment_method: PaymentMethod | null
+  payment_reference: string | null    // N° virement, ref Wave/OM, N° chèque
+  payment_note: string | null
   notes: string | null
   created_at: string
 }

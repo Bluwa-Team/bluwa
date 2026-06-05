@@ -114,6 +114,27 @@ export async function createArticle(article: Partial<Article> & { code: string }
   }
 }
 
+export async function getComponentArticles(): Promise<{ code: string; designation: string; unite: string }[]> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data, error } = await supabase
+      .from('articles')
+      .select('code, designation, unite_stock')
+      .eq('organization_id', orgId)
+      .in('type', ['MP', 'AC', 'CS'])
+      .eq('statut', 'Actif')
+      .order('code')
+    if (error) throw error
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      code:        r.code as string,
+      designation: r.designation as string,
+      unite:       (r.unite_stock as string) ?? 'kg',
+    }))
+  } catch {
+    return []
+  }
+}
+
 export async function updateArticle(id: string, article: Partial<Article>): Promise<Article | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()

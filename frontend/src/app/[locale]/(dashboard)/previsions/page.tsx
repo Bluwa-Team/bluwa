@@ -3,16 +3,22 @@
 import { useEffect, useState, useTransition } from 'react'
 import { Save, Loader2, CircleDot, TrendingUp, Info } from 'lucide-react'
 import { getForecasts, upsertForecast, type ForecastRow } from '@/lib/actions/forecasts'
-import { weekLabel } from '@/lib/planning-utils'
+import { weekLabel, getWeekStarts } from '@/lib/planning-utils'
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+function weekNumberLabel(isoDate: string): string {
+  const d = new Date(isoDate)
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7))
+  const yearStart = new Date(d.getFullYear(), 0, 1)
+  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7)
+  return `S${week}`
+}
 
 export default function PrevisionsPage() {
   const [rows,    setRows]    = useState<ForecastRow[]>([])
   const [weeks,   setWeeks]   = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [pending, startTransition] = useTransition()
-  const [saved,   setSaved]   = useState<string | null>(null)   // "articleId-week"
+  const [saved,   setSaved]   = useState<string | null>(null)
   const [error,   setError]   = useState<string | null>(null)
 
   useEffect(() => {
@@ -49,7 +55,6 @@ export default function PrevisionsPage() {
   return (
     <div className="space-y-5">
 
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prévisions de la demande</h1>
@@ -64,7 +69,6 @@ export default function PrevisionsPage() {
         </div>
       </div>
 
-      {/* KPI */}
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-4">
@@ -91,14 +95,12 @@ export default function PrevisionsPage() {
         </div>
       )}
 
-      {/* Erreur */}
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
-      {/* Aide */}
       <div className="flex items-start gap-2 rounded-xl border bg-muted/30 px-4 py-3">
         <Info className="size-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
@@ -108,7 +110,6 @@ export default function PrevisionsPage() {
         </p>
       </div>
 
-      {/* Grille */}
       {loading ? (
         <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -129,8 +130,8 @@ export default function PrevisionsPage() {
                   Produit
                 </th>
                 {weeks.map(w => (
-                  <th key={w} className="text-center px-3 py-3 font-semibold text-xs tracking-wide min-w-[120px]">
-                    <div className="text-muted-foreground">{weekLabel(w)}</div>
+                  <th key={w} className="text-center px-3 py-3 font-semibold text-xs tracking-wide min-w-[100px]">
+                    <div className="text-muted-foreground">{weekNumberLabel(w)}</div>
                   </th>
                 ))}
                 <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide text-muted-foreground">
@@ -143,15 +144,12 @@ export default function PrevisionsPage() {
                 const total = Object.values(row.weeks).reduce((s, v) => s + v, 0)
                 return (
                   <tr key={row.articleId} className={`border-b last:border-0 ${ri % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                    {/* Article */}
                     <td className="sticky left-0 z-10 bg-card px-4 py-2.5 border-r">
                       <p className="font-medium truncate max-w-[180px]" title={row.articleLabel}>
                         {row.articleLabel}
                       </p>
                       <p className="font-mono text-xs text-muted-foreground">{row.articleCode} · {row.unite}</p>
                     </td>
-
-                    {/* Cellules éditables */}
                     {weeks.map(w => {
                       const key = `${row.articleId}-${w}`
                       const isSaved = saved === key
@@ -168,7 +166,7 @@ export default function PrevisionsPage() {
                                 if (e.key === 'Enter') handleSave(row.articleId, w, row.weeks[w] ?? 0)
                               }}
                               onBlur={() => handleSave(row.articleId, w, row.weeks[w] ?? 0)}
-                              className="w-[90px] h-8 px-2 text-sm text-right rounded-lg border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                              className="w-[80px] h-8 px-2 text-sm text-right rounded-lg border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
                             />
                             {isSaved && (
                               <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -179,8 +177,6 @@ export default function PrevisionsPage() {
                         </td>
                       )
                     })}
-
-                    {/* Total */}
                     <td className="px-4 py-2 text-right font-mono font-semibold text-muted-foreground">
                       {total > 0 ? total.toLocaleString('fr-FR') : <span className="text-muted-foreground/40">—</span>}
                     </td>

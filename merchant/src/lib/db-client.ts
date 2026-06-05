@@ -28,3 +28,17 @@ export async function addPipelineComment(pipelineId: string, author: string, con
   const supabase = createClient()
   await supabase.from('onboarding_comments').insert({ pipeline_id: pipelineId, author, content })
 }
+
+export async function recordInvoicePayment(
+  invoiceId: string,
+  payment: { method: string; reference: string; note: string; paid_at: string },
+): Promise<void> {
+  const supabase = createClient()
+  await supabase.from('invoices').update({
+    status:             'paid',
+    paid_at:            payment.paid_at,
+    payment_method:     payment.method,
+    payment_reference:  payment.reference || null,
+    payment_note:       payment.note || null,
+  }).eq('id', invoiceId)
+}

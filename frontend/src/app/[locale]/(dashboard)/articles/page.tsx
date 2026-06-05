@@ -238,7 +238,7 @@ export default function ArticlesPage() {
             variant="outline" size="sm" className="gap-1.5"
             onClick={() => setMapperOpen(true)}
           >
-            <Upload className="size-3.5" />
+            <Download className="size-3.5" />
             {tCommon('import')}
           </Button>
           <Button
@@ -246,7 +246,7 @@ export default function ArticlesPage() {
             onClick={handleExport}
             disabled={articles.length === 0}
           >
-            <Download className="size-3.5" />
+            <Upload className="size-3.5" />
             {tCommon('export')}
           </Button>
           {selected.size > 0 && (
