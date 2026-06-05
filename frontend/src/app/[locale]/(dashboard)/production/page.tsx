@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   ClipboardList,
   Archive,
@@ -19,6 +19,7 @@ import {
   Barcode,
   Calendar,
   ChevronLeft,
+  Loader2,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -35,8 +36,14 @@ import {
   STATUT_OF_COLORS,
   STATUT_OF_TRANSITION,
   STATUT_OF_NEXT,
-  MOCK_OFS,
 } from './_components/types'
+import {
+  getProductionOrders,
+  createProductionOrder,
+  updateProductionOrder,
+  transitionProductionOrder,
+  validatePickingOrder,
+} from '@/lib/actions/production'
 import { HelpPopover } from '@/components/ui/help-popover'
 import { OFModal }  from './_components/of-modal'
 import { printOf }  from '@/lib/of-print'
@@ -104,8 +111,16 @@ function StatCard({
 
 export default function ProductionPage() {
   const locale = useLocale()
-  const [ofs, setOfs] = useState<OrdreFabrication[]>(MOCK_OFS)
+  const [ofs,     setOfs]     = useState<OrdreFabrication[]>([])
+  const [loading, setLoading] = useState(true)
   const [vue, setVue] = useState<Vue>('liste')
+
+  useEffect(() => {
+    getProductionOrders().then((data) => {
+      setOfs(data)
+      setLoading(false)
+    })
+  }, [])
   const [tabStatut, setTabStatut] = useState<TabStatut>('Tous')
   const [showArchives, setShowArchives] = useState(false)
   const [monthOffset, setMonthOffset] = useState(0)
@@ -177,48 +192,38 @@ export default function ProductionPage() {
   }, [ofs, monthOffset])
 
   // ── Transitions d'état ──────────────────────────────────────────────────────
-  function transition(id: string) {
-    setOfs((prev) =>
-      prev.map((o) => {
-        if (o.id !== id) return o
-        const next = STATUT_OF_NEXT[o.statut]
-        if (!next) return o
-        return {
-          ...o,
-          statut: next,
-          archive: next === 'Termine',
-        }
-      }),
-    )
+  async function transition(id: string) {
+    const of_ = ofs.find((o) => o.id === id)
+    if (!of_) return
+    const next = STATUT_OF_NEXT[of_.statut]
+    if (!next) return
+    // Optimistic update
+    setOfs((prev) => prev.map((o) =>
+      o.id === id ? { ...o, statut: next, archive: next === 'Termine' } : o,
+    ))
+    // Persist
+    const updated = await transitionProductionOrder(id, next)
+    if (updated) {
+      setOfs((prev) => prev.map((o) => o.id === id ? updated : o))
+    }
   }
 
-  function validatePicking(id: string) {
-    setOfs((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, picking: 'Valide' } : o)),
-    )
+  async function validatePicking(id: string) {
+    setOfs((prev) => prev.map((o) => o.id === id ? { ...o, picking: 'Valide' } : o))
+    await validatePickingOrder(id)
   }
 
   // ── Sauvegarder (création ou modification) ───────────────────────────────────
   async function handleSaveOF(data: Omit<OrdreFabrication, 'id' | 'numero'>): Promise<boolean> {
     if (selectedOf) {
-      // Mode édition — mise à jour de l'OF existant
-      setOfs((prev) =>
-        prev.map((o) =>
-          o.id === selectedOf.id
-            ? { ...data, id: selectedOf.id, numero: selectedOf.numero }
-            : o,
-        ),
-      )
+      const updated = await updateProductionOrder(selectedOf.id, data)
+      if (!updated) return false
+      setOfs((prev) => prev.map((o) => o.id === selectedOf.id ? updated : o))
       return true
     }
-    // Mode création
-    const year = new Date().getFullYear()
-    const nextSeq = ofs.reduce((max, o) => {
-      const match = o.numero.match(/OF-\d{4}-(\d+)/)
-      return match ? Math.max(max, parseInt(match[1], 10)) : max
-    }, 40)
-    const numero = `OF-${year}-${String(nextSeq + 1).padStart(3, '0')}`
-    setOfs((prev) => [{ ...data, id: String(Date.now()), numero }, ...prev])
+    const created = await createProductionOrder(data)
+    if (!created) return false
+    setOfs((prev) => [created, ...prev])
     return true
   }
 
@@ -234,6 +239,15 @@ export default function ProductionPage() {
     if (pct >= 1) return 'bg-emerald-500'
     if (pct >= 0.5) return 'bg-blue-500'
     return 'bg-orange-400'
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm gap-2">
+        <Loader2 className="size-4 animate-spin" />
+        Chargement des ordres de fabrication…
+      </div>
+    )
   }
 
   return (
