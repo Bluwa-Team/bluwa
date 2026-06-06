@@ -62,8 +62,8 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
 
 export default function OnboardingPage() {
   const t = useTranslations('onboarding')
-  const locale = useLocale()
   const router = useRouter()
+  const locale = useLocale()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -104,7 +104,9 @@ export default function OnboardingPage() {
       return
     }
 
-    window.location.href = `/${locale}/dashboard`
+    // Hard redirect : force un vrai rechargement HTTP pour que le DashboardLayout
+    // voie le profil fraîchement inséré sans passer par le cache RSC du router.
+    window.location.replace(`/${locale}/dashboard`)
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]
