@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboardingAction } from '@/lib/actions/auth'
@@ -63,6 +63,7 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
 export default function OnboardingPage() {
   const t = useTranslations('onboarding')
   const router = useRouter()
+  const locale = useLocale()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -103,8 +104,9 @@ export default function OnboardingPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    // Hard redirect : force un vrai rechargement HTTP pour que le DashboardLayout
+    // voie le profil fraîchement inséré sans passer par le cache RSC du router.
+    window.location.replace(`/${locale}/dashboard`)
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]
