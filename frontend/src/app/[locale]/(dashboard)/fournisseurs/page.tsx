@@ -22,19 +22,20 @@ import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mappe
 import Link from 'next/link'
 
 const FOURNISSEUR_CSV_FIELDS: CsvField[] = [
-  { key: 'raisonSociale', label: 'Raison sociale', required: true },
-  { key: 'code', label: 'Code' },
-  { key: 'statut', label: 'Statut (Formel/Informel)' },
-  { key: 'qualification', label: 'Qualification (Agree, AQualifier, Suspendu)' },
-  { key: 'categorie', label: 'Catégorie' },
-  { key: 'devise', label: 'Devise' },
+  { key: 'code',             label: 'Code fournisseur' },
+  { key: 'raisonSociale',    label: 'Raison sociale', required: true },
+  { key: 'statut',           label: 'Statut (Formel/Informel)' },
+  { key: 'qualification',    label: 'Qualification (Agree, AQualifier, Suspendu)' },
+  { key: 'categorie',        label: 'Catégorie' },
+  { key: 'devise',           label: 'Devise' },
   { key: 'contactPrincipal', label: 'Contact principal' },
-  { key: 'telephone', label: 'Téléphone' },
-  { key: 'email', label: 'Email' },
-  { key: 'ville', label: 'Ville' },
-  { key: 'pays', label: 'Pays' },
-  { key: 'modeLogistique', label: 'Mode logistique' },
-  { key: 'paiementMobile', label: 'Paiement mobile (true/false)' },
+  { key: 'telephone',        label: 'Téléphone' },
+  { key: 'email',            label: 'Email' },
+  { key: 'ville',            label: 'Ville' },
+  { key: 'pays',             label: 'Pays' },
+  { key: 'modeLogistique',   label: 'Mode logistique' },
+  { key: 'paiementMobile',   label: 'Paiement mobile (true/false)' },
+  { key: 'scoreFilabilite',  label: 'Score de fiabilité (0–100)' },
 ]
 
 const QUALIFICATIONS: Array<'Tous' | FournisseurQualification> = ['Tous', 'Agree', 'AQualifier', 'Suspendu']
@@ -165,7 +166,7 @@ export default function FournisseursPage() {
         pays:             row.pays             || 'Sénégal',
         modeLogistique:   row.modeLogistique   || '',
         scoreFilabilite:  row.scoreFilabilite  ? parseFloat(row.scoreFilabilite) : null,
-        paiementMobile:   row.paiementMobile === 'true',
+        paiementMobile:   row.paiementMobile === 'true' || row.paiementMobile?.toLowerCase() === 'oui',
       } as Fournisseur & { code: string })
       if (result) created++; else errors++
     }
