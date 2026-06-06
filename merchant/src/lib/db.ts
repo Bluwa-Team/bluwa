@@ -1,11 +1,7 @@
 /**
  * db.ts — Couche de requêtes Supabase (données réelles, empty-state si DB vide)
- * Utilise le client admin (service_role) pour bypasser RLS côté serveur.
- * Sécurité assurée par le layout auth guard (uniquement @bluwa.io).
  */
-import { createAdminClient } from '@/lib/supabase/admin'
-
-const createClient = createAdminClient
+import { createClient } from '@/lib/supabase/server'
 import type {
   MerchantOrg, Factory, SubscriptionPlan, UserSiteAccess,
   OnboardingItem, OnboardingCheck, OnboardingComment,
