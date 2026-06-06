@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppHeader } from '@/components/dashboard/app-header'
@@ -27,7 +28,7 @@ export default async function DashboardLayout({
 
   if (!profile) redirect(`/${locale}/onboarding`)
 
-  const { data: org } = await supabase
+  const { data: org } = await supabaseAdmin
     .from('organizations')
     .select('name, status')
     .eq('id', profile.organization_id)
