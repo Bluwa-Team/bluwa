@@ -12,14 +12,15 @@ import { AssignPlanForm } from './_components/AssignPlanForm'
 import { UsersPanel } from './_components/UsersPanel'
 
 const STATUS_STYLES: Record<OrgStatus, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  trial: 'bg-amber-100 text-amber-700',
-  suspended: 'bg-red-100 text-red-700',
-  churned: 'bg-gray-100 text-gray-500',
+  active:   'bg-emerald-100 text-emerald-700',
+  trial:    'bg-amber-100 text-amber-700',
+  suspended:'bg-red-100 text-red-700',
+  churned:  'bg-gray-100 text-gray-500',
+  archived: 'bg-gray-50 text-gray-400',
 }
 
 const STATUS_LABELS: Record<OrgStatus, string> = {
-  active: 'Actif', trial: 'Essai', suspended: 'Suspendu', churned: 'Churned',
+  active: 'Actif', trial: 'Essai', suspended: 'Suspendu', churned: 'Churned', archived: 'Archivé',
 }
 
 const SUB_STATUS_STYLES: Record<string, string> = {
