@@ -1,10 +1,9 @@
 /**
- * db.ts — Couche de requêtes Supabase (données réelles uniquement)
+ * db.ts — Couche de requêtes Supabase (données réelles, empty-state si DB vide)
  */
 import { createClient } from '@/lib/supabase/server'
 import type {
-  MerchantOrg, Factory, SubscriptionPlan, InstallationFee,
-  ServiceOrder, Invoice, SupportTicket, UserSiteAccess,
+  MerchantOrg, Factory, SubscriptionPlan, UserSiteAccess,
   OnboardingItem, OnboardingCheck, OnboardingComment,
 } from '@/types/merchant'
 
@@ -51,14 +50,13 @@ function mapFactory(row: FactoryRow): Factory {
 
 export async function getOrgs(): Promise<MerchantOrg[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('organizations')
     .select(`id, name, country_headquarters, status, created_at,
       factories ( id, is_active, subscription_status,
         plan:subscription_plans ( id, name, price_monthly, price_monthly_annual, max_users_allowed, target_size, features_config, created_at )
       )`)
     .order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
   return (data ?? []).map((org) => ({
     id: org.id, name: org.name, status: org.status as MerchantOrg['status'],
     country: org.country_headquarters ?? null, currency: 'XOF' as const,
@@ -69,7 +67,7 @@ export async function getOrgs(): Promise<MerchantOrg[]> {
 
 export async function getOrg(id: string): Promise<(MerchantOrg & { factories: Factory[] }) | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('organizations')
     .select(`id, name, country_headquarters, status, created_at,
       factories ( id, organization_id, name, code, location_country, location_city, timezone,
@@ -77,7 +75,7 @@ export async function getOrg(id: string): Promise<(MerchantOrg & { factories: Fa
         plan:subscription_plans ( id, name, price_monthly, price_monthly_annual, max_users_allowed, target_size, features_config, created_at )
       )`)
     .eq('id', id).single()
-  if (error || !data) return null
+  if (!data) return null
   return {
     id: data.id, name: data.name, status: data.status as MerchantOrg['status'],
     country: data.country_headquarters ?? null, currency: 'XOF' as const,
@@ -95,17 +93,15 @@ export async function getFactoriesWithPlan(orgId?: string): Promise<Factory[]> {
     subscription_plan_id, subscription_status, subscription_expires_at, is_active, created_at,
     plan:subscription_plans ( id, name, price_monthly, price_monthly_annual, max_users_allowed, target_size, features_config, created_at )`)
   if (orgId) query = query.eq('organization_id', orgId)
-  const { data, error } = await query.order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
-  return (data as unknown as FactoryRow[]).map(mapFactory)
+  const { data } = await query.order('created_at', { ascending: true })
+  return (data as unknown as FactoryRow[] ?? []).map(mapFactory)
 }
 
 // ─── Plans ─────────────────────────────────────────────────────────────────
 
 export async function getPlans(): Promise<SubscriptionPlan[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase.from('subscription_plans').select('*').order('price_monthly', { ascending: true })
-  if (error) throw new Error(error.message)
+  const { data } = await supabase.from('subscription_plans').select('*').order('price_monthly', { ascending: true })
   return (data ?? []) as SubscriptionPlan[]
 }
 
@@ -113,14 +109,13 @@ export async function getPlans(): Promise<SubscriptionPlan[]> {
 
 export async function getInstallFees() {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('installation_fees')
     .select(`id, factory_id, size, amount_xof, status, paid_at, notes, created_at,
       factory:factories ( id, organization_id, name, code, location_country, location_city, timezone,
         subscription_plan_id, subscription_status, subscription_expires_at, is_active, created_at,
         organization:organizations ( id, name ) )`)
     .order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -128,14 +123,13 @@ export async function getInstallFees() {
 
 export async function getServiceOrders() {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('service_orders')
     .select(`id, org_id, factory_id, service_type, description, amount_xof, status,
       scheduled_at, delivered_at, created_at,
       org:organizations ( id, name ),
       factory:factories ( id, name, code )`)
     .order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -149,8 +143,7 @@ export async function getInvoices(orgId?: string) {
       factory:factories ( id, name, code, organization_id, org:organizations ( id, name ) )`)
     .order('due_at', { ascending: false })
   if (orgId) query = query.eq('factory.organization_id', orgId)
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
+  const { data } = await query
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data ?? []).map((row: any) => ({ subscription_id: '', ...row }))
 }
@@ -159,12 +152,11 @@ export async function getInvoices(orgId?: string) {
 
 export async function getTickets() {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('support_tickets')
     .select(`id, org_id, subject, status, priority, assigned_to, messages, created_at, updated_at,
       org:organizations ( id, name )`)
     .order('updated_at', { ascending: false })
-  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -172,40 +164,36 @@ export async function getTickets() {
 
 export async function getUsers(orgId: string) {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('users')
     .select('id, organization_id, email, first_name, last_name, role, is_active, created_at')
     .eq('organization_id', orgId).order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
-  return (data as UserRow[]).map((u) => ({
+  return (data as UserRow[] ?? []).map((u) => ({
     ...u, full_name: [u.first_name, u.last_name].filter(Boolean).join(' '),
   }))
 }
 
 export async function getUserSiteAccess(orgId: string): Promise<UserSiteAccess[]> {
   const supabase = await createClient()
-  const { data: users, error: uErr } = await supabase.from('users').select('id').eq('organization_id', orgId)
-  if (uErr || !users || users.length === 0) return []
-  const userIds = users.map((u) => u.id)
-  const { data, error } = await supabase.from('user_site_access')
-    .select('id, user_id, factory_id, granted_at, granted_by').in('user_id', userIds)
-  if (error) return []
-  return data as UserSiteAccess[]
+  const { data: users } = await supabase.from('users').select('id').eq('organization_id', orgId)
+  if (!users || users.length === 0) return []
+  const { data } = await supabase.from('user_site_access')
+    .select('id, user_id, factory_id, granted_at, granted_by').in('user_id', users.map((u) => u.id))
+  return (data ?? []) as UserSiteAccess[]
 }
 
 // ─── Onboarding ─────────────────────────────────────────────────────────────
 
 export async function getOnboardingItems(): Promise<OnboardingItem[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('onboarding_pipeline')
     .select(`id, org_id, org_name, country, stage, plan_target, assigned_to, notes,
       blocked, blocked_reason, stage_entered_at, created_at,
       onboarding_checklist ( id, label, done, sort_order ),
       onboarding_comments ( id, author, content, created_at )`)
     .order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
-  return (data as unknown as PipelineRow[]).map((row) => ({
+  return (data as unknown as PipelineRow[] ?? []).map((row) => ({
     id: row.id, org_id: row.org_id ?? '', org_name: row.org_name, country: row.country,
     stage: row.stage as OnboardingItem['stage'], plan_target: row.plan_target,
     assigned_to: row.assigned_to, notes: row.notes, blocked: row.blocked,
