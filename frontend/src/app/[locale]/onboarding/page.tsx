@@ -175,7 +175,7 @@ export default function OnboardingPage() {
                 <Label>{t('factory.countryLabel')}</Label>
                 <Select
                   value={form.factoryCountry}
-                  onValueChange={(v) => update('factoryCountry', v)}
+                  onValueChange={(v) => { if (v) update('factoryCountry', v) }}
                 >
                   <SelectTrigger>
                     <SelectValue />
