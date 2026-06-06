@@ -194,14 +194,14 @@ export default function FournisseursPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={() => setMapperOpen(true)}>
+            onClick={handleExport} disabled={fournisseurs.length === 0}>
             <Upload className="size-3.5" />
-            {tCommon('import')}
+            {tCommon('export')}
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={handleExport} disabled={fournisseurs.length === 0}>
+            onClick={() => setMapperOpen(true)}>
             <Download className="size-3.5" />
-            {tCommon('export')}
+            {tCommon('import')}
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setEditFournisseur(null); setModalOpen(true) }}>
             <Plus className="size-4" />
