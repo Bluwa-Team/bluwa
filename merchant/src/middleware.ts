@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export const runtime = 'edge'
+// Emails autorisés en plus de @bluwa.io (fondateur)
+const ALLOWED_EMAILS = ['r.okoye@icloud.com']
+function isAllowed(email: string | undefined): boolean {
+  if (!email) return false
+  return email.endsWith('@bluwa.io') || ALLOWED_EMAILS.includes(email)
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -27,13 +32,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname === '/login' || pathname.startsWith('/auth/')) {
-    if (user && user.email?.endsWith('@bluwa.io')) {
+    if (user && isAllowed(user.email)) {
       return NextResponse.redirect(new URL('/orgs', request.url))
     }
     return supabaseResponse
   }
 
-  if (!user || !user.email?.endsWith('@bluwa.io')) {
+  if (!user || !isAllowed(user.email)) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
