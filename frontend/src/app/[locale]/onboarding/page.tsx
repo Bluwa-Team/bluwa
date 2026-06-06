@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboardingAction } from '@/lib/actions/auth'
@@ -62,6 +62,7 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
 
 export default function OnboardingPage() {
   const t = useTranslations('onboarding')
+  const locale = useLocale()
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -103,8 +104,7 @@ export default function OnboardingPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    window.location.href = `/${locale}/dashboard`
   }
 
   const stepLabels = [t('steps.organization'), t('steps.factory')]
