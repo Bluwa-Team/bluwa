@@ -489,9 +489,10 @@
       "subtitle": "Vous pourrez en ajouter d'autres depuis les paramètres",
       "nameLabel": "Nom de l'usine",
       "namePlaceholder": "Usine Dakar",
-      "locationLabel": "Localisation",
+      "locationLabel": "Ville",
       "locationOptional": "(optionnel)",
-      "locationPlaceholder": "Dakar, Sénégal",
+      "locationPlaceholder": "Lomé",
+      "countryLabel": "Pays",
       "submit": "Créer mon espace",
       "submitting": "Création…",
       "back": "Retour"

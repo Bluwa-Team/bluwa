@@ -9,11 +9,27 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+const WEST_AFRICA_COUNTRIES = [
+  'Bénin',
+  'Burkina Faso',
+  "Côte d'Ivoire",
+  'Guinée',
+  'Mali',
+  'Mauritanie',
+  'Niger',
+  'Nigeria',
+  'Sénégal',
+  'Togo',
+  'Autre',
+]
 
 type FormData = {
   orgName: string
   factoryName: string
   factoryLocation: string
+  factoryCountry: string
 }
 
 function StepIndicator({ current, labels }: { current: number; labels: string[] }) {
@@ -54,6 +70,7 @@ export default function OnboardingPage() {
     orgName: '',
     factoryName: '',
     factoryLocation: '',
+    factoryCountry: 'Togo',
   })
 
   function update(field: keyof FormData, value: string) {
@@ -77,6 +94,7 @@ export default function OnboardingPage() {
       orgName: form.orgName,
       factoryName: form.factoryName,
       factoryCity: form.factoryLocation,
+      factoryCountry: form.factoryCountry,
     })
 
     if (!result || !result.ok) {
@@ -151,6 +169,23 @@ export default function OnboardingPage() {
                   onChange={(e) => update('factoryName', e.target.value)}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('factory.countryLabel')}</Label>
+                <Select
+                  value={form.factoryCountry}
+                  onValueChange={(v) => update('factoryCountry', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WEST_AFRICA_COUNTRIES.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

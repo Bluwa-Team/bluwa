@@ -489,9 +489,10 @@
       "subtitle": "You can add more from settings later",
       "nameLabel": "Factory name",
       "namePlaceholder": "Dakar Factory",
-      "locationLabel": "Location",
+      "locationLabel": "City",
       "locationOptional": "(optional)",
-      "locationPlaceholder": "Dakar, Senegal",
+      "locationPlaceholder": "Lomé",
+      "countryLabel": "Country",
       "submit": "Create my workspace",
       "submitting": "Creating…",
       "back": "Back"
