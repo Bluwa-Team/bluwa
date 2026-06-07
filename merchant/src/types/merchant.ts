@@ -176,7 +176,7 @@ export interface Invoice {
 
 export interface SupportTicket {
   id: string
-  org_id: string
+  factory_id: string
   subject: string
   status: TicketStatus
   priority: TicketPriority
@@ -184,6 +184,12 @@ export interface SupportTicket {
   messages: TicketMessage[]
   created_at: string
   updated_at: string
+  factory?: {
+    id: string
+    name: string
+    code: string
+    org: { id: string; name: string } | null
+  } | null
 }
 
 export interface TicketMessage {

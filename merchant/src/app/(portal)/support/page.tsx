@@ -51,7 +51,7 @@ export default async function SupportPage() {
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
               <th className="text-left px-4 py-3 font-medium text-gray-600">Sujet</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Organisation</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Site</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Priorité</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Assigné à</th>
@@ -68,7 +68,12 @@ export default async function SupportPage() {
                     </Link>
                     <p className="text-xs text-gray-400 mt-0.5">{ticket.messages.length} message{ticket.messages.length > 1 ? 's' : ''}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{(ticket as typeof ticket & { org?: { name: string } }).org?.name ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-gray-900 text-sm">{ticket.factory?.name ?? '—'}</span>
+                    {ticket.factory?.org && (
+                      <p className="text-xs text-gray-400 mt-0.5">{ticket.factory.org.name}</p>
+                    )}
+                  </td>
                   <td className={`px-4 py-3 text-xs ${PRIORITY_STYLES[ticket.priority as keyof typeof PRIORITY_STYLES]}`}>
                     {PRIORITY_LABELS[ticket.priority as keyof typeof PRIORITY_LABELS]}
                   </td>

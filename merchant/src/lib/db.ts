@@ -154,8 +154,8 @@ export async function getTickets() {
   const supabase = await createClient()
   const { data } = await supabase
     .from('support_tickets')
-    .select(`id, org_id, subject, status, priority, assigned_to, messages, created_at, updated_at,
-      org:organizations ( id, name )`)
+    .select(`id, factory_id, subject, status, priority, assigned_to, messages, created_at, updated_at,
+      factory:factories ( id, name, code, org:organizations ( id, name ) )`)
     .order('updated_at', { ascending: false })
   return data ?? []
 }
