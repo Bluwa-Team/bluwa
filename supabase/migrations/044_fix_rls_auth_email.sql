@@ -33,7 +33,6 @@ CREATE POLICY "sp_bluwa_admin" ON subscription_plans FOR ALL
   USING (auth.email() LIKE '%@bluwa.io');
 
 -- ── tables merchant ────────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "users_bluwa_admin"       ON users;
 DROP POLICY IF EXISTS "install_fees_admin"       ON installation_fees;
 DROP POLICY IF EXISTS "service_orders_admin"     ON service_orders;
 DROP POLICY IF EXISTS "invoices_admin"           ON invoices;
@@ -42,7 +41,6 @@ DROP POLICY IF EXISTS "pipeline_admin"           ON onboarding_pipeline;
 DROP POLICY IF EXISTS "checklist_admin"          ON onboarding_checklist;
 DROP POLICY IF EXISTS "comments_admin"           ON onboarding_comments;
 
-CREATE POLICY "users_bluwa_admin"     ON users               FOR ALL USING (auth.email() LIKE '%@bluwa.io');
 CREATE POLICY "install_fees_admin"    ON installation_fees   FOR ALL USING (auth.email() LIKE '%@bluwa.io');
 CREATE POLICY "service_orders_admin"  ON service_orders      FOR ALL USING (auth.email() LIKE '%@bluwa.io');
 CREATE POLICY "invoices_admin"        ON invoices            FOR ALL USING (auth.email() LIKE '%@bluwa.io');
