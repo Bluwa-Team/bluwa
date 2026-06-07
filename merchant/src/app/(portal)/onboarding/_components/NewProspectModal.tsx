@@ -127,7 +127,7 @@ export function NewProspectModal({ open, onClose }: Props) {
             <textarea
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Contexte, source du lead, besoins identifiés…"
+              placeholder="Date de démarrage, référent usine, douleurs identifiées…"
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
