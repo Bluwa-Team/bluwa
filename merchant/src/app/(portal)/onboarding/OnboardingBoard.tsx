@@ -12,70 +12,64 @@ import {
   addPipelineComment,
 } from '@/lib/db-client'
 
-// ── Checklists prédéfinies par étape (guide d'onboarding Bluwa) ───────────────
+// ── Checklists par phase — Kanban Roadmap Bluwa (25 tâches / 5 phases) ────────
 export const STAGE_CHECKLISTS: Record<OnboardingStage, string[]> = {
-  prospect: [
-    'Call de cadrage planifié',
-    'Processus actuels documentés',
-    'Douleurs principales identifiées (3 max)',
-    'Modules prioritaires définis',
-    'Liste utilisateurs collectée (noms + rôles)',
-    'Fichiers Excel existants récupérés',
-    'Fiche de cadrage rédigée',
+  cadrage: [
+    'Signature de la LOI et du NDA',
+    'Envoi notification de lancement & fiche onboarding',
+    'Fixation de la date de démarrage officielle du pilote',
+    'Désignation du référent interne (Key User)',
+    'Call de cadrage : isolation de 3 douleurs majeures',
+    'Validation des modules ERP prioritaires à activer',
   ],
-  demo: [
-    'Environnement démo préparé',
-    'Démo réalisée (modules prioritaires)',
-    'Questions / objections notées',
-    'Proposition commerciale envoyée',
-    'Retour client reçu',
-    'Décision go/no-go confirmée',
+  configuration_ia: [
+    "Réception des fichiers Excel bruts de l'usine",
+    "Ingestion & traitement des fichiers via l'IA Bluwa",
+    'Validation de la cohérence des données injectées (QA)',
+    "Configuration de l'environnement cloud du site",
+    'Création des comptes utilisateurs & envoi des accès',
   ],
-  trial: [
-    'Accès trial créé',
-    'MDM configuré (articles, fournisseurs)',
-    'Première réception enregistrée',
-    'Feedback J+7 collecté',
-    'Équipe terrain autonome',
-    'Décision passage en configuration',
+  formation_golive: [
+    'Formation initiale des utilisateurs clés (Key Users)',
+    'Mise à disposition des capsules Bluwa Academy',
+    'Signature conjointe de la Fiche de Cadrage (PV)',
+    "Go-Live : premier flux réel saisi dans l'application",
   ],
-  configuration: [
-    'Sites créés',
-    'Utilisateurs invités et rôles assignés',
-    'Articles MDM importés',
-    'Fournisseurs et clients créés',
-    'BOM / nomenclatures saisies',
-    'Tests de validation effectués',
+  suivi_adoption: [
+    'Sessions hebdomadaires de feedback (30 min)',
+    'Centralisation des retours dans la grille QA',
+    "Analyse du taux d'utilisation terrain (abandon Excel ?)",
+    'Arbitrage produit CTO — traitement des bugs critiques',
   ],
-  formation: [
-    'Formation stocks & achats (J1)',
-    'Formation ventes (J2)',
-    'Formation GPAO (J3)',
-    'Formation qualité HACCP (si applicable)',
-    'Quiz de validation utilisateurs',
-    'Documentation remise au client',
-  ],
-  golive: [
-    'Go-live effectué',
-    'Utilisation en parallèle avec Excel',
-    'Premier OF en production réelle',
-    'Abonnement payant activé',
-    'Bilan J+15 réalisé',
-    'Bilan M1 planifié',
+  bilan_conversion: [
+    'Extraction & analyse des KPIs depuis le portail Bluwa',
+    "Rédaction du Bilan d'Impact et de R.O.I.",
+    'Présentation des résultats lors du call de clôture pilote',
+    'Envoi du Contrat SaaS Commercial Définitif',
+    'Signature, facturation & encaissement Frais Installation',
+    'Recueil autorisation logo pour la Case Study Bluwa',
   ],
 }
 
-const STAGES: { key: OnboardingStage; label: string; color: string; bg: string; dot: string }[] = [
-  { key: 'prospect',      label: 'Prospect',    color: 'text-gray-600',    bg: 'bg-gray-50',    dot: 'bg-gray-400' },
-  { key: 'demo',          label: 'Démo',         color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
-  { key: 'trial',         label: 'Trial',        color: 'text-amber-700',   bg: 'bg-amber-50',   dot: 'bg-amber-500' },
-  { key: 'configuration', label: 'Config.',      color: 'text-violet-700',  bg: 'bg-violet-50',  dot: 'bg-violet-500' },
-  { key: 'formation',     label: 'Formation',    color: 'text-orange-700',  bg: 'bg-orange-50',  dot: 'bg-orange-500' },
-  { key: 'golive',        label: 'Go-live ✓',   color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+// Nombre de jours dans l'étape au-delà duquel la carte est considérée "en retard"
+const STALE_DAYS: Record<OnboardingStage, number> = {
+  cadrage:           7,
+  configuration_ia:  14,
+  formation_golive:  7,
+  suivi_adoption:    49,   // Phase 4 dure normalement 7 semaines
+  bilan_conversion:  9999, // Dernière phase, pas d'alerte retard
+}
+
+const STAGES: { key: OnboardingStage; label: string; sub: string; color: string; bg: string; dot: string }[] = [
+  { key: 'cadrage',          label: 'À Cadrer',         sub: 'Sem. 1',      color: 'text-gray-700',    bg: 'bg-gray-50',    dot: 'bg-gray-400' },
+  { key: 'configuration_ia', label: 'Config. & IA',     sub: 'Sem. 1–2',    color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
+  { key: 'formation_golive', label: 'Formation & GL',   sub: 'Sem. 3',      color: 'text-violet-700',  bg: 'bg-violet-50',  dot: 'bg-violet-500' },
+  { key: 'suivi_adoption',   label: 'Suivi & Adoption', sub: 'Sem. 4–10',   color: 'text-amber-700',   bg: 'bg-amber-50',   dot: 'bg-amber-500' },
+  { key: 'bilan_conversion', label: 'Bilan & Conv. ✓',  sub: 'Sem. 11–12',  color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
 ]
 
 const STAGE_ORDER: OnboardingStage[] = [
-  'prospect', 'demo', 'trial', 'configuration', 'formation', 'golive',
+  'cadrage', 'configuration_ia', 'formation_golive', 'suivi_adoption', 'bilan_conversion',
 ]
 
 function daysInStage(dateStr: string): number {
@@ -84,13 +78,14 @@ function daysInStage(dateStr: string): number {
   return Math.floor((now.getTime() - entered.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-function ChecklistBar({ checklist }: { checklist: OnboardingItem['checklist'] }) {
+function ChecklistBar({ checklist, stage }: { checklist: OnboardingItem['checklist']; stage: OnboardingStage }) {
   const done = checklist.filter((c) => c.done).length
   const pct = checklist.length > 0 ? (done / checklist.length) * 100 : 0
+  const total = STAGE_CHECKLISTS[stage].length
   return (
     <div className="mt-2">
       <div className="flex justify-between text-xs text-gray-400 mb-1">
-        <span>{done}/{checklist.length} étapes</span>
+        <span>{done}/{total} tâches</span>
         <span>{Math.round(pct)}%</span>
       </div>
       <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
@@ -102,7 +97,7 @@ function ChecklistBar({ checklist }: { checklist: OnboardingItem['checklist'] })
 
 function OrgCard({ item, onClick }: { item: OnboardingItem; onClick: () => void }) {
   const days = daysInStage(item.stage_entered_at)
-  const isStale = days > 14 && item.stage !== 'golive'
+  const isStale = days > STALE_DAYS[item.stage]
 
   return (
     <button
@@ -132,7 +127,7 @@ function OrgCard({ item, onClick }: { item: OnboardingItem; onClick: () => void 
         </div>
       )}
 
-      <ChecklistBar checklist={item.checklist} />
+      <ChecklistBar checklist={item.checklist} stage={item.stage} />
 
       {item.notes && (
         <p className="text-xs text-gray-500 leading-snug line-clamp-2">{item.notes}</p>
@@ -164,9 +159,9 @@ export function OnboardingBoard({ initialItems }: Props) {
   const [selected, setSelected] = useState<OnboardingItem | null>(null)
   const [showNew, setShowNew] = useState(false)
 
-  const total   = items.length
-  const blocked = items.filter((o) => o.blocked).length
-  const golive  = items.filter((o) => o.stage === 'golive').length
+  const total     = items.length
+  const blocked   = items.filter((o) => o.blocked).length
+  const converted = items.filter((o) => o.stage === 'bilan_conversion').length
 
   async function handleToggleCheck(itemId: string, checkId: string) {
     const item = items.find((i) => i.id === itemId)
@@ -260,7 +255,7 @@ export function OnboardingBoard({ initialItems }: Props) {
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Onboarding</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {total} prospects · {golive} go-live
+              {total} client{total > 1 ? 's' : ''} · {converted} converti{converted > 1 ? 's' : ''}
               {blocked > 0 && (
                 <span className="text-red-600 font-medium"> · {blocked} bloqué{blocked > 1 ? 's' : ''}</span>
               )}
@@ -270,7 +265,7 @@ export function OnboardingBoard({ initialItems }: Props) {
             onClick={() => setShowNew(true)}
             className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
-            + Nouveau prospect
+            + Nouveau client
           </button>
         </div>
 
@@ -282,7 +277,10 @@ export function OnboardingBoard({ initialItems }: Props) {
                 <div className={`flex items-center justify-between px-3 py-2 rounded-t-xl border border-b-0 ${stage.bg} border-gray-200`}>
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
-                    <span className={`text-xs font-semibold ${stage.color}`}>{stage.label}</span>
+                    <div>
+                      <span className={`text-xs font-semibold ${stage.color} block`}>{stage.label}</span>
+                      <span className="text-[10px] text-gray-400">{stage.sub}</span>
+                    </div>
                   </div>
                   <span className="text-xs text-gray-400 font-medium">{stageItems.length}</span>
                 </div>
@@ -314,7 +312,7 @@ export function OnboardingBoard({ initialItems }: Props) {
           </span>
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-gray-300" />
-            Nombre de jours dans l&apos;étape (rouge si &gt;14j)
+            Nombre de jours dans l&apos;étape (rouge si délai dépassé)
           </span>
         </div>
       </div>

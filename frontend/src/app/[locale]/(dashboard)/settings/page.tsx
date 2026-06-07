@@ -25,18 +25,20 @@ export default async function SettingsPage() {
   const cookieStore = await cookies()
   const activeFactoryId = cookieStore.get('active_factory_id')?.value ?? null
 
-  const [{ data: org }, factories, orgUsers] = await Promise.all([
+  const [{ data: org }, factories] = await Promise.all([
     supabase
       .from('organizations')
-      .select('name, slug, plan')
+      .select('name, slug')
       .eq('id', profile?.organization_id ?? '')
       .single(),
     getUserFactories(),
-    listOrgUsers(),
   ])
 
-  // Rôle de l'user sur le site actif (depuis user_site_access, migration 024)
+  // activeId avec fallback sur le premier site (même logique que le reste de la page)
   const activeId = activeFactoryId ?? factories[0]?.id ?? null
+  const orgUsers = await listOrgUsers(activeId)
+
+  // Rôle de l'user sur le site actif (depuis user_site_access, migration 024)
   const { data: siteAccess } = activeId ? await supabase
     .from('user_site_access')
     .select('role')
@@ -70,10 +72,6 @@ export default async function SettingsPage() {
           <div>
             <p className="text-xs text-muted-foreground mb-1">Identifiant</p>
             <p className="font-medium font-mono text-xs">{org?.slug ?? '—'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Plan</p>
-            <p className="font-medium capitalize">{org?.plan ?? '—'}</p>
           </div>
         </div>
       </section>

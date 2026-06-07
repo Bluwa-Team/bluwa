@@ -55,12 +55,13 @@ async function assertAdmin() {
 }
 
 // ── Liste tous les utilisateurs de l'org avec leur rôle sur le site actif ────
-export async function listOrgUsers(): Promise<OrgUser[]> {
+export async function listOrgUsers(overrideFactoryId?: string | null): Promise<OrgUser[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const factoryId = await getActiveFactoryId()
+  // Priorité : paramètre explicite > cookie (permet fallback factories[0] depuis page.tsx)
+  const factoryId = overrideFactoryId ?? await getActiveFactoryId()
 
   // Profils de la même org (filtrés par RLS)
   const { data: profiles } = await supabase

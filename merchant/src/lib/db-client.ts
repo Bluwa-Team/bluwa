@@ -139,7 +139,7 @@ export async function createProspect(
     .insert({
       org_name: orgName,
       country: country || null,
-      stage: 'prospect',
+      stage: 'cadrage',
       plan_target: planTarget,
       assigned_to: assignedTo || null,
       notes: notes || null,

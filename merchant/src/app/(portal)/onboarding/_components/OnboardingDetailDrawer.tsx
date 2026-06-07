@@ -8,17 +8,25 @@ import {
   Circle, ChevronRight, Flag, Send, MessageSquare, Download,
 } from 'lucide-react'
 
-const STAGES: { key: OnboardingStage; label: string }[] = [
-  { key: 'prospect',      label: 'Prospect' },
-  { key: 'demo',          label: 'Démo' },
-  { key: 'trial',         label: 'Trial' },
-  { key: 'configuration', label: 'Configuration' },
-  { key: 'formation',     label: 'Formation' },
-  { key: 'golive',        label: 'Go-live' },
+const STAGES: { key: OnboardingStage; label: string; sub: string }[] = [
+  { key: 'cadrage',          label: 'À Cadrer',         sub: 'Sem. 1' },
+  { key: 'configuration_ia', label: 'Config. & IA',     sub: 'Sem. 1–2' },
+  { key: 'formation_golive', label: 'Formation & GL',   sub: 'Sem. 3' },
+  { key: 'suivi_adoption',   label: 'Suivi & Adoption', sub: 'Sem. 4–10' },
+  { key: 'bilan_conversion', label: 'Bilan & Conv.',    sub: 'Sem. 11–12' },
 ]
 
 const STAGE_INDEX: Record<OnboardingStage, number> = {
-  prospect: 0, demo: 1, trial: 2, configuration: 3, formation: 4, golive: 5,
+  cadrage: 0, configuration_ia: 1, formation_golive: 2, suivi_adoption: 3, bilan_conversion: 4,
+}
+
+// Seuils "en retard" par phase (alignés sur les timings Excel)
+const STALE_DAYS: Record<OnboardingStage, number> = {
+  cadrage:           7,
+  configuration_ia:  14,
+  formation_golive:  7,
+  suivi_adoption:    49,
+  bilan_conversion:  9999,
 }
 
 function daysAgo(dateStr: string): number {
@@ -31,40 +39,43 @@ function daysInStage(dateStr: string): number {
   return daysAgo(dateStr)
 }
 
-// ── Alertes intelligentes tirées du guide d'onboarding Bluwa ─────────────────
+// ── Alertes intelligentes ─────────────────────────────────────────────────────
 interface SmartAlert { type: 'warning' | 'danger'; message: string }
 
 function getSmartAlerts(item: OnboardingItem): SmartAlert[] {
   const alerts: SmartAlert[] = []
   const days = daysInStage(item.stage_entered_at)
+  const staleThreshold = STALE_DAYS[item.stage]
 
-  // Erreur 2 — Laisser le client seul (> 14j sans commentaire)
+  // Aucun contact depuis trop longtemps (hors dernière phase)
   const lastCommentDate = item.comments.length > 0
     ? item.comments[item.comments.length - 1].created_at
     : item.stage_entered_at
   const daysSinceContact = daysAgo(lastCommentDate)
-  if (daysSinceContact > 14 && item.stage !== 'golive') {
+  if (daysSinceContact > 14 && item.stage !== 'bilan_conversion') {
     alerts.push({ type: 'danger', message: `Aucun contact depuis ${daysSinceContact} jours — risque d'abandon` })
   }
 
-  // Erreur 1 — Former trop vite (formation démarrée < 7j après création)
-  if (item.stage === 'formation') {
+  // Formation & Go-Live démarré trop rapidement (config IA pas complète)
+  if (item.stage === 'formation_golive') {
     const totalDays = daysAgo(item.created_at)
-    if (totalDays < 21) {
-      alerts.push({ type: 'warning', message: 'Formation démarrée rapidement — vérifiez que la config est complète avant de former' })
+    if (totalDays < 14) {
+      alerts.push({ type: 'warning', message: 'Formation démarrée tôt — vérifiez que la configuration IA et QA sont complètes' })
     }
   }
 
-  // Erreur 3 — Bilan M1 manquant (golive > 30j sans bilan)
-  if (item.stage === 'golive' && days > 30) {
-    const bilanDone = item.checklist.find(c => c.label.toLowerCase().includes('bilan m1') || c.label.toLowerCase().includes('bilan j+15'))?.done
+  // Bilan & Conversion : ROI non rédigé après 14 jours
+  if (item.stage === 'bilan_conversion' && days > 14) {
+    const bilanDone = item.checklist.find(c =>
+      c.label.toLowerCase().includes('bilan') || c.label.toLowerCase().includes('roi')
+    )?.done
     if (!bilanDone) {
-      alerts.push({ type: 'danger', message: `Go-live depuis ${days} jours — bilan M1 non réalisé` })
+      alerts.push({ type: 'danger', message: `Conversion en cours depuis ${days} jours — Bilan ROI non finalisé` })
     }
   }
 
-  // Étape trop longue
-  if (days > 14 && item.stage !== 'golive') {
+  // Retard dans la phase courante
+  if (days > staleThreshold && item.stage !== 'bilan_conversion') {
     alerts.push({ type: 'warning', message: `${days} jours dans cette étape — à débloquer ou faire avancer` })
   }
 
@@ -83,11 +94,11 @@ function exportFicheClient(item: OnboardingItem, currentStageLabel: string) {
   lines.push(`Pays          : ${item.country ?? '—'}`)
   lines.push(`Plan visé     : ${item.plan_target ?? '—'}`)
   lines.push(`Assigné à     : ${item.assigned_to ?? '—'}`)
-  lines.push(`Étape actuelle: ${currentStageLabel}`)
+  lines.push(`Phase actuelle: ${currentStageLabel}`)
   lines.push(`Progression   : ${done}/${item.checklist.length} (${pct}%)`)
   lines.push('')
 
-  lines.push('CHECKLIST')
+  lines.push('CHECKLIST DE LA PHASE')
   lines.push('-'.repeat(30))
   item.checklist.forEach(c => {
     lines.push(`[${c.done ? 'x' : ' '}] ${c.label}`)
@@ -157,11 +168,11 @@ export function OnboardingDetailDrawer({
   if (!item || !mounted) return null
 
   const days = daysInStage(item.stage_entered_at)
-  const isStale = days > 14 && item.stage !== 'golive'
+  const isStale = days > STALE_DAYS[item.stage]
   const done = item.checklist.filter((c) => c.done).length
   const pct = item.checklist.length > 0 ? (done / item.checklist.length) * 100 : 0
   const currentIdx = STAGE_INDEX[item.stage]
-  const canAdvance = item.stage !== 'golive' && !item.blocked
+  const canAdvance = item.stage !== 'bilan_conversion' && !item.blocked
   const smartAlerts = getSmartAlerts(item)
 
   function submitComment() {
@@ -218,9 +229,9 @@ export function OnboardingDetailDrawer({
         {/* Contenu scrollable */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-          {/* Pipeline */}
+          {/* Pipeline — barre de progression 5 phases */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Étape actuelle</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Phase actuelle</p>
             <div className="flex items-center gap-0.5">
               {STAGES.map((s, idx) => {
                 const isActive = idx === currentIdx
@@ -236,9 +247,12 @@ export function OnboardingDetailDrawer({
               })}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <span className="text-sm font-semibold text-blue-700">{STAGES[currentIdx].label}</span>
+              <div>
+                <span className="text-sm font-semibold text-blue-700">{STAGES[currentIdx].label}</span>
+                <span className="text-xs text-gray-400 ml-2">{STAGES[currentIdx].sub}</span>
+              </div>
               <span className={`text-xs font-medium ${isStale ? 'text-red-500' : 'text-gray-400'}`}>
-                {days} jour{days > 1 ? 's' : ''} dans cette étape
+                {days} jour{days > 1 ? 's' : ''} dans cette phase
               </span>
             </div>
           </div>
@@ -280,7 +294,7 @@ export function OnboardingDetailDrawer({
           {/* Checklist */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Checklist</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Checklist de la phase</p>
               <span className="text-xs text-gray-400">{done}/{item.checklist.length} · {Math.round(pct)}%</span>
             </div>
             <div className="h-1 bg-gray-100 rounded-full overflow-hidden mb-3">

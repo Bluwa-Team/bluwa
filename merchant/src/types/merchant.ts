@@ -15,12 +15,11 @@ export type CurrencyCode =
   | 'MRU'  // Ouguiya mauritanien
 
 export type OnboardingStage =
-  | 'prospect'
-  | 'demo'
-  | 'trial'
-  | 'configuration'
-  | 'formation'
-  | 'golive'
+  | 'cadrage'
+  | 'configuration_ia'
+  | 'formation_golive'
+  | 'suivi_adoption'
+  | 'bilan_conversion'
 
 export interface OnboardingItem {
   id: string
