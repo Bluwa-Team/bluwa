@@ -26,6 +26,7 @@ const STATUS_CONFIG: Record<SubscriptionStatus, {
 }
 
 function formatXOF(amount: number) {
+  if (amount === 0) return 'Sur devis'
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XOF',

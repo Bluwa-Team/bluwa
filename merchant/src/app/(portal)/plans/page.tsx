@@ -1,5 +1,5 @@
 import { getPlans, getFactoriesWithPlan, getInstallFees, getServiceOrders, getInvoices } from '@/lib/db'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatPlanPrice } from '@/lib/utils'
 import { Package, Wrench, Users, TrendingUp, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -10,8 +10,8 @@ const PLAN_ACCENT: Record<string, { border: string; badge: string; text: string 
 }
 
 const SIZE_TARGET: Record<string, string> = {
-  tpe:   'TPE · 1–3 users',
-  pme:   "PME · jusqu'à 15 users",
+  tpe:   'TPE · 1–10 utilisateurs/site',
+  pme:   "PME · jusqu'à 30 utilisateurs/site",
   grande: 'Grande structure · illimité',
 }
 
@@ -111,12 +111,14 @@ export default async function PlansOverviewPage() {
 
                 <div className="space-y-0.5 mb-4">
                   <div className="flex items-baseline gap-1.5">
-                    <span className={`text-xl font-bold ${accent.text}`}>{formatCurrency(plan.price_monthly)}</span>
-                    <span className="text-xs text-gray-400">/mois</span>
+                    <span className={`text-xl font-bold ${accent.text}`}>{formatPlanPrice(plan.price_monthly)}</span>
+                    {plan.price_monthly > 0 && <span className="text-xs text-gray-400">/mois</span>}
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xs text-gray-500">{formatCurrency(plan.price_monthly_annual)}/mois annuel</span>
-                  </div>
+                  {plan.price_monthly > 0 && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs text-gray-500">{formatPlanPrice(plan.price_monthly_annual)}/mois annuel</span>
+                    </div>
+                  )}
                 </div>
 
                 {onPlan > 0 && (

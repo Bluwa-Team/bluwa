@@ -32,6 +32,12 @@ const CURRENCY_LOCALE: Record<CurrencyCode, string> = {
   MRU: 'fr-MR',
 }
 
+// Pour les prix de plans : 0 = "Sur devis" (Enterprise)
+export function formatPlanPrice(amount: number, currency: CurrencyCode | string = 'XOF') {
+  if (amount === 0) return 'Sur devis'
+  return formatCurrency(amount, currency)
+}
+
 export function formatCurrency(amount: number, currency: CurrencyCode | string = 'XOF') {
   const locale = CURRENCY_LOCALE[currency as CurrencyCode] ?? 'fr-FR'
   try {
