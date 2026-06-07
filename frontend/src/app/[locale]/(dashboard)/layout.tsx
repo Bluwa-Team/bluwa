@@ -40,10 +40,25 @@ export default async function DashboardLayout({
 
   const cookieStore = await cookies()
   const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false'
+  const activeFactoryId = cookieStore.get('active_factory_id')?.value
+
+  let allowedModules: string[] = ['*']
+  if (activeFactoryId) {
+    const { data: factory } = await supabaseAdmin
+      .from('factories')
+      .select('subscription_plans(features_config)')
+      .eq('id', activeFactoryId)
+      .maybeSingle()
+    const plan = (factory as { subscription_plans?: { features_config?: { modules?: string[] } } } | null)
+      ?.subscription_plans
+    if (plan?.features_config?.modules?.length) {
+      allowedModules = plan.features_config.modules
+    }
+  }
 
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
-      <AppSidebar orgName={org?.name || ''} />
+      <AppSidebar orgName={org?.name || ''} allowedModules={allowedModules} />
       <SidebarInset className="min-w-0">
         <AppHeader
           fullName={profile.full_name || ''}

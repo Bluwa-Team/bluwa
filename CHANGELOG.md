@@ -5,6 +5,92 @@ Versions sémantiques dès le premier déploiement Supabase. En attendant : date
 
 ---
 
+## [2026-06-07] — Session 19 — Fix accès ERP, Merchant Portal v2, Onboarding 5 phases Excel
+
+### Fix critique — Accès ERP cassé pour tous les utilisateurs (`migration 044`)
+
+#### Cause racine
+Migration 042 §10 avait recréé la policy `profiles_bluwa_admin` avec une sous-requête inline `(SELECT email FROM auth.users WHERE id = auth.uid())`. Le rôle `authenticated` n'a pas d'accès direct à `auth.users` sans `SECURITY DEFINER` → exception PostgreSQL silencieuse sur tous les reads `profiles` → redirection onboarding pour tous.
+
+#### Fix
+- **`supabase/migrations/044_fix_rls_auth_email.sql`** : remplacement de toutes les policies admin par `auth.email() LIKE '%@bluwa.io'` (lit le JWT directement, aucune permission requise)
+- Tables couvertes : `profiles`, `organizations`, `factories`, `user_site_access`, `subscription_plans`, `installation_fees`, `service_orders`, `invoices`, `support_tickets`, `onboarding_pipeline`, `onboarding_checklist`, `onboarding_comments`
+
+---
+
+### Support tickets — `org_id` → `factory_id` (`migration 043`)
+
+- **Avant** : `support_tickets.org_id UUID REFERENCES organizations` — les tickets référençaient une organisation entière
+- **Après** : `support_tickets.factory_id UUID REFERENCES factories NOT NULL` — les tickets viennent d'un site de production spécifique
+- `merchant/src/types/merchant.ts` : interface `SupportTicket` mise à jour (factory_id + nested `factory.org`)
+- `merchant/src/lib/db.ts` : `getTickets()` jointure `factory:factories(org:organizations)` avec mapping `Array.isArray()`
+- `merchant/src/app/(portal)/support/page.tsx` : colonne "Organisation" renommée "Site"
+
+---
+
+### Dashboard ERP — Suppression mock data
+
+- `frontend/src/app/[locale]/(dashboard)/dashboard/page.tsx` : suppression de toutes les constantes mock (`KPI_DATA`, `CA_MARGE_DATA`, `MIX_VENTES`, `MARGE_PRODUITS`, `ALERTES_PRIORITAIRES`), suppression de recharts
+- KPIs affichent "—" / "Aucune donnée" ; graphiques remplacés par `EmptyChart` (empty state)
+- Section alertes : "Aucune alerte active" avec `CheckCircle2`
+
+---
+
+### Merchant Portal — Nettoyage architecture
+
+- **`merchant/src/app/(portal)/orgs/_components/NewOrgModal.tsx`** : supprimé — les organisations sont créées exclusivement via l'onboarding ERP
+- **`merchant/src/lib/mock-data.ts`** : supprimé (377 lignes de données factices, jamais importé mais compilé par TypeScript)
+- `merchant/src/app/(portal)/orgs/OrgsClient.tsx` : bouton "Nouvelle org" retiré
+
+---
+
+### Onboarding pipeline — 5 phases Kanban Roadmap Excel (`migration 045`)
+
+#### Décision architecturale
+Remplacement des 6 stages CRM (prospect/demo/trial/configuration/formation/golive) par les 5 phases opérationnelles du Kanban Roadmap Bluwa. Le pipeline ne démarre qu'après signature LOI/NDA — pas de prospection.
+
+#### DB — `migration 045`
+- Nouvelle contrainte : `stage IN ('cadrage', 'configuration_ia', 'formation_golive', 'suivi_adoption', 'bilan_conversion')`
+- Default : `cadrage` (était `prospect`)
+- Suppression des seed data migration 041 (Chom Factory + Africube sur ancien stage `trial`)
+- Insertion réelle : Chom Factory → `configuration_ia` (Phase 1 validée, 1/7 tâches Phase 2), Africube → `cadrage` (0/6 tâches)
+
+#### Code
+- `merchant/src/types/merchant.ts` : `OnboardingStage` → 5 nouvelles valeurs
+- `OnboardingBoard.tsx` : 25 tâches réelles par phase (tirées du fichier Excel), `STALE_DAYS` par phase (Sem.1/1-2/3/4-10/11-12), colonnes avec timing affiché, stats header "convertis" au lieu de "go-live"
+- `OnboardingDetailDrawer.tsx` : barre 5 phases, alertes intelligentes adaptées, seuils retard par phase
+- `NewProspectModal.tsx` : titre "Nouveau client pilote", description "(LOI signée)", placeholder notes post-LOI
+
+#### Phase 2 — Import CSV remplace ingestion IA
+L'ingestion IA n'est pas encore développée. 3 méthodes actuelles : templates CSV → import CSV → saisie manuelle.
+- Phase 2 passe de 5 à 7 tâches : envoi templates CSV, import articles & nomenclatures, import fournisseurs & clients, QA, cloud, accès
+- Label colonne : "Config. & IA" → "Config. & Import"
+
+---
+
+### Settings ERP — 3 corrections
+
+1. **Champ "Plan" retiré de la section Organisation** : `org.plan` était une colonne legacy sur `organizations` — le vrai plan est sur `factories`, déjà affiché dans la section Abonnement
+2. **Fix "Aucun accès"** : `listOrgUsers()` reçoit maintenant `activeId` depuis `page.tsx` (avec fallback `factories[0]?.id`). Avant, la fonction lisait le cookie directement sans fallback — si le cookie `active_factory_id` n'était pas posé, `roleMap = {}` pour tous les utilisateurs
+3. **Email contact** : `selom@bluwa.io` → `john@bluwa.io` dans `AbonnementSection.tsx` (3 occurrences)
+
+---
+
+### Pricing — Mise à jour juin 2026 (`migration 046`)
+
+| Plan | max_users avant | max_users après | Prix |
+|---|---|---|---|
+| Starter | 3 | 10 | 45k / 37k XOF (inchangé) |
+| Growth | 15 | 30 | 150k / 125k XOF (inchangé) |
+| Enterprise | 999 | 999 | 0 → "Sur devis" |
+
+- **`supabase/migrations/046_update_subscription_plans_pricing.sql`** : UPDATE plans + `features_config` JSON mis à jour
+- **`formatPlanPrice()`** ajouté à `merchant/src/lib/utils.ts` : retourne "Sur devis" si `price = 0` (Enterprise)
+- **`SIZE_TARGET`** merchant mis à jour : "TPE · 1–10 utilisateurs/site", "PME · jusqu'à 30 utilisateurs/site"
+- Enterprise sans ligne `/mois` dans la grille plans
+
+---
+
 ## [2026-06-04] — Session 18 — Module Qualité multi-tests, généalogie enrichie, HACCP créatif, GED retirée
 
 ### Contexte
