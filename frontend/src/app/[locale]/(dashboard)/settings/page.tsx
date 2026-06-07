@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, organization_id')
+    .select('full_name, role, organization_id')
     .eq('id', user?.id ?? '')
     .single()
 
@@ -39,12 +39,16 @@ export default async function SettingsPage() {
   const orgUsers = await listOrgUsers(activeId)
 
   // Rôle de l'user sur le site actif (depuis user_site_access, migration 024)
+  // Fallback sur profiles.role pour les owners/admins sans entrée user_site_access
   const { data: siteAccess } = activeId ? await supabase
     .from('user_site_access')
     .select('role')
     .eq('user_id', user?.id ?? '')
     .eq('factory_id', activeId)
     .single() : { data: null }
+
+  const effectiveRole: UserRole = (siteAccess?.role as UserRole)
+    ?? (['owner', 'admin'].includes(profile?.role ?? '') ? profile?.role as UserRole : 'viewer')
 
   const subscription = activeId ? await getFactorySubscription(activeId) : null
 
@@ -101,7 +105,7 @@ export default async function SettingsPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Rôle (site actif)</p>
-            <p className="font-medium capitalize">{siteAccess?.role ?? '—'}</p>
+            <p className="font-medium capitalize">{effectiveRole}</p>
           </div>
         </div>
       </section>
@@ -110,7 +114,7 @@ export default async function SettingsPage() {
       <UsersSection
         users={orgUsers}
         currentUserId={user?.id ?? ''}
-        currentUserRole={(siteAccess?.role ?? 'viewer') as UserRole}
+        currentUserRole={effectiveRole}
         activeFactoryId={activeId}
       />
 
