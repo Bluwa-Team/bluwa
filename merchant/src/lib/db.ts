@@ -150,14 +150,20 @@ export async function getInvoices(orgId?: string) {
 
 // ─── Support ────────────────────────────────────────────────────────────────
 
-export async function getTickets() {
+export async function getTickets(): Promise<import('@/types/merchant').SupportTicket[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('support_tickets')
     .select(`id, factory_id, subject, status, priority, assigned_to, messages, created_at, updated_at,
       factory:factories ( id, name, code, org:organizations ( id, name ) )`)
     .order('updated_at', { ascending: false })
-  return data ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((row: any) => ({
+    ...row,
+    factory: Array.isArray(row.factory)
+      ? (row.factory[0] ? { ...row.factory[0], org: Array.isArray(row.factory[0].org) ? row.factory[0].org[0] ?? null : row.factory[0].org } : null)
+      : row.factory,
+  }))
 }
 
 // ─── Users ──────────────────────────────────────────────────────────────────
