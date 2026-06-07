@@ -23,8 +23,8 @@ export const STAGE_CHECKLISTS: Record<OnboardingStage, string[]> = {
     'Validation des modules ERP prioritaires à activer',
   ],
   configuration_ia: [
-    "Réception des fichiers Excel bruts de l'usine",
     'Envoi des templates CSV au client (articles, clients, fournisseurs)',
+    'Réception des fichiers complétés & données brutes du client',
     'Import CSV ou saisie manuelle — articles & nomenclatures',
     'Import CSV ou saisie manuelle — fournisseurs & clients',
     'Validation de la cohérence des données importées (QA)',
