@@ -74,13 +74,16 @@ BEGIN
   )
   RETURNING id INTO v_chom_id;
 
-  -- Checklist Phase 2 (5 tâches — tâche 1 déjà faite)
+  -- Checklist Phase 2 (7 tâches — tâche 1 déjà faite)
+  -- Import CSV ou saisie manuelle remplace l'ingestion IA (non encore développée)
   INSERT INTO onboarding_checklist (pipeline_id, label, done, sort_order) VALUES
-    (v_chom_id, 'Réception des fichiers Excel bruts de l''usine',          true,  1),
-    (v_chom_id, 'Ingestion & traitement des fichiers via l''IA Bluwa',      false, 2),
-    (v_chom_id, 'Validation de la cohérence des données injectées (QA)',    false, 3),
-    (v_chom_id, 'Configuration de l''environnement cloud du site',          false, 4),
-    (v_chom_id, 'Création des comptes utilisateurs & envoi des accès',      false, 5);
+    (v_chom_id, 'Réception des fichiers Excel bruts de l''usine',                    true,  1),
+    (v_chom_id, 'Envoi des templates CSV au client (articles, clients, fournisseurs)', false, 2),
+    (v_chom_id, 'Import CSV ou saisie manuelle — articles & nomenclatures',           false, 3),
+    (v_chom_id, 'Import CSV ou saisie manuelle — fournisseurs & clients',             false, 4),
+    (v_chom_id, 'Validation de la cohérence des données importées (QA)',              false, 5),
+    (v_chom_id, 'Configuration de l''environnement cloud du site',                    false, 6),
+    (v_chom_id, 'Création des comptes utilisateurs & envoi des accès',                false, 7);
 
   -- Africube — À Cadrer (phase 1)
   -- Aucune tâche réalisée selon le fichier Excel (0/25)

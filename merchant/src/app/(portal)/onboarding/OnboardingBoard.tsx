@@ -24,8 +24,10 @@ export const STAGE_CHECKLISTS: Record<OnboardingStage, string[]> = {
   ],
   configuration_ia: [
     "Réception des fichiers Excel bruts de l'usine",
-    "Ingestion & traitement des fichiers via l'IA Bluwa",
-    'Validation de la cohérence des données injectées (QA)',
+    'Envoi des templates CSV au client (articles, clients, fournisseurs)',
+    'Import CSV ou saisie manuelle — articles & nomenclatures',
+    'Import CSV ou saisie manuelle — fournisseurs & clients',
+    'Validation de la cohérence des données importées (QA)',
     "Configuration de l'environnement cloud du site",
     'Création des comptes utilisateurs & envoi des accès',
   ],
@@ -62,7 +64,7 @@ const STALE_DAYS: Record<OnboardingStage, number> = {
 
 const STAGES: { key: OnboardingStage; label: string; sub: string; color: string; bg: string; dot: string }[] = [
   { key: 'cadrage',          label: 'À Cadrer',         sub: 'Sem. 1',      color: 'text-gray-700',    bg: 'bg-gray-50',    dot: 'bg-gray-400' },
-  { key: 'configuration_ia', label: 'Config. & IA',     sub: 'Sem. 1–2',    color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
+  { key: 'configuration_ia', label: 'Config. & Import',  sub: 'Sem. 1–2',    color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
   { key: 'formation_golive', label: 'Formation & GL',   sub: 'Sem. 3',      color: 'text-violet-700',  bg: 'bg-violet-50',  dot: 'bg-violet-500' },
   { key: 'suivi_adoption',   label: 'Suivi & Adoption', sub: 'Sem. 4–10',   color: 'text-amber-700',   bg: 'bg-amber-50',   dot: 'bg-amber-500' },
   { key: 'bilan_conversion', label: 'Bilan & Conv. ✓',  sub: 'Sem. 11–12',  color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },

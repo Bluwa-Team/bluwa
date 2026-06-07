@@ -10,7 +10,7 @@ import {
 
 const STAGES: { key: OnboardingStage; label: string; sub: string }[] = [
   { key: 'cadrage',          label: 'À Cadrer',         sub: 'Sem. 1' },
-  { key: 'configuration_ia', label: 'Config. & IA',     sub: 'Sem. 1–2' },
+  { key: 'configuration_ia', label: 'Config. & Import',  sub: 'Sem. 1–2' },
   { key: 'formation_golive', label: 'Formation & GL',   sub: 'Sem. 3' },
   { key: 'suivi_adoption',   label: 'Suivi & Adoption', sub: 'Sem. 4–10' },
   { key: 'bilan_conversion', label: 'Bilan & Conv.',    sub: 'Sem. 11–12' },
