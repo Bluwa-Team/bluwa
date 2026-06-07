@@ -169,22 +169,31 @@ export async function getTickets(): Promise<import('@/types/merchant').SupportTi
 // ─── Users ──────────────────────────────────────────────────────────────────
 
 export async function getUsers(orgId: string) {
+  // Lit profiles (vrais utilisateurs ERP liés à auth.users via trigger)
+  // et non la table `users` du merchant portal qui est déconnectée de l'auth
   const supabase = await createClient()
   const { data } = await supabase
-    .from('users')
-    .select('id, organization_id, email, first_name, last_name, role, is_active, created_at')
-    .eq('organization_id', orgId).order('created_at', { ascending: true })
-  return (data as UserRow[] ?? []).map((u) => ({
-    ...u, full_name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+    .from('profiles')
+    .select('id, organization_id, full_name, role, is_active, created_at')
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: true })
+  return (data ?? []).map((u) => ({
+    id:              u.id,
+    organization_id: u.organization_id,
+    full_name:       u.full_name ?? '—',
+    role:            u.role,
+    is_active:       u.is_active,
+    created_at:      u.created_at,
   }))
 }
 
 export async function getUserSiteAccess(orgId: string): Promise<UserSiteAccess[]> {
   const supabase = await createClient()
-  const { data: users } = await supabase.from('users').select('id').eq('organization_id', orgId)
-  if (!users || users.length === 0) return []
+  // profiles.id = auth.users.id = user_site_access.user_id
+  const { data: profiles } = await supabase.from('profiles').select('id').eq('organization_id', orgId)
+  if (!profiles || profiles.length === 0) return []
   const { data } = await supabase.from('user_site_access')
-    .select('id, user_id, factory_id, granted_at, granted_by').in('user_id', users.map((u) => u.id))
+    .select('id, user_id, factory_id, granted_at, granted_by').in('user_id', profiles.map((u) => u.id))
   return (data ?? []) as UserSiteAccess[]
 }
 
