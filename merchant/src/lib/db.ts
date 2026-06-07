@@ -99,9 +99,13 @@ export async function getFactoriesWithPlan(orgId?: string): Promise<Factory[]> {
 
 // ─── Plans ─────────────────────────────────────────────────────────────────
 
-export async function getPlans(): Promise<SubscriptionPlan[]> {
+export async function getPlans(product: 'erp' | 'wms' | 'crm' = 'erp'): Promise<SubscriptionPlan[]> {
   const supabase = await createClient()
-  const { data } = await supabase.from('subscription_plans').select('*').order('price_monthly', { ascending: true })
+  const { data } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('product', product)
+    .order('price_monthly', { ascending: true })
   return (data ?? []) as SubscriptionPlan[]
 }
 

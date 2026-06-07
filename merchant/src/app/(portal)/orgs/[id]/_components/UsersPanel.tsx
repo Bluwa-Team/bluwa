@@ -171,9 +171,10 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
       ) : (
         <div className="divide-y divide-gray-50">
           {users.map((u) => {
-            const siteIds   = access[u.id] ?? []
+            const siteIds    = access[u.id] ?? []
             const accessible = factories.filter((f) => siteIds.includes(f.id))
             const allActive  = activeSites.every((f) => siteIds.includes(f.id)) && activeSites.length > 0
+            const isOwnerOrAdmin = u.role === 'owner' || u.role === 'admin'
             const isEditing  = editing === u.id
             const roleLabel  = ROLE_LABELS[u.role as Role] ?? u.role
 
@@ -259,7 +260,9 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
                   </div>
                 ) : (
                   <div className="mt-1.5 ml-9 flex flex-wrap gap-1">
-                    {allActive ? (
+                    {isOwnerOrAdmin ? (
+                      <span className="text-xs bg-violet-50 text-violet-600 border border-violet-100 px-2 py-0.5 rounded-full font-medium">Accès complet</span>
+                    ) : allActive ? (
                       <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full font-medium">Tous les sites</span>
                     ) : accessible.length === 0 ? (
                       <span className="text-xs text-gray-400 italic">Aucun accès site</span>
