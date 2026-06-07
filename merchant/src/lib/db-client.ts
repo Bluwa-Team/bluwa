@@ -78,40 +78,8 @@ export async function updateFactoryPlan(factoryId: string, planId: string): Prom
 }
 
 // ─── Utilisateurs ───────────────────────────────────────────────────────────
-
-export async function createUser(
-  orgId: string,
-  email: string,
-  firstName: string,
-  lastName: string | null,
-  role: string,
-  siteIds: string[],
-): Promise<string> {
-  const supabase = createClient()
-  const { data: user, error } = await supabase
-    .from('users')
-    .insert({ organization_id: orgId, email, first_name: firstName, last_name: lastName, role, is_active: true })
-    .select('id')
-    .single()
-  if (error || !user) throw new Error(error?.message ?? 'Erreur création utilisateur')
-
-  if (siteIds.length > 0) {
-    await supabase.from('user_site_access').insert(
-      siteIds.map((factory_id) => ({ user_id: user.id, factory_id })),
-    )
-  }
-  return user.id
-}
-
-export async function updateUserRole(userId: string, role: string): Promise<void> {
-  const supabase = createClient()
-  await supabase.from('users').update({ role }).eq('id', userId)
-}
-
-export async function toggleUserActive(userId: string, isActive: boolean): Promise<void> {
-  const supabase = createClient()
-  await supabase.from('users').update({ is_active: isActive }).eq('id', userId)
-}
+// createUser / updateUserRole / toggleUserActive → voir lib/actions/users.ts (Server Actions)
+// Ces fonctions utilisent le client admin (service_role) et profiles à la place de l'ancienne table `users`
 
 export async function setUserSiteAccess(userId: string, siteIds: string[]): Promise<void> {
   const supabase = createClient()

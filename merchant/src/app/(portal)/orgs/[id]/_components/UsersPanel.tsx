@@ -4,15 +4,17 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, XCircle, Pencil, Plus, X, Check, Loader2 } from 'lucide-react'
 import { Factory, UserSiteAccess } from '@/types/merchant'
-import { createUser, updateUserRole, toggleUserActive, setUserSiteAccess } from '@/lib/db-client'
+import { setUserSiteAccess } from '@/lib/db-client'
+import { inviteOrgUser, updateOrgUserRole, toggleOrgUserActive, type ErpRole } from '@/lib/actions/users'
 
-const ROLES = ['SUPER_ADMIN', 'PLANT_MANAGER', 'OPERATOR', 'QUALITY_AUDITOR'] as const
-type Role = typeof ROLES[number]
+const ROLES = ['owner', 'admin', 'manager', 'operator', 'viewer'] as const satisfies ErpRole[]
+type Role = ErpRole
 const ROLE_LABELS: Record<Role, string> = {
-  SUPER_ADMIN:    'Super Admin',
-  PLANT_MANAGER:  'Responsable',
-  OPERATOR:       'Opérateur',
-  QUALITY_AUDITOR:'Qualité',
+  owner:    'Propriétaire',
+  admin:    'Administrateur',
+  manager:  'Responsable',
+  operator: 'Opérateur',
+  viewer:   'Lecteur',
 }
 
 interface User {
@@ -46,13 +48,13 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
   const [editing, setEditing] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
 
-  const [editRole, setEditRole]   = useState<Role>('OPERATOR')
+  const [editRole, setEditRole]   = useState<Role>('operator')
   const [editSites, setEditSites] = useState<string[]>([])
   const [saving, setSaving]       = useState(false)
 
   const [newName,  setNewName]  = useState('')
   const [newEmail, setNewEmail] = useState('')
-  const [newRole,  setNewRole]  = useState<Role>('OPERATOR')
+  const [newRole,  setNewRole]  = useState<Role>('operator')
   const [newSites, setNewSites] = useState<string[]>([])
   const [addError, setAddError] = useState<string | null>(null)
 
@@ -60,7 +62,7 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
 
   function startEdit(u: User) {
     setEditing(u.id)
-    setEditRole((u.role as Role) in ROLE_LABELS ? (u.role as Role) : 'OPERATOR')
+    setEditRole((u.role as Role) in ROLE_LABELS ? (u.role as Role) : 'operator')
     setEditSites(access[u.id] ?? [])
   }
 
@@ -68,7 +70,7 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
 
   async function saveEdit(userId: string) {
     setSaving(true)
-    await updateUserRole(userId, editRole)
+    await updateOrgUserRole(userId, editRole)
     await setUserSiteAccess(userId, editSites)
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: editRole } : u))
     setAccess((prev) => ({ ...prev, [userId]: editSites }))
@@ -86,13 +88,10 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
     setAddError(null)
     setSaving(true)
     try {
-      const parts = newName.trim().split(' ')
-      const firstName = parts[0]
-      const lastName  = parts.slice(1).join(' ') || null
-      const id = await createUser(orgId, newEmail.trim(), firstName, lastName, newRole, newSites)
+      const { id } = await inviteOrgUser(orgId, newEmail.trim(), newName.trim(), newRole, newSites)
       setUsers((prev) => [...prev, { id, full_name: newName.trim(), email: newEmail.trim(), role: newRole, is_active: true, created_at: new Date().toISOString() }])
       setAccess((prev) => ({ ...prev, [id]: newSites }))
-      setNewName(''); setNewEmail(''); setNewRole('OPERATOR'); setNewSites([])
+      setNewName(''); setNewEmail(''); setNewRole('operator'); setNewSites([])
       setShowAdd(false)
       router.refresh()
     } catch (e) {
@@ -103,7 +102,7 @@ export function UsersPanel({ initialUsers, factories, orgId, siteAccess = [] }: 
   }
 
   async function handleToggleActive(userId: string, current: boolean) {
-    await toggleUserActive(userId, !current)
+    await toggleOrgUserActive(userId, !current)
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_active: !u.is_active } : u))
     router.refresh()
   }
