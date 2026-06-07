@@ -22,19 +22,20 @@ import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mappe
 import Link from 'next/link'
 
 const FOURNISSEUR_CSV_FIELDS: CsvField[] = [
-  { key: 'raisonSociale', label: 'Raison sociale', required: true },
-  { key: 'code', label: 'Code' },
-  { key: 'statut', label: 'Statut (Formel/Informel)' },
-  { key: 'qualification', label: 'Qualification (Agree, AQualifier, Suspendu)' },
-  { key: 'categorie', label: 'Catégorie' },
-  { key: 'devise', label: 'Devise' },
+  { key: 'code',             label: 'Code fournisseur' },
+  { key: 'raisonSociale',    label: 'Raison sociale', required: true },
+  { key: 'statut',           label: 'Statut (Formel/Informel)' },
+  { key: 'qualification',    label: 'Qualification (Agree, AQualifier, Suspendu)' },
+  { key: 'categorie',        label: 'Catégorie' },
+  { key: 'devise',           label: 'Devise' },
   { key: 'contactPrincipal', label: 'Contact principal' },
-  { key: 'telephone', label: 'Téléphone' },
-  { key: 'email', label: 'Email' },
-  { key: 'ville', label: 'Ville' },
-  { key: 'pays', label: 'Pays' },
-  { key: 'modeLogistique', label: 'Mode logistique' },
-  { key: 'paiementMobile', label: 'Paiement mobile (true/false)' },
+  { key: 'telephone',        label: 'Téléphone' },
+  { key: 'email',            label: 'Email' },
+  { key: 'ville',            label: 'Ville' },
+  { key: 'pays',             label: 'Pays' },
+  { key: 'modeLogistique',   label: 'Mode logistique' },
+  { key: 'paiementMobile',   label: 'Paiement mobile (true/false)' },
+  { key: 'scoreFilabilite',  label: 'Score de fiabilité (0–100)' },
 ]
 
 const QUALIFICATIONS: Array<'Tous' | FournisseurQualification> = ['Tous', 'Agree', 'AQualifier', 'Suspendu']
@@ -165,7 +166,7 @@ export default function FournisseursPage() {
         pays:             row.pays             || 'Sénégal',
         modeLogistique:   row.modeLogistique   || '',
         scoreFilabilite:  row.scoreFilabilite  ? parseFloat(row.scoreFilabilite) : null,
-        paiementMobile:   row.paiementMobile === 'true',
+        paiementMobile:   row.paiementMobile === 'true' || row.paiementMobile?.toLowerCase() === 'oui',
       } as Fournisseur & { code: string })
       if (result) created++; else errors++
     }
@@ -193,14 +194,14 @@ export default function FournisseursPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={() => setMapperOpen(true)}>
+            onClick={handleExport} disabled={fournisseurs.length === 0}>
             <Upload className="size-3.5" />
-            {tCommon('import')}
+            {tCommon('export')}
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={handleExport} disabled={fournisseurs.length === 0}>
+            onClick={() => setMapperOpen(true)}>
             <Download className="size-3.5" />
-            {tCommon('export')}
+            {tCommon('import')}
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setEditFournisseur(null); setModalOpen(true) }}>
             <Plus className="size-4" />

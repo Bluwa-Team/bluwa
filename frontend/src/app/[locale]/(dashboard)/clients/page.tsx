@@ -22,23 +22,23 @@ import { downloadCsv } from '@/lib/csv-utils'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 
 const CLIENT_CSV_FIELDS: CsvField[] = [
-  { key: 'raisonSociale', label: 'Raison sociale', required: true },
-  { key: 'code', label: 'Code' },
-  { key: 'type', label: 'Type (Grossiste, Detaillant, ...)' },
-  { key: 'statut', label: 'Statut (Actif/Inactif)' },
-  { key: 'secteur', label: 'Secteur' },
-  { key: 'langue', label: 'Langue' },
+  { key: 'code',             label: 'Code client' },
+  { key: 'raisonSociale',    label: 'Raison sociale', required: true },
+  { key: 'type',             label: 'Type (Grossiste, Detaillant, ...)' },
+  { key: 'statut',           label: 'Statut (Actif/Inactif)' },
+  { key: 'secteur',          label: 'Secteur' },
+  { key: 'langue',           label: 'Langue' },
   { key: 'contactPrincipal', label: 'Contact principal' },
-  { key: 'telephone', label: 'Téléphone' },
-  { key: 'email', label: 'Email' },
-  { key: 'ville', label: 'Ville' },
-  { key: 'pays', label: 'Pays' },
-  { key: 'incoterm', label: 'Incoterm' },
-  { key: 'transport', label: 'Transport' },
+  { key: 'telephone',        label: 'Téléphone' },
+  { key: 'email',            label: 'Email' },
+  { key: 'ville',            label: 'Ville' },
+  { key: 'pays',             label: 'Pays' },
   { key: 'conditionPaiement', label: 'Condition de paiement' },
-  { key: 'limiteCredit', label: 'Limite de crédit' },
-  { key: 'devise', label: 'Devise' },
-  { key: 'paiementMobile', label: 'Paiement mobile (true/false)' },
+  { key: 'limiteCredit',     label: 'Limite de crédit' },
+  { key: 'devise',           label: 'Devise' },
+  { key: 'incoterm',         label: 'Incoterm' },
+  { key: 'transport',        label: 'Transport' },
+  { key: 'paiementMobile',   label: 'Paiement mobile (true/false)' },
 ]
 
 const TYPES: Array<'Tous' | ClientType> = ['Tous', 'Grossiste', 'Detaillant', 'Institutionnel', 'ONG', 'Export', 'Autre']
@@ -174,7 +174,7 @@ export default function ClientsPage() {
         contactPrincipal:  row.contactPrincipal  || '',
         telephone:         row.telephone         || '',
         email:             row.email             || '',
-        paiementMobile:    row.paiementMobile === 'true',
+        paiementMobile:    row.paiementMobile === 'true' || row.paiementMobile?.toLowerCase() === 'oui',
         grilleTarifaire:   [],
       } as Partial<Client> & { code: string })
       if (result) created++; else errors++
@@ -198,14 +198,14 @@ export default function ClientsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={() => setMapperOpen(true)}>
+            onClick={handleExport} disabled={clients.length === 0}>
             <Upload className="size-3.5" />
-            {tCommon('import')}
+            {tCommon('export')}
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5"
-            onClick={handleExport} disabled={clients.length === 0}>
+            onClick={() => setMapperOpen(true)}>
             <Download className="size-3.5" />
-            {tCommon('export')}
+            {tCommon('import')}
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setEditClient(null); setModalOpen(true) }}>
             <Plus className="size-4" />
