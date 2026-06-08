@@ -82,8 +82,8 @@ function daysInStage(dateStr: string): number {
 
 function ChecklistBar({ checklist, stage }: { checklist: OnboardingItem['checklist']; stage: OnboardingStage }) {
   const done = checklist.filter((c) => c.done).length
-  const pct = checklist.length > 0 ? (done / checklist.length) * 100 : 0
   const total = STAGE_CHECKLISTS[stage].length
+  const pct = total > 0 ? (done / total) * 100 : 0
   return (
     <div className="mt-2">
       <div className="flex justify-between text-xs text-gray-400 mb-1">

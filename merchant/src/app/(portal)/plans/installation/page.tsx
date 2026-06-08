@@ -9,7 +9,8 @@ const STATUS = {
 }
 
 const SIZE_LABELS: Record<string, string> = { tpe: 'TPE', pme: 'PME', grande: 'Grande' }
-const SIZE_AMOUNTS: Record<string, number> = { tpe: 150000, pme: 500000, grande: 1500000 }
+const SIZE_AMOUNTS: Record<string, number> = { tpe: 150000, pme: 500000 }
+const SIZE_USERS: Record<string, string> = { tpe: '1–10 users', pme: '10–50 users', grande: '50+ users' }
 
 export default async function InstallationPage() {
   const fees = await getInstallFees()
@@ -51,11 +52,18 @@ export default async function InstallationPage() {
           <div key={size} className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{SIZE_LABELS[size]}</p>
-              <p className="text-sm text-gray-600 mt-0.5">{size === 'tpe' ? '1–10 users' : size === 'pme' ? '10–50 users' : '50+ users'}</p>
+              <p className="text-sm text-gray-600 mt-0.5">{SIZE_USERS[size]}</p>
             </div>
             <p className="text-base font-bold text-gray-800">{formatCurrency(amount)}</p>
           </div>
         ))}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Grande</p>
+            <p className="text-sm text-gray-600 mt-0.5">{SIZE_USERS['grande']}</p>
+          </div>
+          <p className="text-base font-bold text-blue-600">Sur devis</p>
+        </div>
       </div>
 
       {/* Table */}
