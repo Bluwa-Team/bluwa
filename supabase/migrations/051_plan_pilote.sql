@@ -19,7 +19,7 @@ VALUES (
   0,
   0,
   999,
-  'pilote',
+  'grande',
   '{
     "modules":     ["*"],
     "support":     "prioritaire",
