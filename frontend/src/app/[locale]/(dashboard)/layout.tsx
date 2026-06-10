@@ -22,11 +22,16 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, organization_id')
+    .select('full_name, role, organization_id, cgu_accepted_at, cgu_version')
     .eq('id', user.id)
     .maybeSingle()
 
   if (!profile) redirect(`/${locale}/onboarding`)
+
+  const CGU_CURRENT_VERSION = '1.0'
+  if (!profile.cgu_accepted_at || profile.cgu_version !== CGU_CURRENT_VERSION) {
+    redirect(`/${locale}/cgu`)
+  }
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
