@@ -65,35 +65,7 @@ ALTER TABLE factories
 
 
 -- ================================================================
--- §4  Table users (utilisateurs ERP clients)
--- ================================================================
-
-CREATE TABLE IF NOT EXISTS users (
-  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  email           TEXT        NOT NULL,
-  first_name      TEXT,
-  last_name       TEXT,
-  role            TEXT        NOT NULL DEFAULT 'OPERATOR'
-                    CHECK (role IN ('SUPER_ADMIN', 'PLANT_MANAGER', 'OPERATOR', 'QUALITY_AUDITOR')),
-  is_active       BOOLEAN     NOT NULL DEFAULT TRUE,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_users_org ON users(organization_id);
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "users_bluwa_admin"    ON users;
-DROP POLICY IF EXISTS "users_select_own_org" ON users;
-
-CREATE POLICY "users_bluwa_admin" ON users FOR ALL
-  USING ((SELECT email FROM auth.users WHERE id = auth.uid()) LIKE '%@bluwa.io');
-CREATE POLICY "users_select_own_org" ON users FOR SELECT
-  USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-
-
--- ================================================================
--- §5  Table installation_fees
+-- §4  Table installation_fees
 -- ================================================================
 
 CREATE TABLE IF NOT EXISTS installation_fees (

@@ -39,37 +39,7 @@ ALTER TABLE factories
 
 
 -- ================================================================
--- §4  TABLE users (utilisateurs ERP clients, ≠ auth.users)
--- ================================================================
-
-CREATE TABLE IF NOT EXISTS users (
-  id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID         NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  email           TEXT         NOT NULL,
-  first_name      TEXT,
-  last_name       TEXT,
-  role            TEXT         NOT NULL DEFAULT 'OPERATOR'
-                    CHECK (role IN ('SUPER_ADMIN', 'PLANT_MANAGER', 'OPERATOR', 'QUALITY_AUDITOR')),
-  is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
-  created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-);
-
-COMMENT ON TABLE users IS 'Utilisateurs ERP clients — distinct de auth.users (profils Supabase)';
-
-CREATE INDEX IF NOT EXISTS idx_users_org ON users(organization_id);
-
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "users_bluwa_admin" ON users;
-CREATE POLICY "users_bluwa_admin" ON users FOR ALL USING (is_bluwa_admin());
-
-DROP POLICY IF EXISTS "users_select_own_org" ON users;
-CREATE POLICY "users_select_own_org" ON users FOR SELECT
-  USING (organization_id = (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-
-
--- ================================================================
--- §5  TABLE installation_fees
+-- §4  TABLE installation_fees
 -- ================================================================
 
 CREATE TABLE IF NOT EXISTS installation_fees (
