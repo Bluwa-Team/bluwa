@@ -14,11 +14,11 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  LotStock, EtatLot, TypeArticle, StatutQC, Mouvement,
+  LotStock, EtatLot, TypeArticle, StatutQC,
   ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
   STATUT_QC_COLORS, STATUT_QC_LABELS,
 } from './_components/types'
-import { getLotStocks } from '@/lib/actions/stocks'
+import { getLotStocks, createInitStock } from '@/lib/actions/stocks'
 import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 import { HelpPopover } from '@/components/ui/help-popover'
 
@@ -97,8 +97,6 @@ export default function StocksPage() {
   const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')
   const [qcFilter, setQcFilter] = useState<StatutQC | 'all'>('all')
   const [mouvementOpen, setMouvementOpen] = useState(false)
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
-
   // Derive article options for the modal from current lot list
   const articleOptions = useMemo<ArticleOption[]>(() => {
     const seen = new Set<string>()
@@ -109,28 +107,12 @@ export default function StocksPage() {
     })
   }, [lots])
 
-  async function handleSaveMouvement(m: Partial<Mouvement>): Promise<boolean> {
-    const id = Date.now().toString()
-    const next = mouvements.length + 1
-    setMouvements((prev) => [
-      {
-        id,
-        date:              m.date ?? new Date().toISOString().split('T')[0],
-        type:              m.type ?? 'Entree',
-        articleCode:       m.articleCode ?? '',
-        articleDesignation: m.articleDesignation ?? '',
-        lot:               m.lot ?? '',
-        quantite:          m.quantite ?? 0,
-        unite:             m.unite ?? '',
-        entrepotSource:    m.entrepotSource ?? '',
-        entrepotDest:      m.entrepotDest ?? '',
-        reference:         m.reference ?? '',
-        motif:             m.motif ?? '',
-        operateur:         m.operateur ?? 'Utilisateur',
-      },
-      ...prev,
-    ])
-    return true
+  async function handleSaveInitStock(
+    articleCode: string, lot: string, quantite: number, date: string, motif: string,
+  ): Promise<boolean> {
+    const ok = await createInitStock(articleCode, lot, quantite, date, motif)
+    if (ok) getLotStocks().then(setLots)
+    return ok
   }
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
@@ -192,9 +174,9 @@ export default function StocksPage() {
             Gestion par Code/SKU ou Désignation · Liaison Commande → Réception → Lot · PMP · FIFO/FEFO
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setMouvementOpen(true)}>
+        <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setMouvementOpen(true)}>
           <Plus className="size-4" />
-          Mouvement de stock
+          Entrée stock initiale
         </Button>
       </div>
 
@@ -475,7 +457,7 @@ export default function StocksPage() {
       <MouvementModal
         open={mouvementOpen}
         onClose={() => setMouvementOpen(false)}
-        onSave={handleSaveMouvement}
+        onSave={handleSaveInitStock}
         articles={articleOptions}
       />
     </div>

@@ -4,6 +4,87 @@ import { getSupabaseWithOrg } from './helpers'
 import type { LotStock, EtatLot, OrigineType, Mouvement, Lot, StatutLot, TypeMouvement } from '@/app/[locale]/(dashboard)/stocks/_components/types'
 import type { ArticleType, StatutQC } from '@/types/erp'
 
+// ── Entrée stock initiale (go-live) ──────────────────────────────────────────
+
+export async function createInitStock(
+  articleCode: string,
+  lot: string,
+  quantite: number,
+  date: string,
+  motif: string,
+): Promise<boolean> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+
+    // Résoudre article
+    const { data: art } = await supabase
+      .from('articles')
+      .select('id, gestion_lot, pmp')
+      .eq('organization_id', orgId)
+      .eq('code', articleCode)
+      .maybeSingle()
+    if (!(art as any)?.id) throw new Error(`Article introuvable : ${articleCode}`)
+
+    // Résoudre factory_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('factory_id')
+      .eq('organization_id', orgId)
+      .maybeSingle()
+    const factoryId = (profile as any)?.factory_id
+    if (!factoryId) throw new Error('Aucune usine trouvée')
+
+    const articleId  = (art as any).id as string
+    const pmp        = Number((art as any).pmp) || 0
+    const batchNumber = lot || `INIT-${date.replace(/-/g, '')}-${articleCode}`
+
+    // Journal mouvement
+    await supabase.from('stock_movements').insert({
+      organization_id: orgId,
+      factory_id:      factoryId,
+      article_id:      articleId,
+      movement_type:   'INIT',
+      quantity:        quantite,
+      unit_price:      pmp,
+      pmp_before:      pmp,
+      pmp_after:       pmp,
+      batch_number:    batchNumber,
+      reference_type:  'manual',
+      reference_id:    null,
+    })
+
+    // Lot (toujours Libere pour un stock initial)
+    await supabase.from('lots').insert({
+      organization_id:   orgId,
+      factory_id:        factoryId,
+      article_id:        articleId,
+      batch_number:      batchNumber,
+      quantity_initial:  quantite,
+      quantity_remaining: quantite,
+      statut_qc:         'Libere',
+      goods_receipt_id:  null,
+      expiry_date:       null,
+    }).select().maybeSingle()
+
+    // article_stocks
+    await supabase.from('article_stocks').upsert({
+      organization_id:   orgId,
+      factory_id:        factoryId,
+      article_id:        articleId,
+      quantity_available: quantite,
+      updated_at:        new Date().toISOString(),
+    }, {
+      onConflict: 'organization_id,factory_id,article_id',
+      ignoreDuplicates: false,
+    })
+
+    return true
+  } catch (e) {
+    console.error('[createInitStock]', e)
+    return false
+  }
+}
+
 // ── Mouvements de stock par article ──────────────────────────────────────────
 
 function mvtType(t: string): TypeMouvement {
