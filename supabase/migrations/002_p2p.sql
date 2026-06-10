@@ -1,10 +1,17 @@
 -- ══════════════════════════════════════════════════════════════════════════════
 -- Migration 002 — Flux P2P (Procure-to-Pay)
 -- Tables : suppliers, purchase_orders, purchase_order_items,
+--          purchase_receipts, purchase_receipt_items, supplier_payments,
 --          goods_receipts, goods_receipt_items,
 --          purchase_requisitions, article_stocks,
 --          stock_movements, contrats_achat
 -- Trigger : recalcul PMP + mise à jour stock à la validation d'une réception
+--
+-- Deux chemins d'achat :
+--   FORMEL  → purchase_orders (BC) → goods_receipts → goods_receipt_items
+--   INFORMEL → purchase_receipts (BA direct) → purchase_receipt_items
+--              + supplier_payments (Cash/Wave) → goods_receipt_items
+--   Les deux convergent vers quality_inspection_lots (purgatoire qualité)
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── SUPPLIERS ─────────────────────────────────────────────────────────────────
@@ -165,6 +172,74 @@ CREATE TABLE public.stock_movements (
     CONSTRAINT stock_movements_pkey PRIMARY KEY (id)
 );
 
+-- ── PURCHASE_RECEIPTS (flux informel — BA direct sans commande préalable) ─────
+-- Utilisé quand le fournisseur est informel : achat direct au marché,
+-- auprès d'un collecteur local, d'un transporteur, etc.
+-- Pas de purchase_order associé — le paiement se fait à la livraison (Cash/Wave).
+
+CREATE TABLE public.purchase_receipts (
+    id                    UUID        DEFAULT gen_random_uuid() NOT NULL,
+    organization_id       UUID        NOT NULL REFERENCES public.organizations(id),
+    factory_id            UUID        NOT NULL REFERENCES public.factories(id),
+    supplier_id           UUID        REFERENCES public.suppliers(id),
+    supplier_name         TEXT,                           -- nom libre si fournisseur non référencé
+    receipt_number        TEXT        NOT NULL,           -- BA-2026-0001
+    receipt_date          DATE        NOT NULL DEFAULT CURRENT_DATE,
+    currency              TEXT        DEFAULT 'XOF' NOT NULL,
+    total_amount_ht       NUMERIC     DEFAULT 0 NOT NULL,
+    payment_status        TEXT        DEFAULT 'PENDING' NOT NULL
+                            CHECK (payment_status IN ('PENDING', 'PARTIAL', 'PAID')),
+    status                TEXT        DEFAULT 'DRAFT' NOT NULL
+                            CHECK (status IN ('DRAFT', 'VALIDATED', 'CANCELLED')),
+    notes                 TEXT,
+    created_at            TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at            TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT purchase_receipts_pkey PRIMARY KEY (id),
+    CONSTRAINT purchase_receipts_org_number_key UNIQUE (organization_id, receipt_number)
+);
+
+-- ── PURCHASE_RECEIPT_ITEMS ────────────────────────────────────────────────────
+
+CREATE TABLE public.purchase_receipt_items (
+    id                    UUID        DEFAULT gen_random_uuid() NOT NULL,
+    organization_id       UUID        NOT NULL REFERENCES public.organizations(id),
+    purchase_receipt_id   UUID        NOT NULL REFERENCES public.purchase_receipts(id) ON DELETE CASCADE,
+    article_id            UUID        REFERENCES public.articles(id),
+    article_label         TEXT        NOT NULL,
+    quantity              NUMERIC     NOT NULL CHECK (quantity > 0),
+    unit_price_ht         NUMERIC     DEFAULT 0 NOT NULL CHECK (unit_price_ht >= 0),
+    shelf_life_days       INTEGER,
+    item_position         INTEGER     DEFAULT 1 NOT NULL,
+    created_at            TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT purchase_receipt_items_pkey PRIMARY KEY (id)
+);
+
+-- ── SUPPLIER_PAYMENTS (paiements directs Cash / Wave / Mobile Money) ──────────
+
+CREATE TABLE public.supplier_payments (
+    id                    UUID        DEFAULT gen_random_uuid() NOT NULL,
+    organization_id       UUID        NOT NULL REFERENCES public.organizations(id),
+    purchase_receipt_id   UUID        REFERENCES public.purchase_receipts(id),
+    purchase_order_id     UUID        REFERENCES public.purchase_orders(id),
+    supplier_id           UUID        REFERENCES public.suppliers(id),
+    payment_date          DATE        NOT NULL DEFAULT CURRENT_DATE,
+    amount                NUMERIC     NOT NULL CHECK (amount > 0),
+    currency              TEXT        DEFAULT 'XOF' NOT NULL,
+    payment_method        TEXT        NOT NULL
+                            CHECK (payment_method IN ('CASH', 'WAVE', 'ORANGE_MONEY', 'VIREMENT', 'CHEQUE', 'AUTRE')),
+    reference             TEXT,                           -- N° transaction Wave/OM
+    notes                 TEXT,
+    created_at            TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT supplier_payments_pkey PRIMARY KEY (id),
+    -- Un paiement est lié à un bon d'achat informel OU une commande formelle, pas les deux
+    CONSTRAINT supplier_payments_source_check
+        CHECK (
+            (purchase_receipt_id IS NOT NULL AND purchase_order_id IS NULL) OR
+            (purchase_receipt_id IS NULL AND purchase_order_id IS NOT NULL) OR
+            (purchase_receipt_id IS NULL AND purchase_order_id IS NULL)
+        )
+);
+
 -- ── CONTRATS_ACHAT ────────────────────────────────────────────────────────────
 
 CREATE TABLE public.contrats_achat (
@@ -317,6 +392,13 @@ CREATE INDEX idx_article_stocks_org_article     ON public.article_stocks(organiz
 CREATE INDEX idx_stock_movements_org            ON public.stock_movements(organization_id, created_at DESC);
 CREATE INDEX idx_stock_movements_article        ON public.stock_movements(article_id, created_at DESC);
 CREATE INDEX idx_contrats_achat_supplier        ON public.contrats_achat(supplier_id);
+CREATE INDEX idx_purchase_receipts_org          ON public.purchase_receipts(organization_id, receipt_date DESC);
+CREATE INDEX idx_purchase_receipts_supplier     ON public.purchase_receipts(supplier_id);
+CREATE INDEX idx_purchase_receipt_items_receipt ON public.purchase_receipt_items(purchase_receipt_id);
+CREATE INDEX idx_purchase_receipt_items_article ON public.purchase_receipt_items(article_id);
+CREATE INDEX idx_supplier_payments_org          ON public.supplier_payments(organization_id, payment_date DESC);
+CREATE INDEX idx_supplier_payments_receipt      ON public.supplier_payments(purchase_receipt_id);
+CREATE INDEX idx_supplier_payments_order        ON public.supplier_payments(purchase_order_id);
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- ROW LEVEL SECURITY
@@ -331,6 +413,9 @@ ALTER TABLE public.purchase_requisitions   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.article_stocks          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock_movements         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contrats_achat          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_receipts       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_receipt_items  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.supplier_payments       ENABLE ROW LEVEL SECURITY;
 
 -- Lecture : tous les utilisateurs de l'organisation
 CREATE POLICY suppliers_select           ON public.suppliers           FOR SELECT USING (organization_id = public.fn_user_org());
@@ -377,5 +462,20 @@ CREATE POLICY stock_movements_insert ON public.stock_movements
     FOR INSERT WITH CHECK (organization_id = public.fn_user_org());
 
 CREATE POLICY contrats_achat_write ON public.contrats_achat
+    USING (organization_id = public.fn_user_org())
+    WITH CHECK (organization_id = public.fn_user_org());
+
+CREATE POLICY purchase_receipts_select  ON public.purchase_receipts      FOR SELECT USING (organization_id = public.fn_user_org());
+CREATE POLICY purchase_receipts_write   ON public.purchase_receipts
+    USING (organization_id = public.fn_user_org())
+    WITH CHECK (organization_id = public.fn_user_org());
+
+CREATE POLICY pr_items_select           ON public.purchase_receipt_items  FOR SELECT USING (organization_id = public.fn_user_org());
+CREATE POLICY pr_items_write            ON public.purchase_receipt_items
+    USING (organization_id = public.fn_user_org())
+    WITH CHECK (organization_id = public.fn_user_org());
+
+CREATE POLICY supplier_payments_select  ON public.supplier_payments       FOR SELECT USING (organization_id = public.fn_user_org());
+CREATE POLICY supplier_payments_write   ON public.supplier_payments
     USING (organization_id = public.fn_user_org())
     WITH CHECK (organization_id = public.fn_user_org());
