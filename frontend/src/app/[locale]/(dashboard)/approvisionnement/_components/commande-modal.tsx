@@ -261,6 +261,9 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
               article:   art.designation,
               unite:     art.uniteStock || i.unite,
               dureeVie:  art.dureeVie !== null ? String(art.dureeVie) : i.dureeVie,
+              puHT:      i.puHT === '' && art.dernierPrixAchat !== null
+                           ? String(art.dernierPrixAchat)
+                           : i.puHT,
             }
           : i,
       ),

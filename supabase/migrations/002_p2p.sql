@@ -316,7 +316,9 @@ BEGIN
                 updated_at         = now();
 
             UPDATE public.articles
-               SET pmp = v_new_pmp, updated_at = now()
+               SET pmp                = v_new_pmp,
+                   dernier_prix_achat = CASE WHEN v_unit_price > 0 THEN v_unit_price ELSE dernier_prix_achat END,
+                   updated_at         = now()
              WHERE id = v_item.article_id;
 
         END LOOP;
