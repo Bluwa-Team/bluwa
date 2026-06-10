@@ -287,8 +287,9 @@ BEGIN
                 gri.batch_number,
                 gri.purchase_order_item_id,
                 gri.expiry_date,
-                a.pmp          AS current_pmp,
-                a.gestion_lot  AS gestion_lot
+                a.pmp                    AS current_pmp,
+                a.gestion_lot            AS gestion_lot,
+                a.coeff_conversion_achat AS coeff_conversion_achat
             FROM   public.goods_receipt_items  gri
             JOIN   public.articles             a ON a.id = gri.article_id
             WHERE  gri.goods_receipt_id = NEW.id
@@ -308,7 +309,8 @@ BEGIN
             FROM   public.purchase_order_items
             WHERE  id = v_item.purchase_order_item_id;
 
-            v_unit_price := COALESCE(v_unit_price, 0);
+            v_unit_price := COALESCE(v_unit_price, 0)
+                          / GREATEST(COALESCE(v_item.coeff_conversion_achat, 1), 1);
 
             IF (v_current_qty + v_item.quantity_received) > 0 THEN
                 v_new_pmp := (v_current_qty * v_current_pmp + v_item.quantity_received * v_unit_price)
