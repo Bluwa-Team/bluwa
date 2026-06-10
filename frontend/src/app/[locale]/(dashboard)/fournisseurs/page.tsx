@@ -241,7 +241,7 @@ export default function FournisseursPage() {
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
           <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Tous">{t('allStructureTypes')}</SelectItem>
+            <SelectItem value="Tous">Type</SelectItem>
             <SelectItem value="Formel">{t('statuts.Formel')}</SelectItem>
             <SelectItem value="Informel">{t('statuts.Informel')}</SelectItem>
           </SelectContent>
@@ -250,7 +250,7 @@ export default function FournisseursPage() {
         <Select value={filterCategorie} onValueChange={(v) => setFilterCategorie(v ?? 'Toutes')}>
           <SelectTrigger className="w-52 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Toutes">{t('allCategories')}</SelectItem>
+            <SelectItem value="Toutes">Catégories</SelectItem>
             {CATEGORIES_FOURNISSEUR.map((c) => (
               <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}
