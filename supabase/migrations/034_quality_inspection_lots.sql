@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS quality_inspection_lots (
   factory_id            UUID          NOT NULL REFERENCES factories(id)          ON DELETE RESTRICT,
 
   -- Lien 1:1 strict avec la ligne de réception
-  goods_receipt_item_id UUID          NOT NULL UNIQUE REFERENCES goods_receipt_items(id) ON DELETE CASCADE,
+  goods_receipt_item_id UUID          NOT NULL UNIQUE,
   article_id            UUID          NOT NULL REFERENCES articles(id)           ON DELETE RESTRICT,
 
   -- Repris de la réception pour indexation rapide (évite un JOIN systématique)

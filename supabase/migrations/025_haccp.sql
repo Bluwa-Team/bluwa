@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS haccp_monitoring_records (
   deviation_details    TEXT,
   operator_id          UUID        REFERENCES profiles(id) ON DELETE SET NULL,
   production_order_id  UUID        REFERENCES production_orders(id) ON DELETE SET NULL,
-  goods_receipt_id     UUID        REFERENCES goods_receipts(id)    ON DELETE SET NULL,
+  goods_receipt_id     UUID,
   notes                TEXT,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS haccp_corrective_actions (
   is_resolved           BOOLEAN     NOT NULL DEFAULT FALSE,
   lot_blocked           BOOLEAN     NOT NULL DEFAULT FALSE,
   non_conformite_id     UUID,
-  stock_movement_id     UUID        REFERENCES stock_movements(id) ON DELETE SET NULL,
+  stock_movement_id     UUID,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -261,8 +261,8 @@ CREATE TABLE IF NOT EXISTS quality_non_conformites (
   resolved_by              UUID        REFERENCES profiles(id) ON DELETE SET NULL,
   resolution_notes         TEXT,
   resolved_at              TIMESTAMPTZ,
-  goods_receipt_id         UUID        REFERENCES goods_receipts(id)    ON DELETE SET NULL,
-  production_order_id      UUID        REFERENCES production_orders(id) ON DELETE SET NULL,
+  goods_receipt_id         UUID,
+  production_order_id      UUID,
   haccp_corrective_action_id UUID      REFERENCES haccp_corrective_actions(id) ON DELETE SET NULL,
   created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -81,73 +81,19 @@ $$;
 
 
 -- ── Trigger sur goods_receipt_items ──────────────────────────────────────────
+-- Conditionné à l'existence de la table (supprimée dans le nettoyage mai 2026,
+-- sera recréée avec la migration des réceptions MP)
 
-DROP TRIGGER IF EXISTS trg_goods_receipt_item_pmp ON goods_receipt_items;
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'goods_receipt_items'
+  ) THEN
+    DROP TRIGGER IF EXISTS trg_goods_receipt_item_pmp ON goods_receipt_items;
 
-CREATE TRIGGER trg_goods_receipt_item_pmp
-  AFTER INSERT ON goods_receipt_items
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_update_article_pmp();
-
-
--- ── Recalcul du PMP historique (données existantes) ──────────────────────────
--- Recalcule le PMP pour tous les articles ayant des réceptions liées à un BC
--- avec un prix unitaire, en ordre chronologique.
-
-DO $$
-DECLARE
-  r RECORD;
-  v_stock   NUMERIC;
-  v_pmp     NUMERIC;
-  v_price   NUMERIC;
-  v_new_pmp NUMERIC;
-BEGIN
-  FOR r IN
-    SELECT
-      gri.id,
-      gri.article_id,
-      gri.quantity_received,
-      COALESCE(poi.unit_price_ht, 0) AS unit_price,
-      gr.received_at
-    FROM goods_receipt_items gri
-    JOIN goods_receipts gr ON gr.id = gri.goods_receipt_id
-    LEFT JOIN purchase_order_items poi ON poi.id = gri.purchase_order_item_id
-    WHERE gri.article_id IS NOT NULL
-    ORDER BY gri.article_id, gr.received_at ASC, gri.id ASC
-  LOOP
-    -- Stock et PMP avant cet item
-    SELECT
-      COALESCE(a.pmp, 0),
-      COALESCE((
-        SELECT SUM(gri2.quantity_received)
-        FROM goods_receipt_items gri2
-        WHERE gri2.article_id = r.article_id
-          AND gri2.id != r.id
-          AND (
-            SELECT received_at FROM goods_receipts WHERE id = gri2.goods_receipt_id
-          ) < r.received_at
-      ), 0)
-    INTO v_pmp, v_stock
-    FROM articles a
-    WHERE a.id = r.article_id;
-
-    v_price := r.unit_price;
-
-    IF v_price > 0 THEN
-      IF v_stock > 0 THEN
-        v_new_pmp := (v_stock * v_pmp + r.quantity_received * v_price)
-                    / (v_stock + r.quantity_received);
-      ELSE
-        v_new_pmp := v_price;
-      END IF;
-
-      UPDATE articles
-      SET
-        pmp                 = ROUND(v_new_pmp::NUMERIC, 4),
-        dernier_prix_achat  = v_price,
-        updated_at          = NOW()
-      WHERE id = r.article_id;
-    END IF;
-  END LOOP;
-END;
-$$;
+    CREATE TRIGGER trg_goods_receipt_item_pmp
+      AFTER INSERT ON goods_receipt_items
+      FOR EACH ROW
+      EXECUTE FUNCTION fn_update_article_pmp();
+  END IF;
+END $$;
