@@ -236,8 +236,32 @@ CREATE TABLE public.contrats_achat (
     CONSTRAINT contrats_achat_pkey PRIMARY KEY (id)
 );
 
+-- ── LOTS ─────────────────────────────────────────────────────────────────────
+-- Un lot = une unité traçable de stock, créée à la validation de réception.
+-- Tous les lots sont visibles peu importe le statut QC (vue type MMBE SAP).
+-- statut_qc : EnControle (si gestion_lot=true) ou Libere (si gestion_lot=false)
+-- quantity_remaining décrémenté à chaque consommation (OF, inventaire, rejet).
+
+CREATE TABLE public.lots (
+    id                 UUID        DEFAULT gen_random_uuid() NOT NULL,
+    organization_id    UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    factory_id         UUID        NOT NULL REFERENCES public.factories(id),
+    article_id         UUID        NOT NULL REFERENCES public.articles(id),
+    batch_number       TEXT        NOT NULL,
+    quantity_initial   NUMERIC     NOT NULL DEFAULT 0 CHECK (quantity_initial >= 0),
+    quantity_remaining NUMERIC     NOT NULL DEFAULT 0,
+    statut_qc          TEXT        NOT NULL DEFAULT 'EnControle'
+                           CHECK (statut_qc IN ('EnControle', 'Libere', 'Rejete', 'Consomme')),
+    goods_receipt_id   UUID        REFERENCES public.goods_receipts(id),
+    expiry_date        DATE,
+    created_at         TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at         TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT lots_pkey PRIMARY KEY (id),
+    CONSTRAINT lots_batch_unique UNIQUE (organization_id, factory_id, batch_number)
+);
+
 -- ══════════════════════════════════════════════════════════════════════════════
--- TRIGGER PMP — validation réception → mouvements stock + recalcul PMP
+-- TRIGGER PMP — validation réception → mouvements stock + recalcul PMP + lots
 -- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.fn_validate_goods_receipt()
@@ -249,6 +273,7 @@ DECLARE
     v_unit_price    NUMERIC;
     v_new_pmp       NUMERIC;
     v_factory_id    UUID;
+    v_statut_qc     TEXT;
 BEGIN
     IF OLD.status = 'DRAFT' AND NEW.status = 'VALIDATED' THEN
 
@@ -261,7 +286,9 @@ BEGIN
                 gri.quantity_received,
                 gri.batch_number,
                 gri.purchase_order_item_id,
-                a.pmp AS current_pmp
+                gri.expiry_date,
+                a.pmp          AS current_pmp,
+                a.gestion_lot  AS gestion_lot
             FROM   public.goods_receipt_items  gri
             JOIN   public.articles             a ON a.id = gri.article_id
             WHERE  gri.goods_receipt_id = NEW.id
@@ -321,6 +348,20 @@ BEGIN
                    updated_at         = now()
              WHERE id = v_item.article_id;
 
+            -- Créer le lot (EnControle si gestion_lot=true, Libere sinon)
+            v_statut_qc := CASE WHEN v_item.gestion_lot THEN 'EnControle' ELSE 'Libere' END;
+
+            INSERT INTO public.lots (
+                organization_id, factory_id, article_id,
+                batch_number, quantity_initial, quantity_remaining,
+                statut_qc, goods_receipt_id, expiry_date
+            ) VALUES (
+                NEW.organization_id, v_factory_id, v_item.article_id,
+                v_item.batch_number, v_item.quantity_received, v_item.quantity_received,
+                v_statut_qc, NEW.id, v_item.expiry_date
+            )
+            ON CONFLICT (organization_id, factory_id, batch_number) DO NOTHING;
+
         END LOOP;
 
         IF NEW.purchase_order_id IS NOT NULL THEN
@@ -365,6 +406,10 @@ CREATE INDEX idx_article_stocks_org_article     ON public.article_stocks(organiz
 CREATE INDEX idx_stock_movements_org            ON public.stock_movements(organization_id, created_at DESC);
 CREATE INDEX idx_stock_movements_article        ON public.stock_movements(article_id, created_at DESC);
 CREATE INDEX idx_contrats_achat_fournisseur     ON public.contrats_achat(fournisseur_id);
+CREATE INDEX idx_lots_org_article               ON public.lots(organization_id, article_id);
+CREATE INDEX idx_lots_batch                     ON public.lots(organization_id, batch_number);
+CREATE INDEX idx_lots_statut_qc                 ON public.lots(organization_id, statut_qc);
+CREATE INDEX idx_lots_goods_receipt             ON public.lots(goods_receipt_id);
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- ROW LEVEL SECURITY
@@ -381,6 +426,7 @@ ALTER TABLE public.purchase_requisitions   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.article_stocks          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock_movements         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contrats_achat          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lots                    ENABLE ROW LEVEL SECURITY;
 
 -- Lecture
 CREATE POLICY purchase_orders_select     ON public.purchase_orders         FOR SELECT USING (organization_id = public.fn_user_org());
@@ -394,6 +440,7 @@ CREATE POLICY requisitions_select        ON public.purchase_requisitions   FOR S
 CREATE POLICY article_stocks_select      ON public.article_stocks          FOR SELECT USING (organization_id = public.fn_user_org());
 CREATE POLICY stock_movements_select     ON public.stock_movements         FOR SELECT USING (organization_id = public.fn_user_org());
 CREATE POLICY contrats_achat_select      ON public.contrats_achat          FOR SELECT USING (organization_id = public.fn_user_org());
+CREATE POLICY lots_select                ON public.lots                    FOR SELECT USING (organization_id = public.fn_user_org());
 
 -- Écriture
 CREATE POLICY purchase_orders_write    ON public.purchase_orders        USING (organization_id = public.fn_user_org()) WITH CHECK (organization_id = public.fn_user_org());
@@ -406,6 +453,7 @@ CREATE POLICY supplier_payments_write  ON public.supplier_payments      USING (o
 CREATE POLICY requisitions_write       ON public.purchase_requisitions  USING (organization_id = public.fn_user_org()) WITH CHECK (organization_id = public.fn_user_org());
 CREATE POLICY article_stocks_write     ON public.article_stocks         USING (organization_id = public.fn_user_org()) WITH CHECK (organization_id = public.fn_user_org());
 CREATE POLICY contrats_achat_write     ON public.contrats_achat         USING (organization_id = public.fn_user_org()) WITH CHECK (organization_id = public.fn_user_org());
+CREATE POLICY lots_write               ON public.lots                   USING (organization_id = public.fn_user_org()) WITH CHECK (organization_id = public.fn_user_org());
 
 -- stock_movements : INSERT uniquement (journal immuable)
 CREATE POLICY stock_movements_insert ON public.stock_movements
