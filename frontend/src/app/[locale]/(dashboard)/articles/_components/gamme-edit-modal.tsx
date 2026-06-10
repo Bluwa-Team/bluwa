@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Plus, Trash2, ListChecks, ExternalLink } from 'lucide-react'
+import { X, Plus, Trash2, ListChecks, ExternalLink, GripVertical } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import {
@@ -52,6 +52,8 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
   const [version, setVersion] = useState('v1.0')
   const [rows, setRows]       = useState<GammeEtape[]>([])
   const [saving, setSaving]   = useState(false)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const dragItemIdx = useRef<number | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -59,6 +61,38 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
       setRows(etapes.map((e) => ({ ...e })))
     }
   }, [open, gamme, etapes])
+
+  // ── Drag & drop ─────────────────────────────────────────────────────────────
+
+  function handleDragStart(idx: number) {
+    dragItemIdx.current = idx
+  }
+
+  function handleDragEnter(id: string) {
+    setDragOverId(id)
+  }
+
+  function handleDrop(targetIdx: number) {
+    const from = dragItemIdx.current
+    if (from === null || from === targetIdx) {
+      dragItemIdx.current = null
+      setDragOverId(null)
+      return
+    }
+    setRows((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(targetIdx, 0, moved)
+      return next.map((r, i) => ({ ...r, ordre: i + 1 }))
+    })
+    dragItemIdx.current = null
+    setDragOverId(null)
+  }
+
+  function handleDragEnd() {
+    dragItemIdx.current = null
+    setDragOverId(null)
+  }
 
   // ── Row helpers ─────────────────────────────────────────────────────────────
 
@@ -184,7 +218,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                 </div>
 
                 {/* Column headers */}
-                <div className="flex items-center gap-x-2 mb-2 px-1">
+                <div className="flex items-center gap-x-2 mb-2 pl-9 pr-1">
                   <span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground text-center">#</span>
                   <span className="w-[180px] shrink-0 text-xs font-semibold text-muted-foreground">Opération</span>
                   <span className="w-[160px] shrink-0 text-xs font-semibold text-muted-foreground">Poste de charge</span>
@@ -196,11 +230,33 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                 </div>
 
                 {/* Rows */}
-                <div className="space-y-2">
-                  {rows.map((row) => {
+                <div className="space-y-1.5">
+                  {rows.map((row, idx) => {
                     const invalid = row.operation.trim() && row.duree <= 0
+                    const isDragOver = dragOverId === row.id
                     return (
-                      <div key={row.id} className="flex items-center gap-x-2">
+                      <div
+                        key={row.id}
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragEnter={() => handleDragEnter(row.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleDrop(idx)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-x-2 rounded-lg transition-colors ${
+                          isDragOver
+                            ? 'border-2 border-blue-400 bg-blue-50/50'
+                            : 'border-2 border-transparent'
+                        }`}
+                      >
+
+                        {/* Poignée drag */}
+                        <div
+                          className="w-7 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                          title="Glisser pour réordonner"
+                        >
+                          <GripVertical className="size-4" />
+                        </div>
 
                         {/* Ordre */}
                         <span className="w-7 shrink-0 text-center text-xs font-semibold text-muted-foreground tabular-nums">
@@ -301,6 +357,8 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                 </button>
 
                 <p className="mt-3 text-xs text-muted-foreground">
+                  <strong>⠿</strong> : glisser-déposer pour réordonner.
+                  <span className="mx-1.5">·</span>
                   <strong>Poste</strong> : poste de charge ou ligne de production.
                   <span className="mx-1.5">·</span>
                   <strong>Lot</strong> : durée standard pour le lot.
