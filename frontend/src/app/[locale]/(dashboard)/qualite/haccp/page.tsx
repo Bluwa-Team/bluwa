@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  MOCK_PROCESS_STEPS, MOCK_HAZARD_ANALYSIS, MOCK_CCP, HACCP_PLAN_META,
+  HACCP_PLAN_META,
   HAZARD_TYPE_LABELS, HAZARD_TYPE_COLORS,
   riskScore, riskColor, riskLabel,
   type HazardType, type RiskLevel,
@@ -840,9 +840,9 @@ function ModalAddPCC({
 export default function HaccpPlanPage() {
   const [activeTab, setActiveTab] = useState<Tab>('pcc')
 
-  const [steps,   setSteps]   = useState<ProcessStep[]>(MOCK_PROCESS_STEPS)
-  const [hazards, setHazards] = useState<HazardAnalysis[]>(MOCK_HAZARD_ANALYSIS)
-  const [ccps,    setCcps]    = useState<CriticalControlPoint[]>(MOCK_CCP)
+  const [steps,   setSteps]   = useState<ProcessStep[]>([])
+  const [hazards, setHazards] = useState<HazardAnalysis[]>([])
+  const [ccps,    setCcps]    = useState<CriticalControlPoint[]>([])
 
   const [modalStep,   setModalStep]   = useState(false)
   const [modalDanger, setModalDanger] = useState(false)

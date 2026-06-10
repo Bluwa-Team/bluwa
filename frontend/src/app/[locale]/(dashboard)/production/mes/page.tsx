@@ -18,10 +18,9 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  OrdreFabrication, MOCK_OFS, STATUT_OF_COLORS, STATUT_OF_LABELS,
+  OrdreFabrication, STATUT_OF_COLORS, STATUT_OF_LABELS,
   EtatLigne, MotifArret, MOTIF_ARRET_LABELS,
-  SessionMES, EvenementMES, TypeEvenementMES, MOCK_SESSIONS_MES,
-  MOCK_JOURNAL_MES, LEAD_TIME_H,
+  SessionMES, EvenementMES, TypeEvenementMES, LEAD_TIME_H,
 } from '../_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
 
@@ -178,9 +177,9 @@ export default function MESPage() {
   const locale = useLocale()
 
   // ── State existant ─────────────────────────────────────────────────────────
-  const [ofs, setOfs] = useState<OrdreFabrication[]>(MOCK_OFS)
-  const [sessions, setSessions] = useState<Record<string, SessionMES>>(MOCK_SESSIONS_MES)
-  const [journal, setJournal] = useState<EvenementMES[]>(MOCK_JOURNAL_MES)
+  const [ofs, setOfs] = useState<OrdreFabrication[]>([])
+  const [sessions, setSessions] = useState<Record<string, SessionMES>>({})
+  const [journal, setJournal] = useState<EvenementMES[]>([])
   const [now, setNow] = useState('')
 
   // Declaration modal
