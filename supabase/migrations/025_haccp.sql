@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS haccp_monitoring_records (
   is_within_limit      BOOLEAN     NOT NULL,
   deviation_details    TEXT,
   operator_id          UUID        REFERENCES profiles(id) ON DELETE SET NULL,
-  production_order_id  UUID        REFERENCES production_orders(id) ON DELETE SET NULL,
+  production_order_id  UUID,
   goods_receipt_id     UUID,
   notes                TEXT,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
