@@ -141,7 +141,8 @@
     },
     "appro": {
       "Achete": "Purchased",
-      "Fabrique": "Manufactured"
+      "Fabrique": "Manufactured",
+      "Interne": "Internal"
     },
     "modal": {
       "new": "New item",

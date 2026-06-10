@@ -460,3 +460,16 @@ CREATE POLICY lots_write               ON public.lots                   USING (o
 -- stock_movements : INSERT uniquement (journal immuable)
 CREATE POLICY stock_movements_insert ON public.stock_movements
     FOR INSERT WITH CHECK (organization_id = public.fn_user_org());
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- APPRO 'Interne' — ressources internes (eau forage, vapeur, …)
+-- Ces articles n'ont pas de fournisseur et n'entrent pas dans le flux P2P.
+-- Entrée en stock via INIT ou flux production séparé.
+-- ══════════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE public.articles
+    DROP CONSTRAINT articles_appro_check;
+
+ALTER TABLE public.articles
+    ADD CONSTRAINT articles_appro_check
+        CHECK (appro = ANY (ARRAY['Achete'::text, 'Fabrique'::text, 'Interne'::text]));

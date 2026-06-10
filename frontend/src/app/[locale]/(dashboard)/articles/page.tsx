@@ -198,7 +198,7 @@ export default function ArticlesPage() {
         pointCommande:        row.pointCommande        ? parseFloat(row.pointCommande)        : null,
         prixVente:            row.prixVente            ? parseFloat(row.prixVente)            : null,
         codeBarres:           row.codeBarres           || '',
-        appro:                (['Achete','Fabrique'].includes(row.appro) ? row.appro : 'Achete') as ArticleAppro,
+        appro:                (['Achete','Fabrique','Interne'].includes(row.appro) ? row.appro : 'Achete') as ArticleAppro,
         statut:               (['Actif','Bloque','EnCreation'].includes(row.statut) ? row.statut : 'Actif') as ArticleStatut,
         gestionLot:           row.gestionLot === 'true' || row.gestionLot?.toLowerCase() === 'oui',
       })
