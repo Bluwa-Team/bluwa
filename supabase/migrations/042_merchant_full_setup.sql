@@ -149,7 +149,7 @@ CREATE POLICY "invoices_admin" ON invoices FOR ALL
 
 CREATE TABLE IF NOT EXISTS support_tickets (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id      UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  factory_id  UUID        NOT NULL REFERENCES factories(id) ON DELETE CASCADE,
   subject     TEXT        NOT NULL,
   status      TEXT        NOT NULL DEFAULT 'open'
                 CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
@@ -161,8 +161,8 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_tickets_org    ON support_tickets(org_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_factory ON support_tickets(factory_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_status  ON support_tickets(status);
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "tickets_admin" ON support_tickets;

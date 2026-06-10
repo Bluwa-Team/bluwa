@@ -132,7 +132,7 @@ CREATE POLICY "invoices_admin" ON invoices FOR ALL USING (is_bluwa_admin());
 
 CREATE TABLE IF NOT EXISTS support_tickets (
   id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id      UUID         NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  factory_id  UUID         NOT NULL REFERENCES factories(id) ON DELETE CASCADE,
   subject     TEXT         NOT NULL,
   status      TEXT         NOT NULL DEFAULT 'open'
                 CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
@@ -146,8 +146,8 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 
 COMMENT ON TABLE support_tickets IS 'Tickets support client — messages en JSONB';
 
-CREATE INDEX IF NOT EXISTS idx_tickets_org    ON support_tickets(org_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_factory ON support_tickets(factory_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_status  ON support_tickets(status);
 
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
