@@ -6,7 +6,7 @@ export default function ArchivedPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-transparent flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <Link href="/" className="inline-block">
-          <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="mx-auto" />
+          <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="mx-auto dark:brightness-0 dark:invert" />
         </Link>
 
         <div className="rounded-xl border bg-card p-8 space-y-4">

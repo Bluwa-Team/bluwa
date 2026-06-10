@@ -118,7 +118,7 @@ export default function OnboardingPage() {
         <div className="p-6">
           <div className="text-center mb-6">
             <Link href="/" className="inline-block">
-              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="mx-auto" />
+              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="mx-auto dark:brightness-0 dark:invert" />
             </Link>
           </div>
 

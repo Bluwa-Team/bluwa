@@ -97,7 +97,7 @@ export default function CguPage() {
     <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-start py-10 px-4">
       {/* Header */}
       <div className="w-full max-w-2xl flex items-center justify-between mb-8">
-        <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} />
+        <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} className="brightness-0 invert" />
         <span className="text-xs text-gray-500">Version {CGU_VERSION} — Juin 2026</span>
       </div>
 

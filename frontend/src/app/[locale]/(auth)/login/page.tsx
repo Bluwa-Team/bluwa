@@ -63,7 +63,7 @@ export default function LoginPage() {
         <div className="p-6">
           <div className="text-center">
             <Link href="/" aria-label="Accueil" className="inline-block">
-              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} priority />
+              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} priority className="dark:brightness-0 dark:invert" />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">Connexion</h1>
             <p className="text-muted-foreground text-sm">Bienvenue, connectez-vous à votre espace</p>
