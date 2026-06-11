@@ -6,7 +6,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { X, Loader2, Plus, Trash2, CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
+import { X, Loader2, Plus, Trash2, CheckCircle2, Clock } from 'lucide-react'
 import type { Article } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import type { ReceptionHeader, ReceptionItem, QualiteStatut } from './types'
 import type { StatutQC } from '@/types/erp'
@@ -18,6 +18,7 @@ type ItemForm = {
   articleId:        string
   article:          string
   articleType:      string
+  gestionLot:       boolean  // articles.gestion_lot → détermine statut QC automatique
   quantite:         string
   unite:            string
   coeffConversion:  number   // coeff_conversion_achat : achat → stock
@@ -73,6 +74,7 @@ function newItemRow(): ItemForm {
     articleId:       '',
     article:         '',
     articleType:     'MP',
+    gestionLot:      true,
     quantite:        '',
     unite:           '',
     coeffConversion: 1,
@@ -84,12 +86,6 @@ function newItemRow(): ItemForm {
     statutLot:       'EnControle',
   }
 }
-
-const STATUT_OPTIONS: { value: StatutQC; label: string; Icon: React.ElementType; cls: string }[] = [
-  { value: 'EnControle', label: 'En contrôle', Icon: Clock,         cls: 'text-amber-500'   },
-  { value: 'Libere',     label: 'Libéré',       Icon: CheckCircle2,  cls: 'text-emerald-600' },
-  { value: 'Bloque',     label: 'Bloqué',        Icon: AlertTriangle, cls: 'text-red-500'     },
-]
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 
@@ -123,8 +119,10 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
             articleId:       art.id,
             article:         `${art.designation} (${art.code})`,
             articleType:     art.type,
+            gestionLot:      art.gestionLot,
             unite:           art.uniteAchat || art.uniteStock,
             coeffConversion: art.coeffConversionAchat || 1,
+            statutLot:       art.gestionLot ? 'EnControle' : 'Libere',
           }
         : i
     ))
@@ -344,25 +342,19 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
                     </Field>
                   </div>
 
-                  {/* Statut lot */}
+                  {/* Statut lot — automatique selon gestion_lot de l'article */}
                   <Field label="Statut qualité lot">
-                    <div className="flex gap-2">
-                      {STATUT_OPTIONS.map(({ value, label, Icon, cls }) => {
-                        const active = item.statutLot === value
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => setI(item._key, 'statutLot', value)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                              active ? `${cls} bg-muted border-current` : 'text-muted-foreground border-input hover:bg-muted'
-                            }`}
-                          >
-                            <Icon className={`size-3.5 ${active ? cls : ''}`} />
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
+                    {item.gestionLot ? (
+                      <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 text-amber-700 text-sm font-medium">
+                        <Clock className="size-3.5 text-amber-500 shrink-0" />
+                        En contrôle — automatique à la réception
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 text-sm font-medium">
+                        <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                        Disponible immédiatement — sans gestion de lot
+                      </div>
+                    )}
                   </Field>
                 </div>
               ))}
