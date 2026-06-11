@@ -232,7 +232,7 @@ export default function ApprovisionnementPage() {
 
   const stats = useMemo(() => ({
     enCours: bcHeaders.filter((h) => h.statut === 'DRAFT' || h.statut === 'PENDING_APPROVAL' || h.statut === 'APPROVED' || h.statut === 'SENT').length,
-    recues:  bcHeaders.filter((h) => h.statut === 'CLOSED').length,
+    recues:  bcHeaders.filter((h) => h.statut === 'RECEIVED').length,
     total:   bcHeaders.length,
   }), [bcHeaders])
 
@@ -771,7 +771,8 @@ export default function ApprovisionnementPage() {
               <option value="PENDING_APPROVAL">Attente approbation</option>
               <option value="APPROVED">Approuvée</option>
               <option value="SENT">Envoyée</option>
-              <option value="CLOSED">Clôturée</option>
+              <option value="RECEIVED">Reçue</option>
+              <option value="CANCELLED">Annulée</option>
             </select>
 
             <select
@@ -895,7 +896,7 @@ export default function ApprovisionnementPage() {
 
                     <td className="px-4 py-3 overflow-hidden">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[h.statut]}`}>
-                        {h.statut === 'CLOSED'
+                        {h.statut === 'RECEIVED'
                           ? <CheckCheck className="size-3 shrink-0" />
                           : <Clock className="size-3 shrink-0" />}
                         {STATUT_COMMANDE_LABELS[h.statut]}

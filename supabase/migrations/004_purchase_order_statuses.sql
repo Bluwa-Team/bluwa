@@ -1,15 +1,15 @@
 -- ══════════════════════════════════════════════════════════════════════════════
 -- Migration 004 — Statuts purchase_orders alignés sur le workflow métier
 --
--- Nouveaux statuts : DRAFT → PENDING_APPROVAL → APPROVED → SENT → CLOSED
+-- Nouveaux statuts : DRAFT → PENDING_APPROVAL → APPROVED → SENT → RECEIVED
 -- Supprime : PENDING, RECEIVED, CANCELLED
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── 1. Migrer les valeurs existantes ─────────────────────────────────────────
 
 UPDATE public.purchase_orders SET status = 'PENDING_APPROVAL' WHERE status = 'PENDING';
-UPDATE public.purchase_orders SET status = 'CLOSED'           WHERE status = 'RECEIVED';
-UPDATE public.purchase_orders SET status = 'CLOSED'           WHERE status = 'CANCELLED';
+UPDATE public.purchase_orders SET status = 'RECEIVED'           WHERE status = 'RECEIVED';
+UPDATE public.purchase_orders SET status = 'RECEIVED'           WHERE status = 'CANCELLED';
 
 -- ── 2. Remplacer le CHECK constraint ─────────────────────────────────────────
 
@@ -18,9 +18,9 @@ ALTER TABLE public.purchase_orders
 
 ALTER TABLE public.purchase_orders
     ADD CONSTRAINT purchase_orders_status_check
-    CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'CLOSED'));
+    CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'RECEIVED', 'CANCELLED'));
 
--- ── 3. Mettre à jour fn_validate_goods_receipt — auto-close → CLOSED ─────────
+-- ── 3. Mettre à jour fn_validate_goods_receipt — auto-close → RECEIVED ─────────
 
 CREATE OR REPLACE FUNCTION public.fn_validate_goods_receipt()
 RETURNS trigger
@@ -124,7 +124,7 @@ BEGIN
 
     END LOOP;
 
-    -- Auto-close BC : CLOSED quand quantités reçues (tous BRs validés) ≥ quantités commandées
+    -- Auto-close BC : RECEIVED quand quantités reçues (tous BRs validés) ≥ quantités commandées
     IF NEW.purchase_order_id IS NOT NULL THEN
 
         SELECT COALESCE(SUM(gri.quantity_received), 0)
@@ -141,10 +141,10 @@ BEGIN
 
         IF v_total_recu >= v_total_commande AND v_total_commande > 0 THEN
             UPDATE public.purchase_orders
-               SET status     = 'CLOSED',
+               SET status     = 'RECEIVED',
                    updated_at = now()
              WHERE id     = NEW.purchase_order_id
-               AND status NOT IN ('CLOSED');
+               AND status NOT IN ('RECEIVED', 'CANCELLED');
         END IF;
 
     END IF;

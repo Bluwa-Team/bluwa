@@ -46,7 +46,7 @@ export const MOCK_STRATEGIE: ArticleStrategie[] = [
 //             l'affichage tabulaire et la rétrocompatibilité
 
 // Valeurs alignées sur la colonne `status` de purchase_orders (migration 003)
-export type StatutCommande = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'SENT' | 'CLOSED'
+export type StatutCommande = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'SENT' | 'RECEIVED' | 'CANCELLED'
 export type TypeCommande   = 'BC' | 'BA'
 
 // ── En-tête du bon de commande / bon d'achat (→ purchase_orders) ─────────────
@@ -139,7 +139,8 @@ export const STATUT_COMMANDE_COLORS: Record<StatutCommande, string> = {
   PENDING_APPROVAL: 'bg-amber-100 text-amber-700 border border-amber-200',
   APPROVED:         'bg-blue-100 text-blue-700 border border-blue-200',
   SENT:             'bg-violet-100 text-violet-700 border border-violet-200',
-  CLOSED:           'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  RECEIVED:         'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  CANCELLED:        'bg-red-100 text-red-600 border border-red-200',
 }
 
 export const STATUT_COMMANDE_LABELS: Record<StatutCommande, string> = {
@@ -147,17 +148,18 @@ export const STATUT_COMMANDE_LABELS: Record<StatutCommande, string> = {
   PENDING_APPROVAL: 'Attente approbation',
   APPROVED:         'Approuvée',
   SENT:             'Envoyée',
-  CLOSED:           'Clôturée',
+  RECEIVED:         'Reçue',
+  CANCELLED:        'Annulée',
 }
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 export const MOCK_BC_HEADERS: BCHeader[] = [
   { id: 'h1', numero: 'BC-2026-058', type: 'BC', date: '2026-05-05', fournisseur: 'Coop. Bissap Kaolack', contrat: 'CT-2026-007', currency: 'XOF', reception: null,           statut: 'PENDING_APPROVAL' },
-  { id: 'h2', numero: 'BC-2026-057', type: 'BC', date: '2026-05-04', fournisseur: 'Sucrerie Niari',        contrat: 'CT-2026-005', currency: 'XOF', reception: 'REC-2026-002', statut: 'CLOSED'           },
+  { id: 'h2', numero: 'BC-2026-057', type: 'BC', date: '2026-05-04', fournisseur: 'Sucrerie Niari',        contrat: 'CT-2026-005', currency: 'XOF', reception: 'REC-2026-002', statut: 'RECEIVED'         },
   { id: 'h3', numero: 'BC-2026-056', type: 'BC', date: '2026-05-03', fournisseur: 'Verrerie Dakar',        contrat: 'CT-2026-003', currency: 'XOF', reception: null,           statut: 'APPROVED'         },
   { id: 'h4', numero: 'BC-2026-055', type: 'BC', date: '2026-05-02', fournisseur: 'Vanille Madagascar',    contrat: 'CT-2025-012', currency: 'EUR', reception: null,           statut: 'PENDING_APPROVAL' },
-  { id: 'h5', numero: 'BA-2026-019', type: 'BA', date: '2026-04-28', fournisseur: 'Maraîcher Pikine',      contrat: null,          currency: 'XOF', reception: 'REC-2026-001', statut: 'SENT'             },
+  { id: 'h5', numero: 'BA-2026-019', type: 'BA', date: '2026-04-28', fournisseur: 'Maraîcher Pikine',      contrat: null,          currency: 'XOF', reception: 'REC-2026-001', statut: 'CANCELLED'        },
   { id: 'h6', numero: 'BC-2026-053', type: 'BC', date: '2026-04-26', fournisseur: 'Imprimerie Plateau',    contrat: 'CT-2026-001', currency: 'XOF', reception: null,           statut: 'DRAFT'    },
 ]
 
