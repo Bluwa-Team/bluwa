@@ -40,10 +40,9 @@ const ETAT_ICONS: Record<EtatLot, React.ReactNode> = {
 }
 
 const QC_ICONS: Record<StatutQC, React.ReactNode> = {
-  EnControle:  <Clock className="size-3 shrink-0" />,
-  Libere:      <Check className="size-3 shrink-0" />,
-  Bloque:      <Lock className="size-3 shrink-0" />,
-  NonConforme: <X className="size-3 shrink-0" />,
+  EnControle: <Clock className="size-3 shrink-0" />,
+  Libere:     <Check className="size-3 shrink-0" />,
+  Bloque:     <Lock className="size-3 shrink-0" />,
 }
 
 const LOT_COLUMNS: ResizableColumn[] = [

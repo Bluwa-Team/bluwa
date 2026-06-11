@@ -1,8 +1,10 @@
-// StatutLot = StatutQC unifié depuis @/types/erp
 // TypeArticleQA = ArticleType unifié depuis @/types/erp
-import type { StatutQC, ArticleType } from '@/types/erp'
-export type { StatutQC as StatutLot }
+import type { ArticleType } from '@/types/erp'
 export type { ArticleType as TypeArticleQA }
+
+// Statuts de lots dans le centre de libération qualité.
+// Distinct de StatutQC (module Stocks) qui ne connaît que EnControle|Libere|Bloque.
+export type StatutLot = 'EnControle' | 'Libere' | 'Bloque' | 'NonConforme'
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DB-ALIGNED TYPES — quality_inspection_lots (migration 007)
@@ -415,7 +417,6 @@ export const MOCK_QUALITY_NON_CONFORMITES: QualityNonConformite[] = [
 
 export type FluxLot = 'Reception' | 'Production'
 
-type StatutLot = StatutQC
 type TypeArticleQA = ArticleType
 export type StatutNC = 'Ouvert' | 'EnCours' | 'Clos'
 export type ActionNC = 'Rebut' | 'Retravail' | 'Derogation'

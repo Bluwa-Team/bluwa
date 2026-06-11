@@ -50,17 +50,15 @@ export const TYPE_LABELS: Record<ArticleType, string> = {
 }
 
 export const STATUT_QC_COLORS: Record<StatutQC, string> = {
-  EnControle:  'bg-amber-100 text-amber-700 border border-amber-200',
-  Libere:      'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  Bloque:      'bg-red-100 text-red-700 border border-red-200',
-  NonConforme: 'bg-red-600 text-white border border-red-700',
+  EnControle: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Libere:     'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  Bloque:     'bg-red-100 text-red-700 border border-red-200',
 }
 
 export const STATUT_QC_LABELS: Record<StatutQC, string> = {
-  EnControle:  'En contrôle',
-  Libere:      'Libéré',
-  Bloque:      'Bloqué',
-  NonConforme: 'Non-conforme',
+  EnControle: 'En contrôle',
+  Libere:     'Libéré',
+  Bloque:     'Bloqué',
 }
 
 export const ETAT_COLORS: Record<EtatLot, string> = {

@@ -38,12 +38,12 @@ export async function createInitStock(
     const pmp        = Number((art as any).pmp) || 0
     const batchNumber = lot || `INIT-${date.replace(/-/g, '')}-${articleCode}`
 
-    // Journal mouvement
+    // Journal mouvement — entrée initiale go-live traitée comme ajustement
     await supabase.from('stock_movements').insert({
       organization_id: orgId,
       factory_id:      factoryId,
       article_id:      articleId,
-      movement_type:   'INIT',
+      movement_type:   'AJUSTEMENT_INVENTAIRE',
       quantity:        quantite,
       unit_price:      pmp,
       pmp_before:      pmp,
@@ -88,9 +88,9 @@ export async function createInitStock(
 // ── Mouvements de stock par article ──────────────────────────────────────────
 
 function mvtType(t: string): TypeMouvement {
-  if (t === 'CONSO_OF') return 'Sortie'
-  if (t === 'INV_ADJ')  return 'Ajustement'
-  return 'Entree'
+  if (t === 'SORTIE_PRODUCTION' || t === 'SORTIE_VENTE' || t === 'RETOUR_FOURNISSEUR') return 'Sortie'
+  if (t === 'AJUSTEMENT_INVENTAIRE') return 'Ajustement'
+  return 'Entree' // ENTREE_RECEPTION
 }
 
 export async function getMouvementsByArticle(articleCode: string): Promise<Mouvement[]> {
@@ -125,7 +125,7 @@ export async function getMouvementsByArticle(articleCode: string): Promise<Mouve
       unite:              (art as any).unite_stock ?? '',
       entrepotSource:     '',
       entrepotDest:       '',
-      reference:          (m.source_document_id as string) ?? '',
+      reference:          (m.reference_id as string | null) ?? '',
       motif:              (m.movement_type as string) ?? '',
       operateur:          '',
     }))
@@ -150,8 +150,8 @@ export async function getLotsByArticle(articleCode: string): Promise<Lot[]> {
     if (!(art as any)?.id) return []
 
     const { data, error } = await supabase
-      .from('goods_receipt_items')
-      .select('id, batch_number, quantity_received, expiry_date, created_at')
+      .from('lots')
+      .select('id, batch_number, quantity_remaining, expiry_date, created_at')
       .eq('organization_id', orgId)
       .eq('article_id', (art as any).id)
       .not('batch_number', 'is', null)
@@ -171,16 +171,16 @@ export async function getLotsByArticle(articleCode: string): Promise<Lot[]> {
         else if (joursRestants < 90) statut = 'ProcheExpiration'
       }
       return {
-        id:                row.id as string,
-        lotCode:           (row.batch_number as string) ?? '',
+        id:                 row.id as string,
+        lotCode:            (row.batch_number as string) ?? '',
         articleCode,
         articleDesignation: (art as any).designation ?? '',
-        entrepot:          '',
-        emplacement:       '',
-        quantite:          Number(row.quantity_received) || 0,
-        unite:             (art as any).unite_stock ?? '',
-        dateReception:     ((row.created_at as string) ?? '').split('T')[0],
-        datePeremption:    dlc,
+        entrepot:           '',
+        emplacement:        '',
+        quantite:           Number(row.quantity_remaining) || 0,
+        unite:              (art as any).unite_stock ?? '',
+        dateReception:      ((row.created_at as string) ?? '').split('T')[0],
+        datePeremption:     dlc,
         joursRestants,
         statut,
       }
@@ -248,7 +248,7 @@ export async function getLotStocks(): Promise<LotStock[]> {
       if (etat === 'Disponible' && daysSinceEntry >= 60) etat = 'Dormant'
 
       const rawQC = (row.statut_qc as string) ?? 'Libere'
-      const statutQC: StatutQC = (rawQC === 'EnControle' || rawQC === 'Libere' || rawQC === 'Rejete')
+      const statutQC: StatutQC = (rawQC === 'EnControle' || rawQC === 'Libere' || rawQC === 'Bloque')
         ? (rawQC as StatutQC)
         : 'Libere'
 

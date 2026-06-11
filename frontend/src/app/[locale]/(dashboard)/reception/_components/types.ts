@@ -128,18 +128,16 @@ export const QUALITE_STATUT_LABELS: Record<QualiteStatut, string> = {
 
 /** @deprecated Utiliser STATUT_QC_LABELS de @/types/erp */
 export const STATUT_LOT_LABELS: Record<StatutQC, string> = {
-  Libere:      'Lot libéré',
-  EnControle:  'Lot en contrôle',
-  Bloque:      'Lot bloqué',
-  NonConforme: 'Non-conforme',
+  Libere:     'Lot libéré',
+  EnControle: 'Lot en contrôle',
+  Bloque:     'Lot bloqué',
 }
 
 /** @deprecated Utiliser STATUT_QC_COLORS de @/types/erp */
 export const STATUT_LOT_COLORS: Record<StatutQC, string> = {
-  Libere:      'text-emerald-600',
-  EnControle:  'text-amber-600',
-  Bloque:      'text-red-600',
-  NonConforme: 'text-red-700 font-semibold',
+  Libere:     'text-emerald-600',
+  EnControle: 'text-amber-600',
+  Bloque:     'text-red-600',
 }
 
 // ── Mock data ─────────────────────────────────────────────────────────────────

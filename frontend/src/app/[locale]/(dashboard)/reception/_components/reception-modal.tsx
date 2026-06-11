@@ -150,7 +150,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
   // Appréciation qualité dérivée des statuts de lots
   const globalQualite = useMemo((): QualiteStatut => {
     if (itemForms.length === 0) return 'EnControle'
-    if (itemForms.some((f) => f.statutLot === 'Bloque' || f.statutLot === 'NonConforme')) return 'Bloque'
+    if (itemForms.some((f) => f.statutLot === 'Bloque')) return 'Bloque'
     if (itemForms.every((f) => f.statutLot === 'Libere')) return 'Libere'
     return 'EnControle'
   }, [itemForms])
