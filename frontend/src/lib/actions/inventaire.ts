@@ -165,6 +165,7 @@ export async function createInventoryDocument(): Promise<InventoryDocument | nul
 
       const items = articles.map((a: { id: string }) => ({
         inventory_document_id: doc.id,
+        organization_id:       orgId,
         article_id:            a.id,
         batch_number:          null,
         book_quantity:         stockMap.get(a.id) ?? 0,
