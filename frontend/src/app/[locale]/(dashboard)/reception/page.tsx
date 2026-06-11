@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   Plus, Printer, Barcode,
   Check, AlertTriangle, Clock, RotateCcw, CheckCheck,
-  MoreHorizontal, Package, CheckCircle2, Search, X, FileDown,
+  Package, CheckCircle2, Search, X, FileDown,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -63,45 +63,26 @@ const RECEPTION_COLUMNS: ResizableColumn[] = [
 ]
 
 function StatCard({
-  label, value, sub, trend, trendVariant = 'neutral', bgClass, iconBgClass, iconColorClass, icon: Icon,
+  label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon,
 }: {
   label: string
   value: number
   sub: string
-  trend?: string
-  trendVariant?: 'up' | 'down' | 'neutral'
   bgClass: string
   iconBgClass: string
   iconColorClass: string
   icon: React.ElementType
 }) {
-  const trendColor = { up: 'text-emerald-600', down: 'text-orange-500', neutral: 'text-muted-foreground' }[trendVariant]
-  const trendArrow = { up: '↑', down: '↓', neutral: '' }[trendVariant]
-
   return (
-    <div className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBgClass}`}>
-            <Icon className={`size-[18px] ${iconColorClass}`} />
-          </div>
-          <span className="text-sm font-semibold">{label}</span>
+    <div className={`rounded-2xl p-4 transition-all hover:scale-[1.02] hover:shadow-md cursor-default ${bgClass}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${iconBgClass}`}>
+          <Icon className={`size-4 ${iconColorClass}`} />
         </div>
-        <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 transition-colors">
-          <MoreHorizontal className="size-4" />
-        </button>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
       </div>
-      <div className="bg-white dark:bg-background rounded-xl px-4 py-3 shadow-sm">
-        <p className="text-3xl font-bold">{value}</p>
-        <div className="flex items-end justify-between mt-1 gap-2">
-          <p className="text-xs text-muted-foreground leading-tight">{sub}</p>
-          {trend && (
-            <span className={`text-xs font-semibold shrink-0 flex items-center gap-0.5 ${trendColor}`}>
-              {trendArrow} {trend}
-            </span>
-          )}
-        </div>
-      </div>
+      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
     </div>
   )
 }
@@ -150,12 +131,12 @@ export default function ReceptionPage() {
 
   // Stats sur les headers (1 réception = 1 header, pas 1 ligne article)
   const stats = useMemo(() => ({
+    total:        recHeaders.length,
     enCours:      recHeaders.filter((h) => h.statut === 'DRAFT').length,
-    archivees:    recHeaders.filter((h) => h.statut !== 'DRAFT').length,
-    liberees:     recHeaders.filter((h) => h.qualiteStatut === 'Libere').length,
+    validees:     recHeaders.filter((h) => h.statut === 'VALIDATED').length,
+    enControle:   recHeaders.filter((h) => h.qualiteStatut === 'EnControle').length,
     bloquees:     recHeaders.filter((h) => h.qualiteStatut === 'Bloque').length,
-    codesScannes: recItems.filter((i) => i.codeBarres !== null).length,
-  }), [recHeaders, recItems])
+  }), [recHeaders])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -235,6 +216,73 @@ export default function ReceptionPage() {
         </div>
       </div>
 
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Total réceptions"
+          value={stats.total}
+          sub="sur la période"
+          bgClass="bg-slate-50/50 border"
+          iconBgClass="bg-slate-100"
+          iconColorClass="text-slate-600"
+          icon={Package}
+        />
+        <StatCard
+          label="En cours"
+          value={stats.enCours}
+          sub="DRAFT — à valider"
+          bgClass={`bg-blue-50/50 border${stats.enCours > 0 ? ' ring-1 ring-blue-300/50' : ''}`}
+          iconBgClass="bg-blue-100"
+          iconColorClass="text-blue-600"
+          icon={Clock}
+        />
+        <StatCard
+          label="Validées"
+          value={stats.validees}
+          sub="Entrées en stock"
+          bgClass="bg-emerald-50/50 border"
+          iconBgClass="bg-emerald-100"
+          iconColorClass="text-emerald-600"
+          icon={CheckCircle2}
+        />
+        <StatCard
+          label="En contrôle QC"
+          value={stats.enControle}
+          sub={stats.bloquees > 0 ? `dont ${stats.bloquees} bloqué(s)` : 'Aucun lot bloqué'}
+          bgClass={stats.bloquees > 0 ? 'bg-amber-50/50 border ring-1 ring-amber-300/50' : 'bg-amber-50/50 border'}
+          iconBgClass="bg-amber-100"
+          iconColorClass="text-amber-600"
+          icon={AlertTriangle}
+        />
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 border-b">
+        {([
+          { key: 'all'       as const, label: 'Tous',      count: recHeaders.length },
+          { key: 'DRAFT'     as const, label: 'En cours',  count: stats.enCours     },
+          { key: 'VALIDATED' as const, label: 'Validée',   count: stats.validees    },
+          { key: 'CANCELLED' as const, label: 'Annulée',   count: recHeaders.filter((h) => h.statut === 'CANCELLED').length },
+        ] as { key: StatutReception | 'all'; label: string; count: number }[]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setStatutFilter(t.key)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              statutFilter === t.key
+                ? 'border-foreground text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t.label}
+            <span className={`ml-0.5 text-xs rounded-full px-1.5 py-0.5 font-semibold ${
+              statutFilter === t.key ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+            }`}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
@@ -248,18 +296,6 @@ export default function ReceptionPage() {
             className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
           />
         </div>
-
-        {/* Statut filter */}
-        <select
-          value={statutFilter}
-          onChange={(e) => setStatutFilter(e.target.value as StatutReception | 'all')}
-          className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
-        >
-          <option value="all">Tous statuts</option>
-          <option value="DRAFT">En cours</option>
-          <option value="VALIDATED">Validée</option>
-          <option value="CANCELLED">Annulée</option>
-        </select>
 
         {/* Type fournisseur filter */}
         <select
@@ -301,7 +337,7 @@ export default function ReceptionPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border overflow-x-auto">
+      <div className="rounded-2xl border shadow-sm overflow-x-auto">
         <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
           <colgroup>
             {RECEPTION_COLUMNS.map((c) => (
@@ -358,7 +394,7 @@ export default function ReceptionPage() {
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/50">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -366,7 +402,7 @@ export default function ReceptionPage() {
                 </td>
               </tr>
             ) : filtered.map((r) => (
-              <tr key={`${r.id}-${r.itemId}`} className="border-b last:border-0 hover:bg-muted/20">
+              <tr key={`${r.id}-${r.itemId}`} className="hover:bg-muted/20">
 
                 {/* N° Rec */}
                 <td className="px-4 py-3 font-mono text-xs font-semibold truncate">

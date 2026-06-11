@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import {
   Plus, FileDown, FileText, Leaf,
   Clock, CheckCheck, RotateCcw, Search, X,
-  ShoppingBag, PackageCheck, MoreHorizontal, Info, ShoppingCart,
+  ShoppingBag, PackageCheck, Info, ShoppingCart,
   Link2, AlertCircle, ArrowRight, Factory,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
@@ -64,34 +64,26 @@ const COMMANDE_COLUMNS: ResizableColumn[] = [
 ]
 
 function StatCard({
-  label, value, sub, trendVariant = 'neutral', bgClass, iconBgClass, iconColorClass, icon: Icon,
+  label, value, sub, bgClass, iconBgClass, iconColorClass, icon: Icon,
 }: {
   label: string
   value: number
   sub: string
-  trendVariant?: 'up' | 'down' | 'neutral'
   bgClass: string
   iconBgClass: string
   iconColorClass: string
   icon: React.ElementType
 }) {
   return (
-    <div className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBgClass}`}>
-            <Icon className={`size-[18px] ${iconColorClass}`} />
-          </div>
-          <span className="text-sm font-semibold">{label}</span>
+    <div className={`rounded-2xl p-4 transition-all hover:scale-[1.02] hover:shadow-md cursor-default ${bgClass}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${iconBgClass}`}>
+          <Icon className={`size-4 ${iconColorClass}`} />
         </div>
-        <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 transition-colors">
-          <MoreHorizontal className="size-4" />
-        </button>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
       </div>
-      <div className="bg-white dark:bg-background rounded-xl px-4 py-3 shadow-sm">
-        <p className="text-3xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1 leading-tight">{sub}</p>
-      </div>
+      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
     </div>
   )
 }
@@ -403,7 +395,7 @@ export default function ApprovisionnementPage() {
           </div>
 
           {/* Table DA */}
-          <div className="rounded-lg border overflow-x-auto">
+          <div className="rounded-2xl border shadow-sm overflow-x-auto">
             <table className="w-full text-sm" style={{ minWidth: 860 }}>
               <thead>
                 <tr className="bg-muted/40 border-b">
@@ -417,7 +409,7 @@ export default function ApprovisionnementPage() {
                   <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide w-[155px]">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {daFiltered.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -427,7 +419,7 @@ export default function ApprovisionnementPage() {
                 ) : daFiltered.map((da) => {
                   const isUrgent = da.requestedDeliveryDate <= TODAY && da.status === 'PENDING'
                   return (
-                    <tr key={da.id} className="border-b last:border-0 hover:bg-muted/20">
+                    <tr key={da.id} className="hover:bg-muted/20">
 
                       {/* N° DA */}
                       <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap">
@@ -600,7 +592,7 @@ export default function ApprovisionnementPage() {
           </div>
 
           {/* Table stratégie */}
-          <div className="rounded-lg border overflow-x-auto">
+          <div className="rounded-2xl border shadow-sm overflow-x-auto">
             <table className="w-full text-sm table-fixed" style={{ minWidth: strategieMinWidth }}>
               <colgroup>
                 {STRATEGIE_COLUMNS.map((c) => (
@@ -644,7 +636,7 @@ export default function ApprovisionnementPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {strategieFiltree.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -658,7 +650,7 @@ export default function ApprovisionnementPage() {
                   const joursRestants = a.consoMoy > 0 ? Math.round(a.stockActuel / a.consoMoy) : null
 
                   return (
-                    <tr key={a.id} className="border-b last:border-0 hover:bg-muted/20">
+                    <tr key={a.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-mono text-xs font-medium truncate">{a.sku}</td>
                       <td className="px-4 py-3 text-sm font-medium truncate" title={a.article}>{a.article}</td>
                       <td className="px-4 py-3 font-mono text-sm text-right truncate">{a.consoMoy}</td>
@@ -728,8 +720,7 @@ export default function ApprovisionnementPage() {
               label="En cours"
               value={stats.enCours}
               sub="Commandes non reçues"
-              trendVariant="neutral"
-              bgClass="bg-orange-50 dark:bg-orange-950/30"
+              bgClass="bg-orange-50 dark:bg-orange-950/30 border"
               iconBgClass="bg-orange-100 dark:bg-orange-900/50"
               iconColorClass="text-orange-600 dark:text-orange-400"
               icon={Clock}
@@ -738,8 +729,7 @@ export default function ApprovisionnementPage() {
               label="Reçues"
               value={stats.recues}
               sub="Livraisons complètes"
-              trendVariant="up"
-              bgClass="bg-emerald-50 dark:bg-emerald-950/30"
+              bgClass="bg-emerald-50 dark:bg-emerald-950/30 border"
               iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
               iconColorClass="text-emerald-600 dark:text-emerald-400"
               icon={PackageCheck}
@@ -748,8 +738,7 @@ export default function ApprovisionnementPage() {
               label="Total commandes"
               value={stats.total}
               sub={`dont ${stats.recues} reçue(s)`}
-              trendVariant="neutral"
-              bgClass="bg-blue-50 dark:bg-blue-950/30"
+              bgClass="bg-blue-50 dark:bg-blue-950/30 border"
               iconBgClass="bg-blue-100 dark:bg-blue-900/50"
               iconColorClass="text-blue-600 dark:text-blue-400"
               icon={ShoppingBag}
@@ -821,7 +810,7 @@ export default function ApprovisionnementPage() {
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border overflow-x-auto">
+          <div className="rounded-2xl border shadow-sm overflow-x-auto">
             <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
               <colgroup>
                 {COMMANDE_COLUMNS.map((c) => (
@@ -862,7 +851,7 @@ export default function ApprovisionnementPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -876,7 +865,7 @@ export default function ApprovisionnementPage() {
                   return (
                   <tr
                     key={h.id}
-                    className="border-b last:border-0 hover:bg-muted/20 cursor-pointer"
+                    className="hover:bg-muted/20 cursor-pointer"
                     onClick={() => setSelectedOrderId(h.id)}
                   >
                     <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{h.numero}</td>

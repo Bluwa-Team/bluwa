@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import {
-  Search, X, RotateCcw, MoreHorizontal,
+  Search, X, RotateCcw,
   Check, Moon, AlertTriangle, Clock, Lock,
   FileText, Leaf, Wallet, TrendingUp,
   ShoppingBasket, ShieldAlert, Layers, Plus,
@@ -69,22 +69,15 @@ function StatCard({
   bgClass: string; iconBgClass: string; iconColorClass: string; icon: React.ElementType
 }) {
   return (
-    <div className={`rounded-2xl p-4 transition-all duration-200 ease-out hover:scale-[1.025] hover:shadow-lg cursor-default ${bgClass}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBgClass}`}>
-            <Icon className={`size-[18px] ${iconColorClass}`} />
-          </div>
-          <span className="text-sm font-semibold">{label}</span>
+    <div className={`rounded-2xl p-4 transition-all hover:scale-[1.02] hover:shadow-md cursor-default ${bgClass}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${iconBgClass}`}>
+          <Icon className={`size-4 ${iconColorClass}`} />
         </div>
-        <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-black/5 transition-colors">
-          <MoreHorizontal className="size-4" />
-        </button>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
       </div>
-      <div className="bg-white dark:bg-background rounded-xl px-4 py-3 shadow-sm">
-        <p className="text-3xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1 leading-tight">{sub}</p>
-      </div>
+      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
     </div>
   )
 }
@@ -336,7 +329,7 @@ export default function StocksPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border overflow-x-auto">
+      <div className="rounded-2xl border shadow-sm overflow-x-auto">
         <table className="w-full text-sm table-fixed" style={{ minWidth: tableMinWidth }}>
           <colgroup>
             {LOT_COLUMNS.map((c) => (
@@ -389,7 +382,7 @@ export default function StocksPage() {
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/50">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={14} className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -397,7 +390,7 @@ export default function StocksPage() {
                 </td>
               </tr>
             ) : filtered.map((l) => (
-              <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
+              <tr key={l.id} className="hover:bg-muted/20">
 
                 <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{l.numero}</td>
 
