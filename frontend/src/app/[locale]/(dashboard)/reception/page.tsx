@@ -22,7 +22,7 @@ import { ReceptionDirecteModal }  from './_components/reception-directe-modal'
 import type { DirectItemInput }   from './_components/reception-directe-modal'
 import { LabelPrintModal }        from './_components/label-print-modal'
 import type { BCHeader, BCItem }  from '../approvisionnement/_components/types'
-import { getGoodsReceipts, createGoodsReceipt } from '@/lib/actions/reception'
+import { getGoodsReceipts, createGoodsReceipt, type CreateGoodsReceiptItemInput } from '@/lib/actions/reception'
 import { getPurchaseOrders }      from '@/lib/actions/approvisionnement'
 import { getArticles }            from '@/lib/actions/articles'
 import type { Article }           from '@/app/[locale]/(dashboard)/articles/_components/types'
@@ -180,7 +180,7 @@ export default function ReceptionPage() {
 
   async function handleSave(
     headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
-    newItems: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
+    newItems: CreateGoodsReceiptItemInput[],
   ): Promise<boolean> {
     const result = await createGoodsReceipt(headerData, newItems)
     if (!result) return false

@@ -10,6 +10,7 @@ import { X, Loader2, Barcode, Camera, ShieldCheck, CheckCircle2, Clock, Wand2 } 
 import { BCHeader, BCItem } from '../../approvisionnement/_components/types'
 import { ReceptionHeader, ReceptionItem, StatutLot, StatutReception, QualiteStatut } from './types'
 import { generateBatchNumber } from '@/lib/batch-number'
+import type { CreateGoodsReceiptItemInput } from '@/lib/actions/reception'
 
 // ── Types locaux du formulaire ────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ interface Props {
   bcItems: BCItem[]               // toutes les lignes articles des BC ouverts
   onSave: (
     header: Omit<ReceptionHeader, 'id' | 'numero'>,
-    items: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
+    items: CreateGoodsReceiptItemInput[],
   ) => Promise<boolean>
 }
 
