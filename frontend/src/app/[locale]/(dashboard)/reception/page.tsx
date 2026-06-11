@@ -109,8 +109,13 @@ export default function ReceptionPage() {
     ]).then(([rec, po, arts]) => {
       setRecHeaders(rec.headers)
       setRecItems(rec.items)
-      // Commandes ouvertes (approuvées ou envoyées) pour la modale de réception liée BC
-      setBcHeaders(po.headers.filter((h) => h.statut === 'APPROVED' || h.statut === 'SENT'))
+      // BC : APPROVED ou SENT — BA : tout statut non terminal (pas d'approbation formelle)
+      const TERMINAL = ['RECEIVED', 'CANCELLED']
+      setBcHeaders(po.headers.filter((h) =>
+        h.type === 'BA'
+          ? !TERMINAL.includes(h.statut)
+          : h.statut === 'APPROVED' || h.statut === 'SENT',
+      ))
       setBcItems(po.items)
       setArticlesRef(arts)
       setLoading(false)
