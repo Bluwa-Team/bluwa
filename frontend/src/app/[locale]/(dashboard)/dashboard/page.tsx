@@ -1,11 +1,13 @@
 'use client'
 
-import React from 'react'
-import { ArrowRight, TrendingUp, BarChart3, Factory, Boxes, CheckCircle2, Layers, Bell } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { ArrowRight, TrendingUp, BarChart3, Factory, Boxes, CheckCircle2, Layers, Bell, Clock, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from '@/components/ui/card'
 import { PeriodPicker, type PeriodValue } from '@/components/ui/period-picker'
+import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
+import type { BCHeader } from '../approvisionnement/_components/types'
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,13 @@ export default function DashboardPage() {
   const locale = useLocale()
   const [periodeCA, setPeriodeCA] = React.useState<PeriodValue>({ preset: '6m' })
   const [periodeStock, setPeriodeStock] = React.useState<PeriodValue>({ preset: '6m' })
+  const [pendingApproval, setPendingApproval] = useState<BCHeader[]>([])
+
+  useEffect(() => {
+    getPurchaseOrders().then(({ headers }) => {
+      setPendingApproval(headers.filter((h) => h.statut === 'PENDING_APPROVAL'))
+    })
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -188,11 +197,36 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-              <CheckCircle2 className="size-8 text-emerald-400" />
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aucune alerte active</p>
-              <p className="text-xs text-muted-foreground">Les alertes stock, DLC et MRP apparaîtront ici</p>
-            </div>
+            {pendingApproval.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                <CheckCircle2 className="size-8 text-emerald-400" />
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aucune alerte active</p>
+                <p className="text-xs text-muted-foreground">Les alertes stock, DLC et MRP apparaîtront ici</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pendingApproval.map((h) => (
+                  <Link
+                    key={h.id}
+                    href={`/${locale}/approvisionnement`}
+                    className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-3 py-2.5 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                      <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 truncate">
+                        {h.numero} — {h.fournisseur}
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        {h.type} · En attente d'approbation
+                      </p>
+                    </div>
+                    <ChevronRight className="size-4 text-amber-400 shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
