@@ -37,12 +37,29 @@ export async function getGoodsReceipts(): Promise<{
     const { data: receiptItems, error: itemsErr } = await supabase
       .from('goods_receipt_items')
       .select(`
-        id, goods_receipt_id, quantity_received, batch_number, expiry_date,
+        id, goods_receipt_id, quantity_received, batch_number, expiry_date, lot_status,
         articles!article_id ( code, designation, unite_stock, pmp )
       `)
       .eq('organization_id', orgId)
       .in('goods_receipt_id', receiptIds)
     if (itemsErr) throw itemsErr
+
+    // Statut qualité agrégé par bon de réception : le statut le plus défavorable l'emporte
+    // Priorité : Bloque = NonConforme > EnControle > Libere
+    const qualitePriority: Record<string, number> = {
+      Bloque: 3, NonConforme: 3, EnControle: 2, Libere: 1,
+    }
+    const qualiteByReceipt = new Map<string, QualiteStatut>()
+    for (const item of receiptItems ?? []) {
+      const receiptId = item.goods_receipt_id as string
+      const lotStatut = (item.lot_status as string | null) ?? 'EnControle'
+      // NonConforme remonte comme Bloqué au niveau de la réception
+      const mapped: QualiteStatut = lotStatut === 'NonConforme' ? 'Bloque' : lotStatut as QualiteStatut
+      const current = qualiteByReceipt.get(receiptId) ?? 'EnControle'
+      if ((qualitePriority[lotStatut] ?? 0) > (qualitePriority[current] ?? 0)) {
+        qualiteByReceipt.set(receiptId, mapped)
+      }
+    }
 
     const headers: ReceptionHeader[] = receipts.map((r) => {
       const po       = (r as any).purchase_orders
@@ -57,7 +74,7 @@ export async function getGoodsReceipts(): Promise<{
         fournisseur:        fournisseur?.raison_sociale ?? '',
         typeFournisseur:    (vType === 'Informel' ? 'Informel' : 'Formel') as TypeFournisseur,
         statut:             r.status as StatutReception,
-        qualiteStatut:      'NonJuge' as QualiteStatut,  // TODO: depuis quality_inspection_lots
+        qualiteStatut:      qualiteByReceipt.get(r.id as string) ?? 'EnControle',
       }
     })
 

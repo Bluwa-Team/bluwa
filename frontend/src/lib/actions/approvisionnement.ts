@@ -51,6 +51,21 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       .order('item_position')
     if (itemsErr) throw itemsErr
 
+    // Quantités reçues par ligne BC (cumul de tous les BRs)
+    const poItemIds = (poItems ?? []).map((i) => i.id as string)
+    const receivedMap = new Map<string, number>()
+    if (poItemIds.length > 0) {
+      const { data: receiptItems } = await supabase
+        .from('goods_receipt_items')
+        .select('purchase_order_item_id, quantity_received')
+        .eq('organization_id', orgId)
+        .in('purchase_order_item_id', poItemIds)
+      for (const ri of receiptItems ?? []) {
+        const k = ri.purchase_order_item_id as string
+        receivedMap.set(k, (receivedMap.get(k) ?? 0) + Number(ri.quantity_received))
+      }
+    }
+
     // Récupérer les numéros de réception pour les commandes reçues
     const { data: receipts } = await supabase
       .from('goods_receipts')
@@ -83,7 +98,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       itemPosition:          (i.item_position as number) ?? 1,
       article:               (i.article_label as string) ?? '',
       quantite:              Number(i.quantity) || 0,
-      quantiteRecue:         0,   // TODO: calculer depuis goods_receipt_items
+      quantiteRecue:         receivedMap.get(i.id as string) ?? 0,
       unite:                 '',  // non stocké sur les lignes BC — enrichi via article_id
       puHT:                  Number(i.unit_price_ht) || 0,
       livraisonPrevue:       (i.expected_delivery_date as string) ?? '',

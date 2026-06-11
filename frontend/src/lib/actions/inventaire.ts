@@ -145,19 +145,29 @@ export async function createInventoryDocument(): Promise<InventoryDocument | nul
       .single()
     if (docError) throw docError
 
-    // Snapshot articles → lignes de comptage (book_quantity = 0)
-    // TODO: remplacer par le stock réel une fois article_stocks câblé (migration 009)
+    // Snapshot articles → lignes de comptage avec stock réel depuis article_stocks
     const { data: articles } = await supabase
       .from('articles')
       .select('id')
       .eq('organization_id', orgId)
 
     if (articles && articles.length > 0) {
+      const articleIds = articles.map((a: { id: string }) => a.id)
+      const stockMap = new Map<string, number>()
+      const { data: stocks } = await supabase
+        .from('article_stocks')
+        .select('article_id, quantity_available')
+        .eq('organization_id', orgId)
+        .in('article_id', articleIds)
+      for (const s of stocks ?? []) {
+        stockMap.set(s.article_id as string, Number(s.quantity_available) || 0)
+      }
+
       const items = articles.map((a: { id: string }) => ({
         inventory_document_id: doc.id,
         article_id:            a.id,
         batch_number:          null,
-        book_quantity:         0,
+        book_quantity:         stockMap.get(a.id) ?? 0,
         counted_quantity:      null,
       }))
       const { error: itemsError } = await supabase
@@ -230,27 +240,82 @@ export async function saveInventoryCounts(
   }
 }
 
-/**
- * COUNTED → POSTED : valide les écarts comptables.
- * Note : dans une implémentation complète, génère des mouvements INV_ADJ
- * dans stock_movements pour chaque ligne avec difference_quantity ≠ 0.
- * TODO: ajouter les mouvements une fois stock_movements câblé (migration 007).
- */
+/** COUNTED → POSTED : valide les écarts, écrit les mouvements, ajuste les stocks. */
 export async function postInventoryDocument(
   docId: string,
 ): Promise<InventoryDocument | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    const factoryId = await resolveFactoryId(supabase, orgId)
+
     const { data, error } = await supabase
       .from('inventory_documents')
       .update({ status: 'POSTED', posted_at: new Date().toISOString() })
       .eq('id', docId)
       .eq('organization_id', orgId)
-      .eq('status', 'COUNTED')   // RLS-grade : seuls les COUNTED sont postables
+      .eq('status', 'COUNTED')
       .select()
       .single()
     if (error) throw error
-    return data ? toDocument(data as unknown as Record<string, unknown>) : null
+    if (!data) return null
+
+    // Lignes avec écart réel
+    const { data: adjItems } = await supabase
+      .from('inventory_document_items')
+      .select('article_id, batch_number, difference_quantity')
+      .eq('inventory_document_id', docId)
+    const itemsWithDiff = (adjItems ?? []).filter(
+      (i) => i.difference_quantity != null && Number(i.difference_quantity) !== 0,
+    )
+
+    if (itemsWithDiff.length > 0) {
+      // Journal immuable — un mouvement par ligne en écart
+      await supabase.from('stock_movements').insert(
+        itemsWithDiff.map((i) => ({
+          organization_id: orgId,
+          factory_id:      factoryId,
+          article_id:      i.article_id as string,
+          movement_type:   'AJUSTEMENT_INVENTAIRE',
+          quantity:        Number(i.difference_quantity),
+          unit_price:      0,
+          batch_number:    (i.batch_number as string | null) ?? null,
+          reference_type:  'INVENTORY',
+          reference_id:    docId,
+        })),
+      )
+
+      // Mise à jour article_stocks (read-then-write par article)
+      const articleIds = itemsWithDiff.map((i) => i.article_id as string)
+      const { data: stocks } = await supabase
+        .from('article_stocks')
+        .select('id, article_id, quantity_available')
+        .eq('organization_id', orgId)
+        .in('article_id', articleIds)
+      const stockByArticle = new Map(
+        (stocks ?? []).map((s) => [s.article_id as string, s]),
+      )
+
+      for (const item of itemsWithDiff) {
+        const artId = item.article_id as string
+        const diff  = Number(item.difference_quantity)
+        const stock = stockByArticle.get(artId)
+        if (stock) {
+          await supabase
+            .from('article_stocks')
+            .update({ quantity_available: Number(stock.quantity_available) + diff })
+            .eq('id', stock.id as string)
+        } else {
+          await supabase.from('article_stocks').insert({
+            organization_id:    orgId,
+            factory_id:         factoryId,
+            article_id:         artId,
+            quantity_available: diff,
+          })
+        }
+      }
+    }
+
+    return toDocument(data as unknown as Record<string, unknown>)
   } catch (e) {
     console.error('[inventaire] postInventoryDocument:', e)
     return null

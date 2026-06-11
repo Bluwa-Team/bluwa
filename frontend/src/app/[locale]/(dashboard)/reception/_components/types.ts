@@ -5,20 +5,12 @@
 //   ReceptionItem   ≡ goods_receipt_items
 //   ReceptionFlat   : vue aplatie pour l'affichage tabulaire
 //
-// StatutLot = StatutQC unifié depuis @/types/erp
-// (EnControle | Libere | Bloque | NonConforme)
-
 import type { StatutQC } from '@/types/erp'
 
 export type StatutReception  = 'DRAFT' | 'VALIDATED' | 'CANCELLED'
-// Mappage UI legacy → migration 005 :
-//   'Attente'  → 'DRAFT'      (saisie en cours, pas encore validée)
-//   'Conforme' → 'VALIDATED'  (réception confirmée, stock mis à jour)
-//   'Reserve'  → 'VALIDATED'  (validée avec réserve — qualiteStatut='Reserve')
-//   'CANCELLED'→ 'CANCELLED'  (livraison refusée)
 
-export type QualiteStatut    = 'Conforme' | 'Reserve' | 'NonJuge'
-// Niveau qualité de la réception (orthogonal au statut workflow)
+export type QualiteStatut    = 'EnControle' | 'Libere' | 'Bloque'
+// Niveau qualité de la réception — dérivé du lot_status le plus défavorable parmi les lignes
 
 export type TypeFournisseur  = 'Formel' | 'Informel'
 
@@ -123,15 +115,15 @@ export const STATUT_RECEPTION_LABELS: Record<StatutReception, string> = {
 }
 
 export const QUALITE_STATUT_COLORS: Record<QualiteStatut, string> = {
-  Conforme: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  Reserve:  'bg-orange-100 text-orange-700 border border-orange-200',
-  NonJuge:  'bg-amber-100 text-amber-700 border border-amber-200',
+  Libere:     'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  EnControle: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Bloque:     'bg-red-100 text-red-700 border border-red-200',
 }
 
 export const QUALITE_STATUT_LABELS: Record<QualiteStatut, string> = {
-  Conforme: 'Conforme',
-  Reserve:  'Réserve',
-  NonJuge:  'Non jugée',
+  Libere:     'Libéré',
+  EnControle: 'En contrôle',
+  Bloque:     'Bloqué',
 }
 
 /** @deprecated Utiliser STATUT_QC_LABELS de @/types/erp */
@@ -153,10 +145,10 @@ export const STATUT_LOT_COLORS: Record<StatutQC, string> = {
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 export const MOCK_RECEPTION_HEADERS: ReceptionHeader[] = [
-  { id: 'rh1', numero: 'REC-2026-001', date: '2026-05-02', deliveryNoteNumber: 'BL-MP-2604-01', numeroBon: 'BA-2026-019', fournisseur: 'Maraîcher Pikine',    typeFournisseur: 'Informel', statut: 'VALIDATED', qualiteStatut: 'Conforme' },
-  { id: 'rh2', numero: 'REC-2026-002', date: '2026-05-09', deliveryNoteNumber: 'SN-A23-BL-0508', numeroBon: 'BC-2026-057', fournisseur: 'Sucrerie Niari',      typeFournisseur: 'Formel',   statut: 'VALIDATED', qualiteStatut: 'Conforme' },
-  { id: 'rh3', numero: 'REC-2026-003', date: '2026-05-08', deliveryNoteNumber: 'VDO-BL-0508',    numeroBon: 'BC-2026-019', fournisseur: "Verrerie de l'Ouest", typeFournisseur: 'Formel',   statut: 'VALIDATED', qualiteStatut: 'Reserve'  },
-  { id: 'rh4', numero: 'REC-2026-004', date: '2026-05-08', deliveryNoteNumber: null,              numeroBon: 'BC-2026-020', fournisseur: 'Sucrerie Nationale',  typeFournisseur: 'Formel',   statut: 'DRAFT',     qualiteStatut: 'NonJuge'  },
+  { id: 'rh1', numero: 'REC-2026-001', date: '2026-05-02', deliveryNoteNumber: 'BL-MP-2604-01', numeroBon: 'BA-2026-019', fournisseur: 'Maraîcher Pikine',    typeFournisseur: 'Informel', statut: 'VALIDATED', qualiteStatut: 'Libere'     },
+  { id: 'rh2', numero: 'REC-2026-002', date: '2026-05-09', deliveryNoteNumber: 'SN-A23-BL-0508', numeroBon: 'BC-2026-057', fournisseur: 'Sucrerie Niari',      typeFournisseur: 'Formel',   statut: 'VALIDATED', qualiteStatut: 'Libere'     },
+  { id: 'rh3', numero: 'REC-2026-003', date: '2026-05-08', deliveryNoteNumber: 'VDO-BL-0508',    numeroBon: 'BC-2026-019', fournisseur: "Verrerie de l'Ouest", typeFournisseur: 'Formel',   statut: 'VALIDATED', qualiteStatut: 'Bloque'     },
+  { id: 'rh4', numero: 'REC-2026-004', date: '2026-05-08', deliveryNoteNumber: null,              numeroBon: 'BC-2026-020', fournisseur: 'Sucrerie Nationale',  typeFournisseur: 'Formel',   statut: 'DRAFT',     qualiteStatut: 'EnControle' },
 ]
 
 export const MOCK_RECEPTION_ITEMS: ReceptionItem[] = [

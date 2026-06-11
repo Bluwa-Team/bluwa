@@ -149,10 +149,10 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
 
   // Appréciation qualité dérivée des statuts de lots
   const globalQualite = useMemo((): QualiteStatut => {
-    if (itemForms.length === 0) return 'NonJuge'
-    if (itemForms.some((f) => f.statutLot === 'Bloque' || f.statutLot === 'NonConforme')) return 'Reserve'
-    if (itemForms.every((f) => f.statutLot === 'Libere')) return 'Conforme'
-    return 'NonJuge'
+    if (itemForms.length === 0) return 'EnControle'
+    if (itemForms.some((f) => f.statutLot === 'Bloque' || f.statutLot === 'NonConforme')) return 'Bloque'
+    if (itemForms.every((f) => f.statutLot === 'Libere')) return 'Libere'
+    return 'EnControle'
   }, [itemForms])
 
   function isValid() {
@@ -425,13 +425,13 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                   <>
                     <span>Qualité :</span>
                     <span className={`px-2 py-0.5 rounded-full font-medium border ${
-                      globalQualite === 'Conforme'
+                      globalQualite === 'Libere'
                         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                        : globalQualite === 'Reserve'
-                          ? 'bg-orange-100 text-orange-700 border-orange-200'
+                        : globalQualite === 'Bloque'
+                          ? 'bg-red-100 text-red-700 border-red-200'
                           : 'bg-amber-100 text-amber-700 border-amber-200'
                     }`}>
-                      {globalQualite === 'Conforme' ? 'Conforme' : globalQualite === 'Reserve' ? 'Réserve' : 'Non jugée'}
+                      {globalQualite === 'Libere' ? 'Libéré' : globalQualite === 'Bloque' ? 'Bloqué' : 'En contrôle'}
                     </span>
                   </>
                 )}

@@ -25,9 +25,9 @@ import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
 import { HelpPopover } from '@/components/ui/help-popover'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
-  Conforme: <Check className="size-3" />,
-  Reserve: <AlertTriangle className="size-3" />,
-  Attente: <Clock className="size-3" />,
+  Libere:     <Check className="size-3" />,
+  Bloque:     <AlertTriangle className="size-3" />,
+  EnControle: <Clock className="size-3" />,
 }
 
 function CommandeBadge({ value }: { value: string | null }) {
@@ -144,8 +144,8 @@ export default function ReceptionPage() {
   const stats = useMemo(() => ({
     enCours:      recHeaders.filter((h) => h.statut === 'DRAFT').length,
     archivees:    recHeaders.filter((h) => h.statut !== 'DRAFT').length,
-    conformes:    recHeaders.filter((h) => h.qualiteStatut === 'Conforme').length,
-    avecReserve:  recHeaders.filter((h) => h.qualiteStatut === 'Reserve').length,
+    liberees:     recHeaders.filter((h) => h.qualiteStatut === 'Libere').length,
+    bloquees:     recHeaders.filter((h) => h.qualiteStatut === 'Bloque').length,
     codesScannes: recItems.filter((i) => i.codeBarres !== null).length,
   }), [recHeaders, recItems])
 
@@ -223,8 +223,8 @@ export default function ReceptionPage() {
           icon={Package}
         />
         <StatCard
-          label="Conformes"
-          value={stats.conformes}
+          label="Libérées"
+          value={stats.liberees}
           sub="Libres pour atelier"
           trend="OK"
           trendVariant="up"
@@ -234,14 +234,14 @@ export default function ReceptionPage() {
           icon={CheckCircle2}
         />
         <StatCard
-          label="Avec réserve"
-          value={stats.avecReserve}
-          sub="Litige / écart qualité"
-          trend={stats.avecReserve > 0 ? 'Litige' : 'Aucun'}
-          trendVariant={stats.avecReserve > 0 ? 'down' : 'neutral'}
-          bgClass="bg-orange-50 dark:bg-orange-950/30"
-          iconBgClass="bg-orange-100 dark:bg-orange-900/50"
-          iconColorClass="text-orange-600 dark:text-orange-400"
+          label="Bloquées"
+          value={stats.bloquees}
+          sub="Lots en attente de décision"
+          trend={stats.bloquees > 0 ? 'Action requise' : 'Aucun'}
+          trendVariant={stats.bloquees > 0 ? 'down' : 'neutral'}
+          bgClass="bg-red-50 dark:bg-red-950/30"
+          iconBgClass="bg-red-100 dark:bg-red-900/50"
+          iconColorClass="text-red-600 dark:text-red-400"
           icon={AlertTriangle}
         />
         <StatCard
@@ -278,9 +278,9 @@ export default function ReceptionPage() {
           className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
         >
           <option value="all">Tous statuts</option>
-          <option value="Conforme">Conforme</option>
-          <option value="Reserve">Réserve</option>
-          <option value="Attente">Attente</option>
+          <option value="DRAFT">En cours</option>
+          <option value="VALIDATED">Validée</option>
+          <option value="CANCELLED">Annulée</option>
         </select>
 
         {/* Type fournisseur filter */}
@@ -467,7 +467,7 @@ export default function ReceptionPage() {
                     >
                       <Printer className="size-3.5" />
                     </button>
-                    {r.qualiteStatut === 'Conforme' && r.statut !== 'CANCELLED' && (
+                    {r.qualiteStatut === 'Libere' && r.statut !== 'CANCELLED' && (
                       <button
                         title="Clôturer la réception"
                         className="p-1.5 rounded text-orange-600 hover:text-orange-700 hover:bg-orange-50"
