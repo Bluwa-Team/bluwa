@@ -286,6 +286,7 @@ export async function createPurchaseOrder(
         .from('purchase_order_items')
         .insert(
           input.items.map((item, idx) => ({
+            organization_id:         orgId,
             purchase_order_id:       (order as any).id,
             article_id:              item.articleId ?? null,
             article_label:           item.article,
