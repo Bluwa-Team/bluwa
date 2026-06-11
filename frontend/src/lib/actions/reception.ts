@@ -109,7 +109,8 @@ export async function getGoodsReceipts(): Promise<{
 export interface CreateGoodsReceiptItemInput {
   purchaseOrderItemId: string | null  // ID direct de la ligne BC — évite le matching par libellé
   article: string
-  quantite: number
+  quantite: number         // en unité d'achat (ex: kg)
+  coeffConversion: number  // facteur unite_achat → unite_stock (ex: 1000 pour kg→g)
   unite: string
   lotFourn: string | null
   dlc: string | null
@@ -212,7 +213,7 @@ export async function createGoodsReceipt(
           goods_receipt_id:       (receipt as any).id,
           purchase_order_item_id: item.purchaseOrderItemId,
           article_id:             articleId,
-          quantity_received:      item.quantite,
+          quantity_received:      item.quantite * item.coeffConversion,
           batch_number:           batchNumber,
           supplier_batch_number:  item.lotFourn ?? null,
           expiry_date:            dlcDate,

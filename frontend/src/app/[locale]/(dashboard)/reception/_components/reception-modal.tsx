@@ -28,6 +28,7 @@ type ItemForm = {
   statutLot: StatutLot | null   // null si article sans gestion de lot
   gestionLot: boolean           // articles.gestion_lot
   articleType: string           // articles.type — pour auto-génération du lot
+  coeffConversion: number       // articles.coeff_conversion (ex: 1000 pour kg→g)
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -104,8 +105,9 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     const today = new Date()
     setItemForms(
       hItems.map((bcItem, idx) => {
-        const gestionLot  = bcItem.gestionLot  ?? true
-        const articleType = bcItem.articleType ?? 'MP'
+        const gestionLot       = bcItem.gestionLot       ?? true
+        const articleType      = bcItem.articleType      ?? 'MP'
+        const coeffConversion  = bcItem.coeffConversion  ?? 1
         // DLC auto = aujourd'hui + dureeVie si disponible
         let dlcAuto = ''
         if (bcItem.dureeVie) {
@@ -128,9 +130,10 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
           dlc:          dlcAuto,
           humidite:     '',
           codeBarres:   '',
-          statutLot:    gestionLot ? 'EnControle' : null,
+          statutLot:       gestionLot ? 'EnControle' : null,
           gestionLot,
           articleType,
+          coeffConversion,
         }
       }),
     )
@@ -193,14 +196,15 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
       },
       activeLines.map((f) => ({
         purchaseOrderItemId: f.bcItemId,
-        article:    f.article,
-        quantite:   parseFloat(f.qteRecue),
-        unite:      f.uniteCmd,
-        lotFourn:   f.lotFourn.trim() || null,
-        dlc:        f.dlc || null,
-        humidite:   f.humidite !== '' ? parseFloat(f.humidite) : null,
-        codeBarres: f.codeBarres.trim() || null,
-        statutLot:  f.statutLot,
+        article:         f.article,
+        quantite:        parseFloat(f.qteRecue),
+        coeffConversion: f.coeffConversion,
+        unite:           f.uniteCmd,
+        lotFourn:        f.lotFourn.trim() || null,
+        dlc:             f.dlc || null,
+        humidite:        f.humidite !== '' ? parseFloat(f.humidite) : null,
+        codeBarres:      f.codeBarres.trim() || null,
+        statutLot:       f.statutLot,
       })),
     )
     setSaving(false)
