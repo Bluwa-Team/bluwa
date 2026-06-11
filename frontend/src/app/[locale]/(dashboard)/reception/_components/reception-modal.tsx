@@ -185,6 +185,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
         qualiteStatut:      globalQualite,
       },
       activeLines.map((f) => ({
+        purchaseOrderItemId: f.bcItemId,
         article:    f.article,
         quantite:   parseFloat(f.qteRecue),
         unite:      f.uniteCmd,

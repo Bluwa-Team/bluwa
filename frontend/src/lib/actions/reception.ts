@@ -38,8 +38,8 @@ export async function getGoodsReceipts(): Promise<{
     const { data: receiptItems, error: itemsErr } = await supabase
       .from('goods_receipt_items')
       .select(`
-        id, goods_receipt_id, quantity_received, batch_number, expiry_date, lot_status,
-        articles!article_id ( code, designation, unite_stock, pmp )
+        id, goods_receipt_id, quantity_received, batch_number, supplier_batch_number, expiry_date, lot_status,
+        articles ( code, designation, unite_stock, pmp )
       `)
       .eq('organization_id', orgId)
       .in('goods_receipt_id', receiptIds)
@@ -88,11 +88,11 @@ export async function getGoodsReceipts(): Promise<{
         quantite:    Number(i.quantity_received) || 0,
         unite:       art?.unite_stock ?? '',
         lot:         (i.batch_number as string | null) ?? null,
-        lotFourn:    null,
+        lotFourn:    (i.supplier_batch_number as string | null) ?? null,
         dlc:         (i.expiry_date as string | null) ?? null,
         humidite:    null,
         codeBarres:  null,
-        statutLot:   null,
+        statutLot:   (i.lot_status as StatutQC | null) ?? null,
       }
     })
 
@@ -106,6 +106,7 @@ export async function getGoodsReceipts(): Promise<{
 // ── Créer un bon de réception ─────────────────────────────────────────────────
 
 export interface CreateGoodsReceiptItemInput {
+  purchaseOrderItemId: string | null  // ID direct de la ligne BC — évite le matching par libellé
   article: string
   quantite: number
   unite: string
@@ -170,23 +171,33 @@ export async function createGoodsReceipt(
       .single()
     if (recErr) throw recErr
 
-    // Créer les lignes si on a un BC lié
-    if (newItems.length > 0 && purchaseOrderId) {
-      const { data: poItems } = await supabase
-        .from('purchase_order_items')
-        .select('id, article_label, article_id, shelf_life_days, articles!article_id(type)')
-        .eq('purchase_order_id', purchaseOrderId)
+    // Créer les lignes si on a des items BC
+    if (newItems.length > 0) {
+      // Charger toutes les lignes BC en une seule requête (LEFT JOIN pour inclure article_id=null)
+      const poItemIds = newItems
+        .map((i) => i.purchaseOrderItemId)
+        .filter((id): id is string => id !== null)
 
+      const poItemMap = new Map<string, Record<string, unknown>>()
+      if (poItemIds.length > 0) {
+        const { data: poRows } = await supabase
+          .from('purchase_order_items')
+          .select('id, article_id, shelf_life_days, articles(type)')
+          .in('id', poItemIds)
+        for (const row of poRows ?? []) {
+          poItemMap.set(row.id as string, row as Record<string, unknown>)
+        }
+      }
+
+      const seqBase = parseInt(receiptNumber.split('-').pop() ?? '1', 10)
       for (let idx = 0; idx < newItems.length; idx++) {
-        const item = newItems[idx]
+        const item   = newItems[idx]
+        if (!item.purchaseOrderItemId) continue
+        const poItem = poItemMap.get(item.purchaseOrderItemId)
+        if (!poItem) continue
 
-        // Rapprocher la ligne BC par article_label
-        const poItem = (poItems ?? []).find(
-          (p) =>
-            (p.article_label as string).toLowerCase().trim() ===
-            item.article.toLowerCase().trim(),
-        )
-        if (!poItem || !(poItem as any).article_id) continue
+        const articleId = poItem.article_id as string | null
+        if (!articleId) continue   // impossible de créer un lot sans article_id
 
         // DLC : fournie ou calculée depuis shelf_life_days
         const dlcDate =
@@ -199,16 +210,14 @@ export async function createGoodsReceipt(
               })()
             : null)
 
-        // Numéro de lot interne — format {TYPE}-{AAAAMMJJ}-{NNNN}
-        const articleType = ((poItem as any).articles as { type: string } | null)?.type ?? 'MP'
-        const seqBase     = parseInt(receiptNumber.split('-').pop() ?? '1', 10)
+        const articleType = ((poItem.articles as { type?: string } | null)?.type) ?? 'MP'
         const batchNumber = generateBatchNumber(articleType, new Date(headerData.date), seqBase + idx)
 
         await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,
           goods_receipt_id:       (receipt as any).id,
-          purchase_order_item_id: poItem.id,
-          article_id:             (poItem as any).article_id,
+          purchase_order_item_id: item.purchaseOrderItemId,
+          article_id:             articleId,
           quantity_received:      item.quantite,
           batch_number:           batchNumber,
           supplier_batch_number:  item.lotFourn ?? null,
