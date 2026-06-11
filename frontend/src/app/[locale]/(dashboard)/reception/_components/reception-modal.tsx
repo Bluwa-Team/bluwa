@@ -145,33 +145,30 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     )
   }
 
-  // Statut workflow dérivé : DRAFT tant que tout n'est pas saisi, VALIDATED sinon
-  const globalStatut = useMemo((): StatutReception => {
-    if (itemForms.length === 0) return 'DRAFT'
-    if (itemForms.every((f) => f.qteRecue !== '' && !isNaN(parseFloat(f.qteRecue)))) return 'VALIDATED'
-    return 'DRAFT'
-  }, [itemForms])
+  // Lignes actives = celles où l'opérateur a saisi une quantité > 0
+  const activeLines = useMemo(
+    () => itemForms.filter((f) => { const q = parseFloat(f.qteRecue); return !isNaN(q) && q > 0 }),
+    [itemForms],
+  )
 
-  // Appréciation qualité dérivée des statuts de lots
+  // Statut workflow : VALIDATED dès qu'au moins une ligne active existe
+  const globalStatut = useMemo((): StatutReception => {
+    return activeLines.length > 0 ? 'VALIDATED' : 'DRAFT'
+  }, [activeLines])
+
+  // Appréciation qualité dérivée des statuts de lots des lignes actives uniquement
   // null = article sans gestion de lot → traité comme Libéré
   const globalQualite = useMemo((): QualiteStatut => {
-    if (itemForms.length === 0) return 'EnControle'
-    if (itemForms.some((f) => f.statutLot === 'Bloque')) return 'Bloque'
-    if (itemForms.every((f) => f.statutLot === 'Libere' || f.statutLot === null)) return 'Libere'
+    if (activeLines.length === 0) return 'EnControle'
+    if (activeLines.some((f) => f.statutLot === 'Bloque')) return 'Bloque'
+    if (activeLines.every((f) => f.statutLot === 'Libere' || f.statutLot === null)) return 'Libere'
     return 'EnControle'
-  }, [itemForms])
+  }, [activeLines])
 
   function isValid() {
-    return (
-      selectedHeader !== null &&
-      itemForms.length > 0 &&
-      itemForms.every(
-        (f) =>
-          f.qteRecue !== '' &&
-          !isNaN(parseFloat(f.qteRecue)) &&
-          f.lotFourn.trim() !== '',
-      )
-    )
+    if (selectedHeader === null || activeLines.length === 0) return false
+    // Chaque ligne active doit avoir un lot fournisseur (sauf si gestionLot=false → déjà auto-rempli)
+    return activeLines.every((f) => f.lotFourn.trim() !== '')
   }
 
   async function handleSave() {
@@ -187,7 +184,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
         statut:             globalStatut,
         qualiteStatut:      globalQualite,
       },
-      itemForms.map((f) => ({
+      activeLines.map((f) => ({
         article:    f.article,
         quantite:   parseFloat(f.qteRecue),
         unite:      f.uniteCmd,
@@ -288,9 +285,11 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
 
                   <div className="rounded-lg border overflow-hidden divide-y">
                     {itemForms.map((f, idx) => {
-                      const bcItem = bcItems.find((i) => i.id === f.bcItemId)
+                      const bcItem   = bcItems.find((i) => i.id === f.bcItemId)
+                      const qty      = parseFloat(f.qteRecue)
+                      const isSkipped = isNaN(qty) || qty === 0
                       return (
-                        <div key={f.bcItemId} className="p-4 space-y-3">
+                        <div key={f.bcItemId} className={`p-4 space-y-3 transition-opacity ${isSkipped ? 'opacity-40' : ''}`}>
 
                           {/* Ligne info */}
                           <div className="flex items-center justify-between">
@@ -299,6 +298,11 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                                 Ligne {idx + 1}
                               </span>
                               <span className="text-sm font-semibold">{f.article}</span>
+                              {isSkipped && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">
+                                  Ignorée ce jour
+                                </span>
+                              )}
                             </div>
                             <span className="text-xs text-muted-foreground tabular-nums">
                               Commandé : <strong>{f.quantiteCmd}</strong>{' '}
@@ -322,7 +326,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                               />
                             </Field>
 
-                            <Field label="N° lot fournisseur" required={f.gestionLot}>
+                            <Field label="N° lot fournisseur" required={f.gestionLot && !isSkipped}>
                               <div className="flex gap-2">
                                 <Input
                                   value={f.lotFourn}
@@ -440,6 +444,17 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {selectedHeader && (
                   <>
+                    {activeLines.length > 0 && (
+                      <span className="text-foreground font-medium">
+                        {activeLines.length} ligne{activeLines.length > 1 ? 's' : ''} à réceptionner
+                        {activeLines.length < itemForms.length && (
+                          <span className="text-muted-foreground font-normal">
+                            {' '}· {itemForms.length - activeLines.length} ignorée{itemForms.length - activeLines.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {activeLines.length > 0 && <span>·</span>}
                     <span>Qualité :</span>
                     <span className={`px-2 py-0.5 rounded-full font-medium border ${
                       globalQualite === 'Libere'
