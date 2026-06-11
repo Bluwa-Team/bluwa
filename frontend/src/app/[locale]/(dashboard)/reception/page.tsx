@@ -121,8 +121,8 @@ export default function ReceptionPage() {
     ]).then(([rec, po]) => {
       setRecHeaders(rec.headers)
       setRecItems(rec.items)
-      // Commandes ouvertes (PENDING ou APPROVED) pour la modale de réception
-      setBcHeaders(po.headers.filter((h) => h.statut === 'PENDING' || h.statut === 'APPROVED'))
+      // Commandes ouvertes (approuvées ou envoyées) pour la modale de réception
+      setBcHeaders(po.headers.filter((h) => h.statut === 'APPROVED' || h.statut === 'SENT'))
       setBcItems(po.items)
       setLoading(false)
     })

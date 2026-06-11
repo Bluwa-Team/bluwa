@@ -76,7 +76,7 @@ export function CommandeDetailModal({ open, onClose, header, items }: Props) {
                       {header.numero}
                     </p>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUT_COMMANDE_COLORS[header.statut]}`}>
-                      {header.statut === 'RECEIVED'
+                      {header.statut === 'CLOSED'
                         ? <CheckCheck className="size-3 shrink-0" />
                         : <Clock      className="size-3 shrink-0" />}
                       {STATUT_COMMANDE_LABELS[header.statut]}
