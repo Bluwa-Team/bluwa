@@ -28,6 +28,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "cwd": "academy"
+    },
+    {
+      "name": "mobile-flutter-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "3010", "--web-hostname", "127.0.0.1"],
+      "port": 3010,
+      "cwd": "mobile_flutter"
     }
   ]
 }
