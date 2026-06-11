@@ -235,53 +235,6 @@ export default function ReceptionPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="En cours"
-          value={stats.enCours}
-          sub="Réceptions non clôturées"
-          trendVariant="neutral"
-          bgClass="bg-blue-50 dark:bg-blue-950/30"
-          iconBgClass="bg-blue-100 dark:bg-blue-900/50"
-          iconColorClass="text-blue-600 dark:text-blue-400"
-          icon={Package}
-        />
-        <StatCard
-          label="Libérées"
-          value={stats.liberees}
-          sub="Libres pour atelier"
-          trend="OK"
-          trendVariant="up"
-          bgClass="bg-emerald-50 dark:bg-emerald-950/30"
-          iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
-          iconColorClass="text-emerald-600 dark:text-emerald-400"
-          icon={CheckCircle2}
-        />
-        <StatCard
-          label="Bloquées"
-          value={stats.bloquees}
-          sub="Lots en attente de décision"
-          trend={stats.bloquees > 0 ? 'Action requise' : 'Aucun'}
-          trendVariant={stats.bloquees > 0 ? 'down' : 'neutral'}
-          bgClass="bg-red-50 dark:bg-red-950/30"
-          iconBgClass="bg-red-100 dark:bg-red-900/50"
-          iconColorClass="text-red-600 dark:text-red-400"
-          icon={AlertTriangle}
-        />
-        <StatCard
-          label="Codes scannés"
-          value={stats.codesScannes}
-          sub="Traçabilité GS1"
-          trend="GS1"
-          trendVariant="up"
-          bgClass="bg-violet-50 dark:bg-violet-950/30"
-          iconBgClass="bg-violet-100 dark:bg-violet-900/50"
-          iconColorClass="text-violet-600 dark:text-violet-400"
-          icon={Barcode}
-        />
-      </div>
-
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
