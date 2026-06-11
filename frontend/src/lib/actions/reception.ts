@@ -6,6 +6,7 @@ import type {
   ReceptionHeader, ReceptionItem,
   StatutReception, QualiteStatut, TypeFournisseur,
 } from '@/app/[locale]/(dashboard)/reception/_components/types'
+import type { DirectItemInput } from '@/app/[locale]/(dashboard)/reception/_components/reception-directe-modal'
 import type { StatutQC } from '@/types/erp'
 
 // ── Lecture des bons de réception ─────────────────────────────────────────────
@@ -118,6 +119,7 @@ export interface CreateGoodsReceiptItemInput {
 export async function createGoodsReceipt(
   headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
   newItems: CreateGoodsReceiptItemInput[],
+  directItems: DirectItemInput[] = [],
 ): Promise<ReceptionHeader | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
@@ -209,6 +211,28 @@ export async function createGoodsReceipt(
           quantity_received:      item.quantite,
           batch_number:           batchNumber,
           expiry_date:            dlcDate,
+        })
+      }
+    }
+
+    // Réception directe — items sans BC lié
+    if (directItems.length > 0) {
+      const seqBase = parseInt(receiptNumber.split('-').pop() ?? '1', 10)
+      for (let idx = 0; idx < directItems.length; idx++) {
+        const item = directItems[idx]
+        const batchNumber = generateBatchNumber(item.articleType, new Date(headerData.date), seqBase + idx)
+        await supabase.from('goods_receipt_items').insert({
+          organization_id:        orgId,
+          goods_receipt_id:       (receipt as any).id,
+          purchase_order_item_id: null,
+          article_id:             item.articleId,
+          quantity_received:      item.quantite,
+          batch_number:           batchNumber,
+          supplier_batch_number:  item.lotFourn,
+          expiry_date:            item.dlc,
+          humidity:               item.humidite,
+          barcode:                item.codeBarres,
+          lot_status:             item.statutLot,
         })
       }
     }

@@ -17,11 +17,15 @@ import {
   STATUT_RECEPTION_COLORS, STATUT_RECEPTION_LABELS,
   StatutReception, flattenReception,
 } from './_components/types'
-import { ReceptionModal }    from './_components/reception-modal'
-import { LabelPrintModal }   from './_components/label-print-modal'
-import type { BCHeader, BCItem } from '../approvisionnement/_components/types'
+import { ReceptionModal }         from './_components/reception-modal'
+import { ReceptionDirecteModal }  from './_components/reception-directe-modal'
+import type { DirectItemInput }   from './_components/reception-directe-modal'
+import { LabelPrintModal }        from './_components/label-print-modal'
+import type { BCHeader, BCItem }  from '../approvisionnement/_components/types'
 import { getGoodsReceipts, createGoodsReceipt } from '@/lib/actions/reception'
-import { getPurchaseOrders } from '@/lib/actions/approvisionnement'
+import { getPurchaseOrders }      from '@/lib/actions/approvisionnement'
+import { getArticles }            from '@/lib/actions/articles'
+import type { Article }           from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
 
 const STATUT_ICONS: Record<string, React.ReactNode> = {
@@ -108,22 +112,26 @@ export default function ReceptionPage() {
   const [recHeaders, setRecHeaders] = useState<ReceptionHeader[]>([])
   const [recItems,   setRecItems]   = useState<ReceptionItem[]>([])
   const receptions = useMemo<ReceptionFlat[]>(() => flattenReception(recHeaders, recItems), [recHeaders, recItems])
-  const [modalOpen,    setModalOpen]    = useState(false)
-  const [printRow,     setPrintRow]     = useState<ReceptionFlat | null>(null)
-  const [bcHeaders, setBcHeaders] = useState<BCHeader[]>([])
-  const [bcItems,   setBcItems]   = useState<BCItem[]>([])
-  const [loading,   setLoading]   = useState(true)
+  const [modalOpen,         setModalOpen]         = useState(false)
+  const [directModalOpen,   setDirectModalOpen]   = useState(false)
+  const [printRow,          setPrintRow]          = useState<ReceptionFlat | null>(null)
+  const [bcHeaders,  setBcHeaders]  = useState<BCHeader[]>([])
+  const [bcItems,    setBcItems]    = useState<BCItem[]>([])
+  const [articlesRef, setArticlesRef] = useState<Article[]>([])
+  const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
     Promise.all([
       getGoodsReceipts(),
       getPurchaseOrders(),
-    ]).then(([rec, po]) => {
+      getArticles(),
+    ]).then(([rec, po, arts]) => {
       setRecHeaders(rec.headers)
       setRecItems(rec.items)
-      // Commandes ouvertes (approuvées ou envoyées) pour la modale de réception
+      // Commandes ouvertes (approuvées ou envoyées) pour la modale de réception liée BC
       setBcHeaders(po.headers.filter((h) => h.statut === 'APPROVED' || h.statut === 'SENT'))
       setBcItems(po.items)
+      setArticlesRef(arts)
       setLoading(false)
     })
   }, [])
@@ -176,7 +184,19 @@ export default function ReceptionPage() {
   ): Promise<boolean> {
     const result = await createGoodsReceipt(headerData, newItems)
     if (!result) return false
-    // Rafraîchir depuis Supabase pour avoir les lots générés
+    const { headers, items } = await getGoodsReceipts()
+    setRecHeaders(headers)
+    setRecItems(items)
+    return true
+  }
+
+  async function handleSaveDirecte(
+    headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
+    _newItems: Omit<ReceptionItem, 'id' | 'headerId' | 'lot'>[],
+    directItems: DirectItemInput[],
+  ): Promise<boolean> {
+    const result = await createGoodsReceipt(headerData, [], directItems)
+    if (!result) return false
     const { headers, items } = await getGoodsReceipts()
     setRecHeaders(headers)
     setRecItems(items)
@@ -203,10 +223,16 @@ export default function ReceptionPage() {
             BA formels &amp; informels · Photos marchandises · Scan code-barres / DataMatrix
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" />
-          Nouvelle réception
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setDirectModalOpen(true)}>
+            <Plus className="size-4" />
+            Réception directe
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setModalOpen(true)}>
+            <Plus className="size-4" />
+            Réception sur BC/BA
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -495,6 +521,13 @@ export default function ReceptionPage() {
         bcHeaders={bcHeaders}
         bcItems={bcItems}
         onSave={handleSave}
+      />
+
+      <ReceptionDirecteModal
+        open={directModalOpen}
+        onClose={() => setDirectModalOpen(false)}
+        articles={articlesRef}
+        onSave={handleSaveDirecte}
       />
     </div>
   )
