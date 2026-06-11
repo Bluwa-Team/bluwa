@@ -39,8 +39,7 @@ export async function getGoodsReceipts(): Promise<{
       .from('goods_receipt_items')
       .select(`
         id, goods_receipt_id, quantity_received, batch_number, supplier_batch_number, expiry_date, lot_status,
-        articles ( code, designation, unite_stock, pmp ),
-        purchase_order_items!purchase_order_item_id ( unit )
+        articles ( code, designation, unite_stock, pmp )
       `)
       .eq('organization_id', orgId)
       .in('goods_receipt_id', receiptIds)
@@ -88,7 +87,7 @@ export async function getGoodsReceipts(): Promise<{
         headerId:    i.goods_receipt_id as string,
         article:     art?.designation ?? '',
         quantite:    Number(i.quantity_received) || 0,
-        unite:       (poi?.unit as string | null) ?? art?.unite_stock ?? '',
+        unite:       art?.unite_stock ?? '',
         lot:         (i.batch_number as string | null) ?? null,
         lotFourn:    (i.supplier_batch_number as string | null) ?? null,
         dlc:         (i.expiry_date as string | null) ?? null,

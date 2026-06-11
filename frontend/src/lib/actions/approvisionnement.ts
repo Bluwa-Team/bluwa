@@ -46,7 +46,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
 
     const { data: poItems, error: itemsErr } = await supabase
       .from('purchase_order_items')
-      .select('*, articles!article_id(type, gestion_lot)')
+      .select('*, articles!article_id(type, gestion_lot, unite_stock)')
       .in('purchase_order_id', orderIds)
       .order('item_position')
     if (itemsErr) throw itemsErr
@@ -101,7 +101,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
         article:               (i.article_label as string) ?? '',
         quantite:              Number(i.quantity) || 0,
         quantiteRecue:         receivedMap.get(i.id as string) ?? 0,
-        unite:                 '',
+        unite:                 (art?.unite_stock as string) ?? '',
         puHT:                  Number(i.unit_price_ht) || 0,
         livraisonPrevue:       (i.expected_delivery_date as string) ?? '',
         dureeVie:              (i.shelf_life_days as number | null) ?? null,
