@@ -14,18 +14,19 @@ import type { StatutQC } from '@/types/erp'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ItemForm = {
-  _key:       string
-  articleId:  string
-  article:    string
-  articleType: string
-  quantite:   string
-  unite:      string
-  puHT:       string
-  lotFourn:   string
-  dlc:        string
-  humidite:   string
-  codeBarres: string
-  statutLot:  StatutQC
+  _key:             string
+  articleId:        string
+  article:          string
+  articleType:      string
+  quantite:         string
+  unite:            string
+  coeffConversion:  number   // coeff_conversion_achat : achat → stock
+  puHT:             string
+  lotFourn:         string
+  dlc:              string
+  humidite:         string
+  codeBarres:       string
+  statutLot:        StatutQC
 }
 
 interface Props {
@@ -68,18 +69,19 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 function newItemRow(): ItemForm {
   return {
-    _key:        Math.random().toString(36).slice(2),
-    articleId:   '',
-    article:     '',
-    articleType: 'MP',
-    quantite:    '',
-    unite:       '',
-    puHT:        '',
-    lotFourn:    '',
-    dlc:         '',
-    humidite:    '',
-    codeBarres:  '',
-    statutLot:   'EnControle',
+    _key:            Math.random().toString(36).slice(2),
+    articleId:       '',
+    article:         '',
+    articleType:     'MP',
+    quantite:        '',
+    unite:           '',
+    coeffConversion: 1,
+    puHT:            '',
+    lotFourn:        '',
+    dlc:             '',
+    humidite:        '',
+    codeBarres:      '',
+    statutLot:       'EnControle',
   }
 }
 
@@ -116,7 +118,14 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
     if (!art) return
     setItems((prev) => prev.map((i) =>
       i._key === key
-        ? { ...i, articleId: art.id, article: `${art.designation} (${art.code})`, articleType: art.type, unite: art.uniteStock }
+        ? {
+            ...i,
+            articleId:       art.id,
+            article:         `${art.designation} (${art.code})`,
+            articleType:     art.type,
+            unite:           art.uniteAchat || art.uniteStock,
+            coeffConversion: art.coeffConversionAchat || 1,
+          }
         : i
     ))
   }
@@ -155,7 +164,7 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
       articleId:   i.articleId,
       articleType: i.articleType,
       article:     i.article,
-      quantite:    parseFloat(i.quantite),
+      quantite:    parseFloat(i.quantite) * (i.coeffConversion || 1),
       unite:       i.unite,
       puHT:        parseFloat(i.puHT),
       lotFourn:    i.lotFourn.trim() || null,
