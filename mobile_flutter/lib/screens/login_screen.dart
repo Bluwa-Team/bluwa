@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../theme.dart';
 import '../widgets/shared.dart';
 
@@ -15,8 +15,45 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _showPwd = false;
+  bool _remember = true;
   bool _loading = false;
   String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('savedEmail') ?? '';
+    final savedPassword = prefs.getString('savedPassword') ?? '';
+    final remember = prefs.getBool('rememberLogin') ?? true;
+
+    if (mounted) {
+      setState(() {
+        _remember = remember;
+        if (savedEmail.isNotEmpty) {
+          _email.text = savedEmail;
+        }
+        if (savedPassword.isNotEmpty) {
+          _password.text = savedPassword;
+        }
+      });
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rememberLogin', _remember);
+    await prefs.setString('savedEmail', _email.text.trim());
+    if (_remember) {
+      await prefs.setString('savedPassword', _password.text);
+    } else {
+      await prefs.remove('savedPassword');
+    }
+  }
 
   @override
   void dispose() {
@@ -39,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _email.text.trim(),
         password: _password.text,
       );
+      await _saveCredentials();
       // L'AuthGate bascule automatiquement vers HomeShell.
     } on AuthException {
       setState(() => _error = 'Email ou mot de passe incorrect.');
@@ -125,6 +163,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _remember,
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _remember = value);
+                          },
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _remember = !_remember),
+                            child: Text('Se souvenir de moi',
+                                style: ts(13, F.medium, C.text)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Les identifiants sont sauvegardés localement pour accélérer la connexion.',
+                      style: ts(11, F.regular, C.textMuted),
+                    ),
+                    const SizedBox(height: 16),
 
                     if (_error.isNotEmpty)
                       Container(

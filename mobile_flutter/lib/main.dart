@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/dashboard_screen.dart';
 import 'screens/inventaire_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/of_screen.dart';
 import 'screens/qualite_screen.dart';
 import 'screens/reception_screen.dart';
@@ -39,8 +41,61 @@ class BluwaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildBluwaTheme(),
       locale: const Locale('fr', 'FR'),
-      home: const AuthGate(),
+      home: const AppEntry(),
     );
+  }
+}
+
+class AppEntry extends StatefulWidget {
+  const AppEntry({super.key});
+
+  @override
+  State<AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<AppEntry> {
+  bool _ready = false;
+  bool _onboardingDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStartupState();
+  }
+
+  Future<void> _loadStartupState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final done = prefs.getBool('onboardingComplete') ?? false;
+    if (mounted) {
+      setState(() {
+        _ready = true;
+        _onboardingDone = done;
+      });
+    }
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboardingComplete', true);
+    if (mounted) {
+      setState(() {
+        _onboardingDone = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!supabaseReady) return const HomeShell();
+    if (!_ready) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_onboardingDone) {
+      return OnboardingScreen(onComplete: _completeOnboarding);
+    }
+    return const AuthGate();
   }
 }
 

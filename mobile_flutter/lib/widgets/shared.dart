@@ -10,7 +10,7 @@ class BluwaLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/images/logo_icon.png',
+      'assets/images/logo_white_icon.png',
       width: size,
       height: size,
       fit: BoxFit.contain,
