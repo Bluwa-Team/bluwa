@@ -50,18 +50,16 @@ const STRATEGIE_COLUMNS: ResizableColumn[] = [
 ]
 
 const COMMANDE_COLUMNS: ResizableColumn[] = [
-  { id: 'numero',          defaultWidth: 130, minWidth: 100 },
-  { id: 'type',            defaultWidth: 90,  minWidth: 70  },
-  { id: 'date',            defaultWidth: 120, minWidth: 95  },
-  { id: 'fournisseur',     defaultWidth: 170, minWidth: 120 },
-  { id: 'article',         defaultWidth: 200, minWidth: 150  },
-  { id: 'quantite',        defaultWidth: 110, minWidth: 90  },
-  { id: 'recue',           defaultWidth: 100, minWidth: 80  },
-  { id: 'livraisonPrevue', defaultWidth: 160, minWidth: 120 },
-  { id: 'contrat',         defaultWidth: 120, minWidth: 90  },
-  { id: 'reception',       defaultWidth: 130, minWidth: 100 },
-  { id: 'statut',          defaultWidth: 140, minWidth: 110 },
-  { id: 'doc',             defaultWidth: 72,  minWidth: 60  },
+  { id: 'numero',      defaultWidth: 130, minWidth: 100 },
+  { id: 'type',        defaultWidth: 90,  minWidth: 70  },
+  { id: 'date',        defaultWidth: 120, minWidth: 95  },
+  { id: 'fournisseur', defaultWidth: 180, minWidth: 120 },
+  { id: 'lignes',      defaultWidth: 80,  minWidth: 60  },
+  { id: 'totalHT',     defaultWidth: 140, minWidth: 100 },
+  { id: 'contrat',     defaultWidth: 120, minWidth: 90  },
+  { id: 'reception',   defaultWidth: 130, minWidth: 100 },
+  { id: 'statut',      defaultWidth: 140, minWidth: 110 },
+  { id: 'doc',         defaultWidth: 72,  minWidth: 60  },
 ]
 
 function StatCard({
@@ -233,28 +231,27 @@ export default function ApprovisionnementPage() {
   }
 
   const stats = useMemo(() => ({
-    enCours: commandes.filter((c) => c.statut === 'DRAFT' || c.statut === 'PENDING').length,
-    recues:  commandes.filter((c) => c.statut === 'RECEIVED').length,
-    total:   commandes.length,
-  }), [commandes])
+    enCours: bcHeaders.filter((h) => h.statut === 'DRAFT' || h.statut === 'PENDING').length,
+    recues:  bcHeaders.filter((h) => h.statut === 'RECEIVED').length,
+    total:   bcHeaders.length,
+  }), [bcHeaders])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return commandes.filter((c) => {
-      if (statutFilter !== 'all' && c.statut !== statutFilter) return false
-      if (typeFilter !== 'all' && c.type !== typeFilter) return false
+    return bcHeaders.filter((h) => {
+      if (statutFilter !== 'all' && h.statut !== statutFilter) return false
+      if (typeFilter !== 'all' && h.type !== typeFilter) return false
       if (q) {
         return (
-          c.numero.toLowerCase().includes(q)
-          || c.fournisseur.toLowerCase().includes(q)
-          || c.article.toLowerCase().includes(q)
-          || (c.contrat?.toLowerCase().includes(q) ?? false)
-          || (c.reception?.toLowerCase().includes(q) ?? false)
+          h.numero.toLowerCase().includes(q)
+          || h.fournisseur.toLowerCase().includes(q)
+          || (h.contrat?.toLowerCase().includes(q) ?? false)
+          || (h.reception?.toLowerCase().includes(q) ?? false)
         )
       }
       return true
     })
-  }, [commandes, search, statutFilter, typeFilter])
+  }, [bcHeaders, search, statutFilter, typeFilter])
 
   const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
@@ -835,17 +832,11 @@ export default function ApprovisionnementPage() {
                   <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Fournisseur<ColumnResizer columnId="fournisseur" onStart={startResize} />
                   </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                    Article<ColumnResizer columnId="article" onStart={startResize} />
+                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
+                    Lignes<ColumnResizer columnId="lignes" onStart={startResize} />
                   </th>
                   <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                    Quantité<ColumnResizer columnId="quantite" onStart={startResize} />
-                  </th>
-                  <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                    Reçue<ColumnResizer columnId="recue" onStart={startResize} />
-                  </th>
-                  <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
-                    Livraison prévue<ColumnResizer columnId="livraisonPrevue" onStart={startResize} />
+                    Total HT<ColumnResizer columnId="totalHT" onStart={startResize} />
                   </th>
                   <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                     Contrat<ColumnResizer columnId="contrat" onStart={startResize} />
@@ -864,70 +855,68 @@ export default function ApprovisionnementPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={10} className="px-4 py-10 text-center text-sm text-muted-foreground">
                       Aucune commande ne correspond aux filtres.
                     </td>
                   </tr>
-                ) : filtered.map((c) => (
+                ) : filtered.map((h) => {
+                  const hItems   = bcItems.filter((i) => i.headerId === h.id)
+                  const nbLignes = hItems.length
+                  const totalHT  = hItems.reduce((sum, i) => sum + i.quantite * i.puHT, 0)
+                  return (
                   <tr
-                    key={`${c.id}-${c.itemId}`}
+                    key={h.id}
                     className="border-b last:border-0 hover:bg-muted/20 cursor-pointer"
-                    onClick={() => setSelectedOrderId(c.id)}
+                    onClick={() => setSelectedOrderId(h.id)}
                   >
-
-                    <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{c.numero}</td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{h.numero}</td>
 
                     <td className="px-4 py-3 truncate">
-                      <TypeBadge type={c.type} />
+                      <TypeBadge type={h.type} />
                     </td>
 
-                    <td className="px-4 py-3 font-mono text-xs truncate">{c.date}</td>
+                    <td className="px-4 py-3 font-mono text-xs truncate">{h.date}</td>
 
-                    <td className="px-4 py-3 text-sm truncate" title={c.fournisseur}>{c.fournisseur}</td>
+                    <td className="px-4 py-3 text-sm truncate" title={h.fournisseur}>{h.fournisseur}</td>
 
-                    <td className="px-4 py-3 text-sm truncate" title={c.article}>{c.article}</td>
-
-                    <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                      {formatNumber(c.quantite, locale)}{' '}
-                      <span className="text-muted-foreground text-xs">{c.unite}</span>
+                    <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground truncate">
+                      {nbLignes} ligne{nbLignes !== 1 ? 's' : ''}
                     </td>
 
                     <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                      {formatNumber(c.quantiteRecue, locale)}{' '}
-                      <span className="text-muted-foreground text-xs">{c.unite}</span>
+                      {formatNumber(totalHT, locale)}{' '}
+                      <span className="text-muted-foreground text-xs">{h.currency}</span>
                     </td>
 
-                    <td className="px-4 py-3 font-mono text-xs truncate">{c.livraisonPrevue}</td>
+                    <td className="px-4 py-3 font-mono text-xs truncate">{h.contrat}</td>
 
-                    <td className="px-4 py-3 font-mono text-xs truncate">{c.contrat}</td>
-
-                    <td className="px-4 py-3 font-mono text-xs truncate">{c.reception}</td>
+                    <td className="px-4 py-3 font-mono text-xs truncate">{h.reception}</td>
 
                     <td className="px-4 py-3 overflow-hidden">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[c.statut]}`}>
-                        {c.statut === 'RECEIVED'
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[h.statut]}`}>
+                        {h.statut === 'RECEIVED'
                           ? <CheckCheck className="size-3 shrink-0" />
                           : <Clock className="size-3 shrink-0" />}
-                        {STATUT_COMMANDE_LABELS[c.statut]}
+                        {STATUT_COMMANDE_LABELS[h.statut]}
                       </span>
                     </td>
 
                     <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
-                        title={c.type === 'BC' ? 'Imprimer le bon de commande' : "Imprimer le bon d'achat"}
-                        onClick={() => handlePrintDoc(c.id)}
+                        title={h.type === 'BC' ? 'Imprimer le bon de commande' : "Imprimer le bon d'achat"}
+                        onClick={() => handlePrintDoc(h.id)}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors ${
-                          c.type === 'BC'
+                          h.type === 'BC'
                             ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
                             : 'text-orange-700 bg-orange-50 hover:bg-orange-100'
                         }`}
                       >
                         <FileDown className="size-3.5 shrink-0" />
-                        {c.type}
+                        {h.type}
                       </button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
