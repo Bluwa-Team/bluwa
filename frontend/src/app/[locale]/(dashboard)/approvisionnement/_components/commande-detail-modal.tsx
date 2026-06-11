@@ -1,26 +1,54 @@
 'use client'
 
+import { useState } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
 import {
   X, Building2, Leaf, FileDown, CheckCheck, Clock,
-  FileText, Lock, Link2,
+  FileText, Lock, Link2, Send, ThumbsUp, ThumbsDown,
+  XCircle, Loader2,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
 import {
-  BCHeader, BCItem,
+  BCHeader, BCItem, StatutCommande,
   STATUT_COMMANDE_COLORS, STATUT_COMMANDE_LABELS,
 } from './types'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
-  open:    boolean
-  onClose: () => void
-  header:  BCHeader | null
-  items:   BCItem[]
+  open:           boolean
+  onClose:        () => void
+  header:         BCHeader | null
+  items:          BCItem[]
+  onStatusChange: (orderId: string, newStatus: StatutCommande) => Promise<void>
+}
+
+// ── Transitions autorisées par statut ────────────────────────────────────────
+
+type Transition = {
+  label:     string
+  icon:      React.ElementType
+  nextStatus: StatutCommande
+  variant:   'default' | 'outline' | 'destructive'
+}
+
+const TRANSITIONS: Partial<Record<StatutCommande, Transition[]>> = {
+  DRAFT: [
+    { label: 'Soumettre pour approbation', icon: Send,       nextStatus: 'PENDING_APPROVAL', variant: 'default'     },
+  ],
+  PENDING_APPROVAL: [
+    { label: 'Approuver',                  icon: ThumbsUp,   nextStatus: 'APPROVED',         variant: 'default'     },
+    { label: 'Refuser',                    icon: ThumbsDown, nextStatus: 'DRAFT',             variant: 'outline'     },
+  ],
+  APPROVED: [
+    { label: 'Marquer comme envoyée',      icon: Send,       nextStatus: 'SENT',             variant: 'default'     },
+  ],
+  SENT: [
+    { label: 'Annuler la commande',        icon: XCircle,    nextStatus: 'CANCELLED',        variant: 'destructive' },
+  ],
 }
 
 // ── Sous-composant : champ de métadonnée ──────────────────────────────────────
@@ -44,13 +72,22 @@ function MetaField({
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export function CommandeDetailModal({ open, onClose, header, items }: Props) {
+export function CommandeDetailModal({ open, onClose, header, items, onStatusChange }: Props) {
   const locale = useLocale()
+  const [transitioning, setTransitioning] = useState<StatutCommande | null>(null)
 
   if (!header) return null
 
-  const isBC    = header.type === 'BC'
-  const totalHT = items.reduce((sum, i) => sum + i.quantite * i.puHT, 0)
+  const isBC       = header.type === 'BC'
+  const totalHT    = items.reduce((sum, i) => sum + i.quantite * i.puHT, 0)
+  const transitions = TRANSITIONS[header.statut] ?? []
+
+  async function handleTransition(nextStatus: StatutCommande) {
+    setTransitioning(nextStatus)
+    await onStatusChange(header!.id, nextStatus)
+    setTransitioning(null)
+    onClose()
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -247,7 +284,28 @@ export function CommandeDetailModal({ open, onClose, header, items }: Props) {
                   <FileDown className="size-3.5" />
                   {header.type}
                 </Button>
-                <Button variant="outline" onClick={onClose}>
+
+                {transitions.map((t) => {
+                  const Icon = t.icon
+                  const loading = transitioning === t.nextStatus
+                  return (
+                    <Button
+                      key={t.nextStatus}
+                      variant={t.variant}
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      disabled={transitioning !== null}
+                      onClick={() => handleTransition(t.nextStatus)}
+                    >
+                      {loading
+                        ? <Loader2 className="size-3.5 animate-spin" />
+                        : <Icon className="size-3.5" />}
+                      {t.label}
+                    </Button>
+                  )
+                })}
+
+                <Button variant="outline" onClick={onClose} disabled={transitioning !== null}>
                   Fermer
                 </Button>
               </div>

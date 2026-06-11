@@ -16,7 +16,7 @@ import {
 import {
   BCHeader, BCItem, BCFlat, CommandeFournisseur,
   STATUT_COMMANDE_COLORS, STATUT_COMMANDE_LABELS,
-  StatutCommande, flattenBC,
+  StatutCommande, TypeCommande, flattenBC,
   ArticleStrategie, NiveauService, Z_VALUES, calcSS, calcPointCmd,
 } from './_components/types'
 import { CommandeModal }       from './_components/commande-modal'
@@ -29,7 +29,8 @@ import {
 } from '../mrp/_components/types'
 import {
   getPurchaseOrders, getPurchaseRequisitions, getArticleStrategies,
-  createPurchaseOrder, convertRequisition, type CreatePurchaseOrderInput,
+  createPurchaseOrder, convertRequisition, updatePurchaseOrderStatus,
+  type CreatePurchaseOrderInput,
 } from '@/lib/actions/approvisionnement'
 
 type Tab = 'da' | 'commandes' | 'strategie'
@@ -215,6 +216,13 @@ export default function ApprovisionnementPage() {
     setBcHeaders(headers)
     setBcItems(items)
     return result
+  }
+
+  async function handleStatusChange(orderId: string, newStatus: StatutCommande) {
+    await updatePurchaseOrderStatus(orderId, newStatus)
+    const { headers, items } = await getPurchaseOrders()
+    setBcHeaders(headers)
+    setBcItems(items)
   }
 
   function handlePrintDoc(headerId: string) {
@@ -937,6 +945,7 @@ export default function ApprovisionnementPage() {
         onClose={() => setSelectedOrderId(null)}
         header={selectedHeader}
         items={selectedItems}
+        onStatusChange={handleStatusChange}
       />
     </div>
   )

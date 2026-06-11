@@ -318,6 +318,27 @@ export async function createPurchaseOrder(
   }
 }
 
+// ── Changer le statut d'une commande ─────────────────────────────────────────
+
+export async function updatePurchaseOrderStatus(
+  orderId: string,
+  newStatus: string,
+): Promise<boolean> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .eq('organization_id', orgId)
+    if (error) throw error
+    return true
+  } catch (e) {
+    console.error('[updatePurchaseOrderStatus]', e)
+    return false
+  }
+}
+
 // ── Convertir une DA en commande fournisseur ──────────────────────────────────
 
 export async function convertRequisition(
