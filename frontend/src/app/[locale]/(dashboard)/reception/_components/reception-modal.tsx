@@ -28,7 +28,7 @@ type ItemForm = {
   statutLot: StatutLot | null   // null si article sans gestion de lot
   gestionLot: boolean           // articles.gestion_lot
   articleType: string           // articles.type — pour auto-génération du lot
-  coeffConversion: number       // articles.coeff_conversion (ex: 1000 pour kg→g)
+  coeffConversion: number       // articles.coeff_conversion_achat (ex: 1000 pour kg→g)
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────

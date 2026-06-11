@@ -46,7 +46,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
 
     const { data: poItems, error: itemsErr } = await supabase
       .from('purchase_order_items')
-      .select('*, articles!article_id(type, gestion_lot, unite_stock, unite_achat, coeff_conversion)')
+      .select('*, articles!article_id(type, gestion_lot, unite_stock, unite_achat, coeff_conversion, coeff_conversion_achat)')
       .in('purchase_order_id', orderIds)
       .order('item_position')
     if (itemsErr) throw itemsErr
@@ -101,7 +101,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
         article:               (i.article_label as string) ?? '',
         quantite:              Number(i.quantity) || 0,
         quantiteRecue:         Math.round(
-          ((receivedMap.get(i.id as string) ?? 0) / ((art?.coeff_conversion as number) ?? 1)) * 1000
+          ((receivedMap.get(i.id as string) ?? 0) / ((art?.coeff_conversion_achat as number) ?? 1)) * 1000
         ) / 1000,
         unite:                 (art?.unite_achat as string) || (art?.unite_stock as string) || '',
         puHT:                  Number(i.unit_price_ht) || 0,
@@ -110,7 +110,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
         purchaseRequisitionId: (i.purchase_requisition_id as string | null) ?? null,
         gestionLot:            (art?.gestion_lot as boolean) ?? true,
         articleType:           (art?.type as string) ?? 'MP',
-        coeffConversion:       (art?.coeff_conversion as number) ?? 1,
+        coeffConversion:       (art?.coeff_conversion_achat as number) ?? 1,
       }
     })
 
