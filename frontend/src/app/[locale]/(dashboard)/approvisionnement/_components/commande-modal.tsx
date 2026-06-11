@@ -284,6 +284,7 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
     if (!header.fournisseurId || !header.fournisseur.trim() || items.length === 0) return false
     return items.every(
       (i) =>
+        i.articleId !== '' &&        // article obligatoirement sélectionné depuis le référentiel
         i.article.trim() !== '' &&
         i.quantite !== '' &&
         !isNaN(parseFloat(i.quantite)) &&
