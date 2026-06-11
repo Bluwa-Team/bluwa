@@ -10,7 +10,6 @@ import {
   X, Loader2, Building2, Leaf, Check, Plus, Trash2, Printer, Lock, Link2,
 } from 'lucide-react'
 import { BCHeader, BCItem, TypeCommande } from './types'
-import { printBcDoc } from './bc-print'
 import type { Fournisseur } from '@/app/[locale]/(dashboard)/fournisseurs/_components/types'
 import type { Article, ArticleType } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { TYPE_LABELS } from '@/app/[locale]/(dashboard)/articles/_components/types'
@@ -298,13 +297,6 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
 
   async function handleSave() {
     setSaving(true)
-    const printItems = items.map((i) => ({
-      article:         i.article.trim(),
-      quantite:        parseFloat(i.quantite),
-      unite:           i.unite.trim() || 'kg',
-      puHT:            parseFloat(i.puHT),
-      livraisonPrevue: i.livraisonPrevue,
-    }))
     const result = await onSave(
       {
         type:        header.type,
@@ -327,10 +319,7 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
       })),
     )
     setSaving(false)
-    if (result) {
-      printBcDoc(result, printItems)
-      onClose()
-    }
+    if (result) onClose()
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────

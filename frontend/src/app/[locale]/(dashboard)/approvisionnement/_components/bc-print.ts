@@ -7,6 +7,7 @@ export interface BcPrintHeader {
   fournisseur: string
   contrat:    string | null
   currency:   string
+  orgName?:   string
 }
 
 export interface BcPrintItem {
@@ -188,8 +189,7 @@ function buildBcHtml(header: BcPrintHeader, items: BcPrintItem[]): string {
 
   <div class="doc-header">
     <div>
-      <div class="brand-name">Bluwa</div>
-      <div class="brand-sub">Production agro-alimentaire · Afrique de l'Ouest</div>
+      <div class="brand-name">${header.orgName || '—'}</div>
     </div>
     <div class="doc-meta">
       <div class="doc-type">${docTitle}</div>
@@ -201,8 +201,7 @@ function buildBcHtml(header: BcPrintHeader, items: BcPrintItem[]): string {
   <div class="parties">
     <div class="party-box">
       <div class="party-label">Acheteur</div>
-      <div class="party-name">Bluwa</div>
-      <div class="party-detail">Production agro-alimentaire<br>Afrique de l'Ouest</div>
+      <div class="party-name">${header.orgName || '—'}</div>
     </div>
     <div class="party-box">
       <div class="party-label">Fournisseur</div>
@@ -250,7 +249,7 @@ function buildBcHtml(header: BcPrintHeader, items: BcPrintItem[]): string {
     <div class="sig-box">
       <div class="sig-title">Visa &amp; Cachet</div>
       <div class="sig-line"></div>
-      <div class="sig-label">Pour Bluwa — Responsable achats</div>
+      <div class="sig-label">Pour ${header.orgName || '—'} — Responsable achats</div>
     </div>
   </div>
 

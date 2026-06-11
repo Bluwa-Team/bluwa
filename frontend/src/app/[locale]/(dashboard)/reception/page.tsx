@@ -25,6 +25,7 @@ import type { BCHeader, BCItem }  from '../approvisionnement/_components/types'
 import { getGoodsReceipts, createGoodsReceipt, type CreateGoodsReceiptItemInput } from '@/lib/actions/reception'
 import { getPurchaseOrders }      from '@/lib/actions/approvisionnement'
 import { getArticles }            from '@/lib/actions/articles'
+import { getOrgName }             from '@/lib/actions/helpers'
 import type { Article }           from '@/app/[locale]/(dashboard)/articles/_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
 
@@ -100,13 +101,15 @@ export default function ReceptionPage() {
   const [bcItems,    setBcItems]    = useState<BCItem[]>([])
   const [articlesRef, setArticlesRef] = useState<Article[]>([])
   const [loading,    setLoading]    = useState(true)
+  const [orgName,    setOrgName]    = useState('')
 
   useEffect(() => {
     Promise.all([
       getGoodsReceipts(),
       getPurchaseOrders(),
       getArticles(),
-    ]).then(([rec, po, arts]) => {
+      getOrgName(),
+    ]).then(([rec, po, arts, name]) => {
       setRecHeaders(rec.headers)
       setRecItems(rec.items)
       // BC : APPROVED ou SENT — BA : tout statut non terminal (pas d'approbation formelle)
@@ -118,6 +121,7 @@ export default function ReceptionPage() {
       ))
       setBcItems(po.items)
       setArticlesRef(arts)
+      setOrgName(name)
       setLoading(false)
     })
   }, [])
@@ -506,6 +510,7 @@ export default function ReceptionPage() {
         open={printRow !== null}
         row={printRow}
         onClose={() => setPrintRow(null)}
+        orgName={orgName}
       />
 
       <ReceptionModal
