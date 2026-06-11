@@ -20,7 +20,14 @@ ALTER TABLE public.purchase_orders
     ADD CONSTRAINT purchase_orders_status_check
     CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'RECEIVED', 'CANCELLED'));
 
--- ── 3. Mettre à jour fn_validate_goods_receipt — auto-close → RECEIVED ─────────
+-- ── 3. Attacher le trigger à goods_receipts (manquant dans baseline) ────────────
+
+CREATE TRIGGER trg_validate_goods_receipt
+    AFTER UPDATE ON public.goods_receipts
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_validate_goods_receipt();
+
+-- ── 4. Mettre à jour fn_validate_goods_receipt — auto-close → RECEIVED ─────────
 
 CREATE OR REPLACE FUNCTION public.fn_validate_goods_receipt()
 RETURNS trigger

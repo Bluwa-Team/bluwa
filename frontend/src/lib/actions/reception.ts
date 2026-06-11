@@ -153,7 +153,8 @@ export async function createGoodsReceipt(
       .maybeSingle()
     const factoryId = (profile as any)?.factory_id ?? null
 
-    // Insérer le bon de réception
+    // Insérer le bon de réception en DRAFT — le trigger fn_validate_goods_receipt
+    // n'écoute que les transitions UPDATE DRAFT→VALIDATED, pas les INSERT directs
     const { data: receipt, error: recErr } = await supabase
       .from('goods_receipts')
       .insert({
@@ -161,7 +162,7 @@ export async function createGoodsReceipt(
         factory_id:           factoryId,
         purchase_order_id:    purchaseOrderId,
         delivery_note_number: headerData.deliveryNoteNumber,
-        status:               headerData.statut,
+        status:               'DRAFT',
         received_at:          headerData.date,
         receipt_number:       receiptNumber,
       })
@@ -239,6 +240,16 @@ export async function createGoodsReceipt(
           lot_status:             item.statutLot,
         })
       }
+    }
+
+    // Valider la réception : UPDATE DRAFT → VALIDATED déclenche fn_validate_goods_receipt
+    // (crée les lots, les mouvements de stock, met à jour le PMP, auto-clôture le BC)
+    if (headerData.statut === 'VALIDATED') {
+      const { error: validateErr } = await supabase
+        .from('goods_receipts')
+        .update({ status: 'VALIDATED' })
+        .eq('id', (receipt as any).id)
+      if (validateErr) throw validateErr
     }
 
     return {
