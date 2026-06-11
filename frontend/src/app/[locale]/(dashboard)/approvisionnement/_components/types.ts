@@ -67,6 +67,7 @@ export interface BCItem {
   id: string
   headerId: string              // → BCHeader.id
   itemPosition: number          // Numéro de ligne 1, 2, 3… (EKPO.EBELP)
+  articleId: string | null      // → articles.id (null si texte libre)
   article: string
   quantite: number
   quantiteRecue: number         // Calculé depuis les réceptions — mock uniquement

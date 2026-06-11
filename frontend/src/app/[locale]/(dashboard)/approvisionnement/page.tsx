@@ -182,7 +182,7 @@ export default function ApprovisionnementPage() {
       currency:    headerData.currency,
       items:       newItems.map((i) => ({
         article:               i.article,
-        articleId:             null,
+        articleId:             i.articleId ?? null,
         quantite:              i.quantite,
         puHT:                  i.puHT,
         livraisonPrevue:       i.livraisonPrevue,

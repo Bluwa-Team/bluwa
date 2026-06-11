@@ -98,6 +98,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
         id:                    i.id as string,
         headerId:              i.purchase_order_id as string,
         itemPosition:          (i.item_position as number) ?? 1,
+        articleId:             (i.article_id as string | null) ?? null,
         article:               (i.article_label as string) ?? '',
         quantite:              Number(i.quantity) || 0,
         quantiteRecue:         Math.round(

@@ -33,7 +33,7 @@ type HeaderForm = {
 
 type ItemForm = {
   _key:                  string
-  articleId:             string         // ID pour l'auto-complétion — non transmis à BCItem
+  articleId:             string         // → articles.id, transmis à BCItem
   article:               string         // Désignation → stockée dans BCItem
   quantite:              string
   unite:                 string
@@ -315,6 +315,7 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
       },
       items.map((i, idx) => ({
         itemPosition:          idx + 1,
+        articleId:             i.articleId || null,
         article:               i.article.trim(),
         quantite:              parseFloat(i.quantite),
         quantiteRecue:         0,
