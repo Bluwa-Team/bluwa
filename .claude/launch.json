@@ -32,8 +32,8 @@
     {
       "name": "mobile-flutter-web",
       "runtimeExecutable": "flutter",
-      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "3010", "--web-hostname", "127.0.0.1"],
-      "port": 3010,
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "3005", "--web-hostname", "127.0.0.1"],
+      "port": 3005,
       "cwd": "mobile_flutter"
     }
   ]
