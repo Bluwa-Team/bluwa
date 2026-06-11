@@ -20,7 +20,9 @@ ALTER TABLE public.purchase_orders
     ADD CONSTRAINT purchase_orders_status_check
     CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'RECEIVED', 'CANCELLED'));
 
--- ── 3. Attacher le trigger à goods_receipts (manquant dans baseline) ────────────
+-- ── 3. Recréer le trigger (remplace l'éventuelle version antérieure) ────────────
+
+DROP TRIGGER IF EXISTS trg_validate_goods_receipt ON public.goods_receipts;
 
 CREATE TRIGGER trg_validate_goods_receipt
     AFTER UPDATE ON public.goods_receipts
