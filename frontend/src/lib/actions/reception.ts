@@ -39,7 +39,8 @@ export async function getGoodsReceipts(): Promise<{
       .from('goods_receipt_items')
       .select(`
         id, goods_receipt_id, quantity_received, batch_number, supplier_batch_number, expiry_date, lot_status,
-        articles ( code, designation, unite_stock, pmp )
+        articles ( code, designation, unite_stock, pmp ),
+        purchase_order_items!purchase_order_item_id ( unit )
       `)
       .eq('organization_id', orgId)
       .in('goods_receipt_id', receiptIds)
@@ -81,12 +82,13 @@ export async function getGoodsReceipts(): Promise<{
 
     const items: ReceptionItem[] = (receiptItems ?? []).map((i) => {
       const art = (i as any).articles
+      const poi = (i as any).purchase_order_items
       return {
         id:          i.id as string,
         headerId:    i.goods_receipt_id as string,
         article:     art?.designation ?? '',
         quantite:    Number(i.quantity_received) || 0,
-        unite:       art?.unite_stock ?? '',
+        unite:       (poi?.unit as string | null) ?? art?.unite_stock ?? '',
         lot:         (i.batch_number as string | null) ?? null,
         lotFourn:    (i.supplier_batch_number as string | null) ?? null,
         dlc:         (i.expiry_date as string | null) ?? null,
@@ -123,7 +125,8 @@ export async function createGoodsReceipt(
   directItems: DirectItemInput[] = [],
 ): Promise<{ header: ReceptionHeader; error: null } | { header: null; error: string }> {
   try {
-    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { supabase, orgId, factoryId } = await getSupabaseWithOrg()
+    if (!factoryId) throw new Error('Aucun site (factory) trouvé pour cette organisation')
 
     // Résoudre purchase_order_id depuis le numéro de commande
     let purchaseOrderId: string | null = null
@@ -145,14 +148,6 @@ export async function createGoodsReceipt(
       .eq('organization_id', orgId)
       .like('receipt_number', `REC-${year}-%`)
     const receiptNumber = `REC-${year}-${String((count ?? 0) + 1).padStart(4, '0')}`
-
-    // Résoudre factory_id
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('factory_id')
-      .eq('organization_id', orgId)
-      .maybeSingle()
-    const factoryId = (profile as any)?.factory_id ?? null
 
     // Insérer le bon de réception en DRAFT — le trigger fn_validate_goods_receipt
     // n'écoute que les transitions UPDATE DRAFT→VALIDATED, pas les INSERT directs

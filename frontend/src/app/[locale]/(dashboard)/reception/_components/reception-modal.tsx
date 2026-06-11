@@ -114,8 +114,9 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
           dlcAuto = d.toISOString().split('T')[0]
         }
         const reste = Math.max(0, bcItem.quantite - bcItem.quantiteRecue)
-        // Lot fournisseur : auto-proposé si l'article n'a pas de gestion de lot
-        const lotFournAuto = gestionLot ? '' : generateBatchNumber(articleType, today, idx + 1)
+        // Lot fournisseur : auto-proposé si l'article n'a pas de gestion de lot (format LF = distinct du lot interne)
+        const datePart = today.toISOString().slice(0, 10).replace(/-/g, '')
+        const lotFournAuto = gestionLot ? '' : `LF-${datePart}-${String(idx + 1).padStart(4, '0')}`
         return {
           bcItemId:     bcItem.id,
           article:      bcItem.article,
@@ -135,8 +136,10 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     )
   }
 
-  function autoGenerateLot(bcItemId: string, articleType: string, idx: number) {
-    const lot = generateBatchNumber(articleType, new Date(), idx + 1)
+  function autoGenerateLot(bcItemId: string, idx: number) {
+    const d = new Date()
+    const datePart = d.toISOString().slice(0, 10).replace(/-/g, '')
+    const lot = `LF-${datePart}-${String(idx + 1).padStart(4, '0')}`
     setItemForms((prev) =>
       prev.map((f) => (f.bcItemId === bcItemId ? { ...f, lotFourn: lot } : f)),
     )
@@ -346,7 +349,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                                   size="sm"
                                   className="shrink-0 gap-1.5 text-xs px-2.5"
                                   title="Générer un numéro de lot automatique"
-                                  onClick={() => autoGenerateLot(f.bcItemId, f.articleType, idx)}
+                                  onClick={() => autoGenerateLot(f.bcItemId, idx)}
                                 >
                                   <Wand2 className="size-3.5" />
                                   Auto

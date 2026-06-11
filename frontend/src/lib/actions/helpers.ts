@@ -21,7 +21,18 @@ export async function getSupabaseWithOrg() {
   const orgId = await getOrgId()
 
   const cookieStore = await cookies()
-  const factoryId = cookieStore.get('active_factory_id')?.value ?? null
+  let factoryId = cookieStore.get('active_factory_id')?.value ?? null
+
+  // Fallback : premier site de l'org si le cookie n'est pas positionné
+  if (!factoryId) {
+    const { data: factory } = await supabase
+      .from('factories')
+      .select('id')
+      .eq('organization_id', orgId)
+      .limit(1)
+      .maybeSingle()
+    factoryId = (factory as any)?.id ?? null
+  }
 
   return { supabase, orgId, factoryId }
 }
