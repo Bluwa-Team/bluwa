@@ -75,6 +75,8 @@ export interface BCItem {
   livraisonPrevue: string       // ISO date — peut varier par ligne
   dureeVie: number | null
   purchaseRequisitionId: string | null  // → purchase_requisitions.id (traçabilité MRP)
+  gestionLot?:  boolean  // articles.gestion_lot — détermine statut QC à la réception
+  articleType?: string   // articles.type — pour générer le N° de lot interne
 }
 
 // ── Vue aplatie : une ligne = un Header × un Item ────────────────────────────

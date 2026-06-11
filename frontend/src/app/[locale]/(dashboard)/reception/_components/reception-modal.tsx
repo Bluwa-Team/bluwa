@@ -6,9 +6,10 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { X, Loader2, Barcode, Camera, ShieldCheck, CheckCircle2, AlertTriangle, Clock } from 'lucide-react'
+import { X, Loader2, Barcode, Camera, ShieldCheck, CheckCircle2, Clock, Wand2 } from 'lucide-react'
 import { BCHeader, BCItem } from '../../approvisionnement/_components/types'
 import { ReceptionHeader, ReceptionItem, StatutLot, StatutReception, QualiteStatut } from './types'
+import { generateBatchNumber } from '@/lib/batch-number'
 
 // ── Types locaux du formulaire ────────────────────────────────────────────────
 
@@ -23,7 +24,9 @@ type ItemForm = {
   dlc: string
   humidite: string
   codeBarres: string
-  statutLot: StatutLot
+  statutLot: StatutLot | null   // null si article sans gestion de lot
+  gestionLot: boolean           // articles.gestion_lot
+  articleType: string           // articles.type — pour auto-génération du lot
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -73,18 +76,6 @@ function SectionTitle({ num, label, badge }: { num: string; label: string; badge
   )
 }
 
-const STATUT_LOT_OPTIONS: {
-  value: StatutLot
-  label: string
-  Icon: React.ElementType
-  iconClass: string
-  activeClass: string
-}[] = [
-  { value: 'EnControle', label: 'En contrôle', Icon: Clock,         iconClass: 'text-amber-500',   activeClass: 'text-amber-600'   },
-  { value: 'Libere',     label: 'Libéré',       Icon: CheckCircle2,  iconClass: 'text-emerald-600', activeClass: 'text-emerald-700' },
-  { value: 'Bloque',     label: 'Bloqué',        Icon: AlertTriangle, iconClass: 'text-red-500',     activeClass: 'text-red-600'     },
-]
-
 // ── Composant ─────────────────────────────────────────────────────────────────
 
 export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Props) {
@@ -107,8 +98,11 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
   function selectHeader(id: string) {
     setSelectedHeaderId(id)
     const hItems = bcItems.filter((i) => i.headerId === id)
+    const today = new Date()
     setItemForms(
-      hItems.map((bcItem) => {
+      hItems.map((bcItem, idx) => {
+        const gestionLot  = bcItem.gestionLot  ?? true
+        const articleType = bcItem.articleType ?? 'MP'
         // DLC auto = aujourd'hui + dureeVie si disponible
         let dlcAuto = ''
         if (bcItem.dureeVie) {
@@ -117,6 +111,8 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
           dlcAuto = d.toISOString().split('T')[0]
         }
         const reste = Math.max(0, bcItem.quantite - bcItem.quantiteRecue)
+        // Lot fournisseur : auto-proposé si l'article n'a pas de gestion de lot
+        const lotFournAuto = gestionLot ? '' : generateBatchNumber(articleType, today, idx + 1)
         return {
           bcItemId:     bcItem.id,
           article:      bcItem.article,
@@ -124,13 +120,22 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
           reste,
           uniteCmd:     bcItem.unite,
           qteRecue:     String(reste > 0 ? reste : bcItem.quantite),
-          lotFourn:     '',
+          lotFourn:     lotFournAuto,
           dlc:          dlcAuto,
           humidite:     '',
           codeBarres:   '',
-          statutLot:    'EnControle',
+          statutLot:    gestionLot ? 'EnControle' : null,
+          gestionLot,
+          articleType,
         }
       }),
+    )
+  }
+
+  function autoGenerateLot(bcItemId: string, articleType: string, idx: number) {
+    const lot = generateBatchNumber(articleType, new Date(), idx + 1)
+    setItemForms((prev) =>
+      prev.map((f) => (f.bcItemId === bcItemId ? { ...f, lotFourn: lot } : f)),
     )
   }
 
@@ -148,10 +153,11 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
   }, [itemForms])
 
   // Appréciation qualité dérivée des statuts de lots
+  // null = article sans gestion de lot → traité comme Libéré
   const globalQualite = useMemo((): QualiteStatut => {
     if (itemForms.length === 0) return 'EnControle'
     if (itemForms.some((f) => f.statutLot === 'Bloque')) return 'Bloque'
-    if (itemForms.every((f) => f.statutLot === 'Libere')) return 'Libere'
+    if (itemForms.every((f) => f.statutLot === 'Libere' || f.statutLot === null)) return 'Libere'
     return 'EnControle'
   }, [itemForms])
 
@@ -316,12 +322,31 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                               />
                             </Field>
 
-                            <Field label="N° lot fournisseur" required>
-                              <Input
-                                value={f.lotFourn}
-                                onChange={(e) => setIF(f.bcItemId, 'lotFourn', e.target.value)}
-                                placeholder="ex: BATCH-A23-08"
-                              />
+                            <Field label="N° lot fournisseur" required={f.gestionLot}>
+                              <div className="flex gap-2">
+                                <Input
+                                  value={f.lotFourn}
+                                  onChange={(e) => setIF(f.bcItemId, 'lotFourn', e.target.value)}
+                                  placeholder={f.gestionLot ? 'ex: BATCH-A23-08' : 'Auto-généré'}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="shrink-0 gap-1.5 text-xs px-2.5"
+                                  title="Générer un numéro de lot automatique"
+                                  onClick={() => autoGenerateLot(f.bcItemId, f.articleType, idx)}
+                                >
+                                  <Wand2 className="size-3.5" />
+                                  Auto
+                                </Button>
+                              </div>
+                              {!f.gestionLot && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Article sans gestion de lot — lot proposé automatiquement
+                                </p>
+                              )}
                             </Field>
 
                             <Field label="DLC fournisseur">
@@ -363,26 +388,18 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                               </div>
                             </Field>
 
-                            <Field label="Statut du lot">
-                              <div className="flex gap-2">
-                                {STATUT_LOT_OPTIONS.map((opt) => {
-                                  const active = f.statutLot === opt.value
-                                  return (
-                                    <button
-                                      key={opt.value}
-                                      onClick={() => setIF(f.bcItemId, 'statutLot', opt.value)}
-                                      className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-md border text-xs font-medium transition-colors ${
-                                        active
-                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                          : 'border-input bg-background text-muted-foreground hover:border-muted-foreground/40'
-                                      }`}
-                                    >
-                                      <opt.Icon className={`size-3.5 ${active ? opt.activeClass : opt.iconClass}`} />
-                                      {opt.label}
-                                    </button>
-                                  )
-                                })}
-                              </div>
+                            <Field label="Statut QC du lot">
+                              {f.gestionLot ? (
+                                <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 text-amber-700 text-sm font-medium">
+                                  <Clock className="size-3.5 text-amber-500 shrink-0" />
+                                  En contrôle — automatique à la réception
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 text-sm font-medium">
+                                  <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                                  Disponible immédiatement — sans gestion de lot
+                                </div>
+                              )}
                             </Field>
 
                           </div>
@@ -407,11 +424,11 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
               <div className="flex items-start gap-2.5 rounded-lg border bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
                 <ShieldCheck className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
                 <span>
-                  Chaque ligne entre en stock avec statut{' '}
-                  <strong className="text-foreground">"En contrôle"</strong> (bloqué MRP/OF).
-                  Le statut global de la réception est calculé automatiquement depuis les statuts de lots.
-                  Libération dans{' '}
+                  Articles avec gestion de lot → statut{' '}
+                  <strong className="text-foreground">"En contrôle"</strong> (bloqué MRP/OF) · libération dans{' '}
                   <strong className="text-foreground">Assurance Qualité</strong>.
+                  Articles sans gestion de lot → directement{' '}
+                  <strong className="text-foreground">disponibles</strong> en stock.
                 </span>
               </div>
             </div>

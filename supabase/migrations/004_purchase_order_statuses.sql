@@ -50,8 +50,10 @@ BEGIN
                gri.quantity_received,
                gri.batch_number,
                gri.expiry_date,
-               gri.lot_status
+               gri.lot_status,
+               COALESCE(a.gestion_lot, TRUE) AS gestion_lot
         FROM   public.goods_receipt_items gri
+        LEFT JOIN public.articles a ON a.id = gri.article_id
         WHERE  gri.goods_receipt_id = NEW.id
     LOOP
         -- PMP avant
@@ -103,10 +105,11 @@ BEGIN
                updated_at = now()
          WHERE id = v_item.article_id;
 
-        -- Statut QC lot
-        v_statut_qc := CASE v_item.lot_status
-            WHEN 'Libere'     THEN 'Libere'
-            WHEN 'Bloque'     THEN 'Bloque'
+        -- Statut QC lot : gestion_lot=false → Libéré direct ; true → dérivé du lot_status saisi
+        v_statut_qc := CASE
+            WHEN NOT v_item.gestion_lot              THEN 'Libere'
+            WHEN v_item.lot_status = 'Libere'        THEN 'Libere'
+            WHEN v_item.lot_status = 'Bloque'        THEN 'Bloque'
             ELSE 'EnControle'
         END;
 

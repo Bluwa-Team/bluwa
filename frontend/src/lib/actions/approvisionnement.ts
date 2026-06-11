@@ -46,7 +46,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
 
     const { data: poItems, error: itemsErr } = await supabase
       .from('purchase_order_items')
-      .select('*')
+      .select('*, articles!article_id(type, gestion_lot)')
       .in('purchase_order_id', orderIds)
       .order('item_position')
     if (itemsErr) throw itemsErr
@@ -92,19 +92,24 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       statut:      o.status as StatutCommande,
     }))
 
-    const items: BCItem[] = (poItems ?? []).map((i) => ({
-      id:                    i.id as string,
-      headerId:              i.purchase_order_id as string,
-      itemPosition:          (i.item_position as number) ?? 1,
-      article:               (i.article_label as string) ?? '',
-      quantite:              Number(i.quantity) || 0,
-      quantiteRecue:         receivedMap.get(i.id as string) ?? 0,
-      unite:                 '',  // non stocké sur les lignes BC — enrichi via article_id
-      puHT:                  Number(i.unit_price_ht) || 0,
-      livraisonPrevue:       (i.expected_delivery_date as string) ?? '',
-      dureeVie:              (i.shelf_life_days as number | null) ?? null,
-      purchaseRequisitionId: (i.purchase_requisition_id as string | null) ?? null,
-    }))
+    const items: BCItem[] = (poItems ?? []).map((i) => {
+      const art = (i as any).articles
+      return {
+        id:                    i.id as string,
+        headerId:              i.purchase_order_id as string,
+        itemPosition:          (i.item_position as number) ?? 1,
+        article:               (i.article_label as string) ?? '',
+        quantite:              Number(i.quantity) || 0,
+        quantiteRecue:         receivedMap.get(i.id as string) ?? 0,
+        unite:                 '',
+        puHT:                  Number(i.unit_price_ht) || 0,
+        livraisonPrevue:       (i.expected_delivery_date as string) ?? '',
+        dureeVie:              (i.shelf_life_days as number | null) ?? null,
+        purchaseRequisitionId: (i.purchase_requisition_id as string | null) ?? null,
+        gestionLot:            (art?.gestion_lot as boolean) ?? true,
+        articleType:           (art?.type as string) ?? 'MP',
+      }
+    })
 
     return { headers, items }
   } catch (e) {

@@ -210,7 +210,11 @@ export async function createGoodsReceipt(
           article_id:             (poItem as any).article_id,
           quantity_received:      item.quantite,
           batch_number:           batchNumber,
+          supplier_batch_number:  item.lotFourn ?? null,
           expiry_date:            dlcDate,
+          humidity:               item.humidite ?? null,
+          barcode:                item.codeBarres ?? null,
+          lot_status:             item.statutLot ?? null,
         })
       }
     }
