@@ -241,7 +241,6 @@ export default function ReceptionPage() {
           label="En cours"
           value={stats.enCours}
           sub="Réceptions non clôturées"
-          trend={`${stats.archivees} archivée(s)`}
           trendVariant="neutral"
           bgClass="bg-blue-50 dark:bg-blue-950/30"
           iconBgClass="bg-blue-100 dark:bg-blue-900/50"
