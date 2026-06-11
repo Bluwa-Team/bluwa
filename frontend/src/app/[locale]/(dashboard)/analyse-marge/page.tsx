@@ -16,12 +16,6 @@ import type { MarginLine } from '@/lib/actions/marge'
 const OH_RATE     = 0.08
 const ENERGIE_UNIT = 50
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Mock OFs — coûts réels décomposés par nature (en attente du module OF)
-// Ces données seront remplacées par de vraies confirmations d'opérations
-// dès que le module Ordres de Fabrication sera disponible.
-// ══════════════════════════════════════════════════════════════════════════════
-
 interface OFReel {
   numero:       string
   sku:          string
@@ -33,14 +27,6 @@ interface OFReel {
   coutMODReel:  number
   rebutCout:    number
 }
-
-const MOCK_OFS_REEL: OFReel[] = [
-  { numero: 'OF-2026-041', sku: 'PF-BIS-001', designation: 'Bissap Pourpre Original 1L',    dateDebut: '2026-05-01', dateFin: '2026-05-02', qte: 200, coutMatReel: 455, coutMODReel: 310, rebutCout:  1 },
-  { numero: 'OF-2026-042', sku: 'PF-BIS-002', designation: 'Bissap Pourpre Vanille 1L',     dateDebut: '2026-05-05', dateFin: '2026-05-06', qte: 150, coutMatReel: 460, coutMODReel: 357, rebutCout:  0 },
-  { numero: 'OF-2026-043', sku: 'PF-BIS-003', designation: 'Bissap Pourpre Gingembre 1L',   dateDebut: '2026-05-10', dateFin: '2026-05-11', qte: 180, coutMatReel: 440, coutMODReel: 350, rebutCout:  0 },
-  { numero: 'OF-2026-044', sku: 'PF-BIS-004', designation: 'Bissap Pourpre Menthe 1L',      dateDebut: '2026-05-15', dateFin: '2026-05-16', qte: 120, coutMatReel: 470, coutMODReel: 354, rebutCout: 15 },
-  { numero: 'OF-2026-045', sku: 'PF-BIS-005', designation: 'Bissap Pourpre Citronnelle 1L', dateDebut: '2026-05-20', dateFin: '2026-05-21', qte: 100, coutMatReel: 426, coutMODReel: 342, rebutCout:  0 },
-]
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Analyse écarts OF (SAP CO-PC — Variance Analysis)
@@ -145,6 +131,7 @@ export default function AnalyseMargesPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [loading, setLoading]   = useState(true)
   const [standards, setStandards] = useState<MarginLine[]>([])
+  const [ofsReel] = useState<OFReel[]>([])
 
   useEffect(() => {
     getMarginAnalysis().then((data) => {
@@ -155,8 +142,8 @@ export default function AnalyseMargesPage() {
 
   // ── Analyse OFs (comparaison avec les standards réels) ─────────────────────
   const analysesOF = useMemo((): AnalyseOF[] => {
-    if (!standards.length) return []
-    return MOCK_OFS_REEL
+    if (!standards.length || !ofsReel.length) return []
+    return ofsReel
       .filter((of) => standards.some((s) => s.sku === of.sku))
       .map((of) => {
         const std = standards.find((s) => s.sku === of.sku)!

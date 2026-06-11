@@ -4,41 +4,35 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type Step = 'email' | 'sent'
+function GoogleIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="0.98em" height="1em" viewBox="0 0 256 262">
+      <path fill="#4285f4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622l38.755 30.023l2.685.268c24.659-22.774 38.875-56.282 38.875-96.027" />
+      <path fill="#34a853" d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055c-34.523 0-63.824-22.773-74.269-54.25l-1.531.13l-40.298 31.187l-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1" />
+      <path fill="#fbbc05" d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82c0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602z" />
+      <path fill="#eb4335" d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251" />
+    </svg>
+  )
+}
 
 export default function LoginPage() {
-  const [email, setEmail]     = useState('')
-  const [step, setStep]       = useState<Step>('email')
-  const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
   const supabase = createClient()
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-
-    if (!email.endsWith('@bluwa.io')) {
-      setError('Accès réservé aux comptes @bluwa.io')
-      return
-    }
-
+  async function handleGoogleLogin() {
     setLoading(true)
-    const redirectTo = `${window.location.origin}/auth/callback`
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
+    setError('')
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
-        shouldCreateUser: true,
-        emailRedirectTo: redirectTo,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-    setLoading(false)
-
     if (authError) {
       setError('Erreur : ' + authError.message)
-      return
+      setLoading(false)
     }
-
-    setStep('sent')
   }
 
   return (
@@ -52,42 +46,19 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500">Accès réservé à l&apos;équipe Bluwa</p>
         </div>
 
-        {step === 'email' ? (
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email" value={email} autoFocus required
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="prenom@bluwa.io"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {loading ? 'Envoi…' : 'Recevoir le lien de connexion'}
-            </button>
-          </form>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="font-semibold text-gray-900">Vérifiez votre email</p>
-            <p className="text-sm text-gray-500">
-              Un lien de connexion a été envoyé à<br />
-              <span className="font-medium text-gray-700">{email}</span>
-            </p>
-            <button onClick={() => { setStep('email'); setError('') }}
-              className="text-xs text-blue-600 hover:underline mt-2">
-              ← Changer d&apos;email
-            </button>
-          </div>
-        )}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            {!loading && <GoogleIcon />}
+            <span>{loading ? 'Redirection…' : 'Continuer avec Google'}</span>
+          </button>
+        </div>
       </div>
     </div>
   )

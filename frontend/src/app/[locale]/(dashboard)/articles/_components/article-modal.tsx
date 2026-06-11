@@ -542,6 +542,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         <SelectContent>
                           <SelectItem value="Achete">{t('appro.Achete')}</SelectItem>
                           <SelectItem value="Fabrique">{t('appro.Fabrique')}</SelectItem>
+                          <SelectItem value="Interne">{t('appro.Interne')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>

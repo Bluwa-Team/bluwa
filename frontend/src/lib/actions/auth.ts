@@ -82,7 +82,7 @@ export async function completeOnboardingAction(input: {
   // 1. Organisation
   const { data: org, error: orgError } = await supabaseAdmin
     .from('organizations')
-    .insert({ name: orgName, slug })
+    .insert({ name: orgName, slug, country_headquarters: factoryCountry ?? null })
     .select()
     .single()
 
@@ -103,6 +103,8 @@ export async function completeOnboardingAction(input: {
       code: factoryCode,
       country: factoryCountry || 'Sénégal',
       city: factoryCity || null,
+      location_country: factoryCountry || 'Sénégal',
+      location_city: factoryCity || null,
     })
     .select()
     .single()

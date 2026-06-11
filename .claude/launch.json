@@ -4,8 +4,8 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000,
+      "runtimeArgs": ["run", "dev", "--", "--port", "3005"],
+      "port": 3005,
       "cwd": "frontend"
     },
     {
@@ -28,6 +28,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3003,
       "cwd": "academy"
+    },
+    {
+      "name": "mobile-flutter-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "3005", "--web-hostname", "127.0.0.1"],
+      "port": 3005,
+      "cwd": "mobile_flutter"
     }
   ]
 }

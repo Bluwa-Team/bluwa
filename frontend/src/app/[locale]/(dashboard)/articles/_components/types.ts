@@ -1,6 +1,6 @@
 export type ArticleType = 'MP' | 'PSF' | 'PF' | 'AC' | 'CS'
 export type ArticleStatut = 'Actif' | 'Bloque' | 'EnCreation'
-export type ArticleAppro = 'Achete' | 'Fabrique'
+export type ArticleAppro = 'Achete' | 'Fabrique' | 'Interne'
 
 export interface Article {
   id: string
@@ -99,6 +99,7 @@ export const STATUT_LABELS: Record<ArticleStatut, string> = {
 }
 
 export const APPRO_COLORS: Record<ArticleAppro, string> = {
-  Achete: 'bg-sky-100 text-sky-700',
+  Achete:   'bg-sky-100 text-sky-700',
   Fabrique: 'bg-violet-100 text-violet-700',
+  Interne:  'bg-teal-100 text-teal-700',
 }

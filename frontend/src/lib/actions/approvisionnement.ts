@@ -36,7 +36,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
 
     const { data: orders, error: ordersErr } = await supabase
       .from('purchase_orders')
-      .select('*, suppliers!supplier_id(name, vendor_type)')
+      .select('*, fournisseurs!fournisseur_id(raison_sociale, statut)')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (ordersErr) throw ordersErr
@@ -70,7 +70,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       numero:      o.order_number as string,
       type:        o.order_type as TypeCommande,
       date:        ((o.created_at as string) ?? '').split('T')[0],
-      fournisseur: ((o as any).suppliers as any)?.name ?? '',
+      fournisseur: ((o as any).fournisseurs as any)?.raison_sociale ?? '',
       contrat:     (o.contract_number as string | null) ?? null,
       currency:    (o.currency as string) ?? 'XOF',
       reception:   receiptMap.get(o.id as string) ?? null,
@@ -228,16 +228,15 @@ export async function createPurchaseOrder(
     const { supabase, orgId } = await getSupabaseWithOrg()
     const factoryId = await resolveFactoryId(supabase, orgId)
 
-    // Upsert fournisseur par nom
+    // Trouver le fournisseur par raison_sociale
     const { data: supplier, error: supErr } = await supabase
-      .from('suppliers')
-      .upsert(
-        { organization_id: orgId, name: input.fournisseur },
-        { onConflict: 'organization_id,name', ignoreDuplicates: false },
-      )
+      .from('fournisseurs')
       .select('id')
-      .single()
+      .eq('organization_id', orgId)
+      .eq('raison_sociale', input.fournisseur)
+      .maybeSingle()
     if (supErr) throw supErr
+    if (!supplier) throw new Error(`Fournisseur introuvable : ${input.fournisseur}`)
 
     // Générer le prochain numéro (BC/BA-YYYY-NNN)
     const year = new Date().getFullYear()
@@ -255,7 +254,7 @@ export async function createPurchaseOrder(
       .insert({
         organization_id: orgId,
         factory_id:      factoryId,
-        supplier_id:     (supplier as any).id,
+        fournisseur_id:  (supplier as any).id,
         order_number:    orderNumber,
         order_type:      input.type,
         contract_number: input.contrat,
@@ -336,7 +335,7 @@ export async function getContratActifByFournisseur(
       .from('contrats_achat')
       .select('reference')
       .eq('organization_id', orgId)
-      .eq('supplier_id', supplierId)
+      .eq('fournisseur_id', supplierId)
       .eq('statut', 'Actif')
       .lte('date_debut', today)
       .gte('date_fin', today)

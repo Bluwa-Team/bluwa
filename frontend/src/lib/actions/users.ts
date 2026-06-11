@@ -55,17 +55,18 @@ async function assertAdmin() {
 }
 
 // ── Liste tous les utilisateurs de l'org avec leur rôle sur le site actif ────
-export async function listOrgUsers(): Promise<OrgUser[]> {
+export async function listOrgUsers(overrideFactoryId?: string | null): Promise<OrgUser[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const factoryId = await getActiveFactoryId()
+  // Priorité : paramètre explicite > cookie (permet fallback factories[0] depuis page.tsx)
+  const factoryId = overrideFactoryId ?? await getActiveFactoryId()
 
-  // Profils de la même org (filtrés par RLS)
+  // Profils de la même org (filtrés par RLS) — role inclus pour fallback owner/admin
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, full_name, is_active, created_at')
+    .select('id, full_name, role, is_active, created_at')
     .order('created_at', { ascending: true })
 
   if (!profiles?.length) return []
@@ -89,7 +90,9 @@ export async function listOrgUsers(): Promise<OrgUser[]> {
     id:         p.id,
     full_name:  p.full_name,
     email:      emailMap[p.id] ?? '',
-    role:       roleMap[p.id] ?? null,
+    // Priorité : rôle sur le site actif (user_site_access)
+    // Fallback : rôle org (profiles.role) pour owner/admin sans entrée site
+    role:       roleMap[p.id] ?? (['owner', 'admin'].includes(p.role) ? p.role as UserRole : null),
     is_active:  p.is_active,
     created_at: p.created_at,
   }))

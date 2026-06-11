@@ -14,13 +14,22 @@ import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
 } from '@/hooks/use-resizable-columns'
 import {
-  LotStock, EtatLot, TypeArticle, StatutQC, Mouvement,
+  LotStock, EtatLot, TypeArticle, StatutQC,
   ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
   STATUT_QC_COLORS, STATUT_QC_LABELS,
 } from './_components/types'
-import { getLotStocks } from '@/lib/actions/stocks'
+import { getLotStocks, createInitStock } from '@/lib/actions/stocks'
 import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
+import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import { HelpPopover } from '@/components/ui/help-popover'
+
+const STOCK_INIT_CSV_FIELDS: CsvField[] = [
+  { key: 'code_article', label: 'Code article',   required: true  },
+  { key: 'quantite',     label: 'Quantité',        required: true  },
+  { key: 'numero_lot',   label: 'N° lot',          required: false },
+  { key: 'date_entree',  label: "Date d'entrée",   required: false },
+  { key: 'motif',        label: 'Motif',           required: false },
+]
 
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
 
@@ -97,8 +106,7 @@ export default function StocksPage() {
   const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')
   const [qcFilter, setQcFilter] = useState<StatutQC | 'all'>('all')
   const [mouvementOpen, setMouvementOpen] = useState(false)
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
-
+  const [csvOpen,       setCsvOpen]       = useState(false)
   // Derive article options for the modal from current lot list
   const articleOptions = useMemo<ArticleOption[]>(() => {
     const seen = new Set<string>()
@@ -109,28 +117,33 @@ export default function StocksPage() {
     })
   }, [lots])
 
-  async function handleSaveMouvement(m: Partial<Mouvement>): Promise<boolean> {
-    const id = Date.now().toString()
-    const next = mouvements.length + 1
-    setMouvements((prev) => [
-      {
-        id,
-        date:              m.date ?? new Date().toISOString().split('T')[0],
-        type:              m.type ?? 'Entree',
-        articleCode:       m.articleCode ?? '',
-        articleDesignation: m.articleDesignation ?? '',
-        lot:               m.lot ?? '',
-        quantite:          m.quantite ?? 0,
-        unite:             m.unite ?? '',
-        entrepotSource:    m.entrepotSource ?? '',
-        entrepotDest:      m.entrepotDest ?? '',
-        reference:         m.reference ?? '',
-        motif:             m.motif ?? '',
-        operateur:         m.operateur ?? 'Utilisateur',
-      },
-      ...prev,
-    ])
-    return true
+  async function handleSaveInitStock(
+    articleCode: string, lot: string, quantite: number, date: string, motif: string,
+  ): Promise<boolean> {
+    const ok = await createInitStock(articleCode, lot, quantite, date, motif)
+    if (ok) getLotStocks().then(setLots)
+    return ok
+  }
+
+  async function handleCsvImport(rows: Record<string, string>[]) {
+    let created = 0
+    let errors  = 0
+    const today = new Date().toISOString().split('T')[0]
+    for (const row of rows) {
+      const code = row.code_article?.trim()
+      const qty  = parseFloat(row.quantite ?? '')
+      if (!code || isNaN(qty) || qty <= 0) { errors++; continue }
+      const ok = await createInitStock(
+        code,
+        row.numero_lot?.trim() ?? '',
+        qty,
+        row.date_entree?.trim() || today,
+        row.motif?.trim() || 'Import CSV stock initial',
+      )
+      ok ? created++ : errors++
+    }
+    getLotStocks().then(setLots)
+    return { created, errors }
   }
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
@@ -192,10 +205,16 @@ export default function StocksPage() {
             Gestion par Code/SKU ou Désignation · Liaison Commande → Réception → Lot · PMP · FIFO/FEFO
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setMouvementOpen(true)}>
-          <Plus className="size-4" />
-          Mouvement de stock
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCsvOpen(true)}>
+            <Plus className="size-4" />
+            Import CSV
+          </Button>
+          <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setMouvementOpen(true)}>
+            <Plus className="size-4" />
+            Entrée stock initiale
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -475,8 +494,16 @@ export default function StocksPage() {
       <MouvementModal
         open={mouvementOpen}
         onClose={() => setMouvementOpen(false)}
-        onSave={handleSaveMouvement}
+        onSave={handleSaveInitStock}
         articles={articleOptions}
+      />
+
+      <CsvImportMapper
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        fields={STOCK_INIT_CSV_FIELDS}
+        entityLabel="entrées stock initiales"
+        onImport={handleCsvImport}
       />
     </div>
   )

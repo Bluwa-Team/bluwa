@@ -239,18 +239,22 @@ export default function FournisseursPage() {
         </div>
 
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
-          <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-36 h-9">
+            <span className="text-sm">{filterStatut === 'Tous' ? 'Type' : filterStatut}</span>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Tous">{t('allStructureTypes')}</SelectItem>
+            <SelectItem value="Tous">Tous</SelectItem>
             <SelectItem value="Formel">{t('statuts.Formel')}</SelectItem>
             <SelectItem value="Informel">{t('statuts.Informel')}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={filterCategorie} onValueChange={(v) => setFilterCategorie(v ?? 'Toutes')}>
-          <SelectTrigger className="w-52 h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-52 h-9">
+            <span className="text-sm">{filterCategorie === 'Toutes' ? 'Catégories' : filterCategorie}</span>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Toutes">{t('allCategories')}</SelectItem>
+            <SelectItem value="Toutes">Toutes</SelectItem>
             {CATEGORIES_FOURNISSEUR.map((c) => (
               <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}

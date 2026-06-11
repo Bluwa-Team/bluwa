@@ -42,7 +42,7 @@ export function NewProspectModal({ open, onClose }: Props) {
         form.plan_target,
         form.assigned_to || null,
         form.notes || null,
-        STAGE_CHECKLISTS.prospect,
+        STAGE_CHECKLISTS.cadrage,
       )
       setDone(true)
       router.refresh()
@@ -59,14 +59,14 @@ export function NewProspectModal({ open, onClose }: Props) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Nouveau prospect" description="Ajouter un prospect dans le pipeline d'onboarding">
+    <Modal open={open} onClose={onClose} title="Nouveau client pilote" description="Ajouter un client dans le pipeline d'onboarding (LOI signée)">
       {done ? (
         <div className="py-6 text-center">
           <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
             <CheckCircle2 className="w-6 h-6 text-emerald-600" />
           </div>
           <p className="font-medium text-gray-900">Prospect ajouté</p>
-          <p className="text-sm text-gray-500 mt-1">{form.org_name} → colonne Prospect avec {STAGE_CHECKLISTS.prospect.length} étapes de cadrage</p>
+          <p className="text-sm text-gray-500 mt-1">{form.org_name} → phase À Cadrer avec {STAGE_CHECKLISTS.cadrage.length} tâches</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,7 +127,7 @@ export function NewProspectModal({ open, onClose }: Props) {
             <textarea
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Contexte, source du lead, besoins identifiés…"
+              placeholder="Date de démarrage, référent usine, douleurs identifiées…"
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />

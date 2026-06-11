@@ -15,12 +15,11 @@ export type CurrencyCode =
   | 'MRU'  // Ouguiya mauritanien
 
 export type OnboardingStage =
-  | 'prospect'
-  | 'demo'
-  | 'trial'
-  | 'configuration'
-  | 'formation'
-  | 'golive'
+  | 'cadrage'
+  | 'configuration_ia'
+  | 'formation_golive'
+  | 'suivi_adoption'
+  | 'bilan_conversion'
 
 export interface OnboardingItem {
   id: string
@@ -176,7 +175,7 @@ export interface Invoice {
 
 export interface SupportTicket {
   id: string
-  org_id: string
+  factory_id: string
   subject: string
   status: TicketStatus
   priority: TicketPriority
@@ -184,6 +183,12 @@ export interface SupportTicket {
   messages: TicketMessage[]
   created_at: string
   updated_at: string
+  factory?: {
+    id: string
+    name: string
+    code: string
+    org: { id: string; name: string } | null
+  } | null
 }
 
 export interface TicketMessage {

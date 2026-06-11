@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  QualityNonConformite, MOCK_QUALITY_NON_CONFORMITES,
+  QualityNonConformite,
   DEFECT_TYPE_LABELS,
   DISPOSITION_ACTION_LABELS, DISPOSITION_ACTION_COLORS,
   STATUT_QC_NC_LABELS, STATUT_QC_NC_COLORS,
@@ -130,7 +130,7 @@ function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function NonConformitesPage() {
-  const [ncs, setNcs] = useState<QualityNonConformite[]>(MOCK_QUALITY_NON_CONFORMITES)
+  const [ncs, setNcs] = useState<QualityNonConformite[]>([])
   const [search, setSearch] = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutQualiteNC | 'Tous'>('Tous')
   const [modalNcId, setModalNcId] = useState<string | null>(null)

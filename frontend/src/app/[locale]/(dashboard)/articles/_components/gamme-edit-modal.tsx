@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Plus, Trash2, ListChecks, ExternalLink } from 'lucide-react'
+import { X, Plus, Trash2, ListChecks, ExternalLink, GripVertical } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
 import {
@@ -52,6 +52,8 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
   const [version, setVersion] = useState('v1.0')
   const [rows, setRows]       = useState<GammeEtape[]>([])
   const [saving, setSaving]   = useState(false)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const dragItemIdx = useRef<number | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -59,6 +61,38 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
       setRows(etapes.map((e) => ({ ...e })))
     }
   }, [open, gamme, etapes])
+
+  // ── Drag & drop ─────────────────────────────────────────────────────────────
+
+  function handleDragStart(idx: number) {
+    dragItemIdx.current = idx
+  }
+
+  function handleDragEnter(id: string) {
+    setDragOverId(id)
+  }
+
+  function handleDrop(targetIdx: number) {
+    const from = dragItemIdx.current
+    if (from === null || from === targetIdx) {
+      dragItemIdx.current = null
+      setDragOverId(null)
+      return
+    }
+    setRows((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(targetIdx, 0, moved)
+      return next.map((r, i) => ({ ...r, ordre: i + 1 }))
+    })
+    dragItemIdx.current = null
+    setDragOverId(null)
+  }
+
+  function handleDragEnd() {
+    dragItemIdx.current = null
+    setDragOverId(null)
+  }
 
   // ── Row helpers ─────────────────────────────────────────────────────────────
 
@@ -124,7 +158,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
           data-slot="dialog-content"
           className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          <div className="w-[min(900px,94vw)] max-h-[88vh] flex flex-col rounded-xl border bg-card shadow-lg">
+          <div className="w-[min(1100px,96vw)] max-h-[88vh] flex flex-col rounded-xl border bg-card shadow-lg">
 
             {/* ── Header ────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
@@ -184,22 +218,45 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                 </div>
 
                 {/* Column headers */}
-                <div className="flex items-center gap-x-2 mb-2 px-1">
+                <div className="flex items-center gap-x-2 mb-2 pl-9 pr-1">
                   <span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground text-center">#</span>
-                  <span className="flex-1 min-w-0 text-xs font-semibold text-muted-foreground">Opération</span>
-                  <span className="w-[180px] shrink-0 text-xs font-semibold text-muted-foreground">Poste de charge</span>
-                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Lot (min)</span>
-                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Rég. (min)</span>
-                  <span className="w-[64px] shrink-0 text-xs font-semibold text-muted-foreground text-right">T° (°C)</span>
+                  <span className="w-[180px] shrink-0 text-xs font-semibold text-muted-foreground">Opération</span>
+                  <span className="w-[160px] shrink-0 text-xs font-semibold text-muted-foreground">Poste de charge</span>
+                  <span className="w-[60px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Lot (min)</span>
+                  <span className="w-[60px] shrink-0 text-xs font-semibold text-muted-foreground text-right">Rég. (min)</span>
+                  <span className="w-[60px] shrink-0 text-xs font-semibold text-muted-foreground text-right">T° (°C)</span>
+                  <span className="flex-1 min-w-0 text-xs font-semibold text-muted-foreground">Point de contrôle</span>
                   <span className="w-9 shrink-0" />
                 </div>
 
                 {/* Rows */}
-                <div className="space-y-2">
-                  {rows.map((row) => {
+                <div className="space-y-1.5">
+                  {rows.map((row, idx) => {
                     const invalid = row.operation.trim() && row.duree <= 0
+                    const isDragOver = dragOverId === row.id
                     return (
-                      <div key={row.id} className="flex items-center gap-x-2">
+                      <div
+                        key={row.id}
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragEnter={() => handleDragEnter(row.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleDrop(idx)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-x-2 rounded-lg transition-colors ${
+                          isDragOver
+                            ? 'border-2 border-blue-400 bg-blue-50/50'
+                            : 'border-2 border-transparent'
+                        }`}
+                      >
+
+                        {/* Poignée drag */}
+                        <div
+                          className="w-7 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                          title="Glisser pour réordonner"
+                        >
+                          <GripVertical className="size-4" />
+                        </div>
 
                         {/* Ordre */}
                         <span className="w-7 shrink-0 text-center text-xs font-semibold text-muted-foreground tabular-nums">
@@ -212,14 +269,14 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                           value={row.operation}
                           onChange={(e) => updateRow(row.id, 'operation', e.target.value)}
                           placeholder="Ex : Macération hibiscus"
-                          className="flex-1 min-w-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          className="w-[180px] shrink-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         />
 
                         {/* Poste de charge */}
                         <select
                           value={row.workCenterId ?? ''}
                           onChange={(e) => setWorkCenter(row.id, e.target.value)}
-                          className="w-[180px] shrink-0 h-9 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 truncate"
+                          className="w-[160px] shrink-0 h-9 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 truncate"
                         >
                           <option value="">— Aucun poste —</option>
                           {workCenters.map((wc) => (
@@ -236,7 +293,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                           value={row.duree === 0 ? '' : row.duree}
                           onChange={(e) => updateRow(row.id, 'duree', parseInt(e.target.value) || 0)}
                           placeholder="0"
-                          className={`w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
+                          className={`w-[60px] shrink-0 h-9 text-right font-mono tabular-nums text-xs ${
                             invalid ? 'border-red-400 focus-visible:ring-red-300' : ''
                           }`}
                         />
@@ -248,7 +305,7 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                           value={row.setupTimeMinutes === 0 ? '' : row.setupTimeMinutes}
                           onChange={(e) => updateRow(row.id, 'setupTimeMinutes', parseInt(e.target.value) || 0)}
                           placeholder="0"
-                          className="w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                          className="w-[60px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
                         />
 
                         {/* Température */}
@@ -261,7 +318,15 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                             updateRow(row.id, 'temperature', e.target.value ? parseInt(e.target.value) : undefined)
                           }
                           placeholder="—"
-                          className="w-[64px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                          className="w-[60px] shrink-0 h-9 text-right font-mono tabular-nums text-xs"
+                        />
+
+                        {/* Point de contrôle */}
+                        <input
+                          value={row.pointControle ?? ''}
+                          onChange={(e) => updateRow(row.id, 'pointControle', e.target.value || undefined)}
+                          placeholder="ex: pH 2.5–3.2, T° ≤ 25°C…"
+                          className="flex-1 min-w-0 h-9 rounded-md border border-input bg-background px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         />
 
                         {/* Supprimer */}
@@ -292,6 +357,8 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                 </button>
 
                 <p className="mt-3 text-xs text-muted-foreground">
+                  <strong>⠿</strong> : glisser-déposer pour réordonner.
+                  <span className="mx-1.5">·</span>
                   <strong>Poste</strong> : poste de charge ou ligne de production.
                   <span className="mx-1.5">·</span>
                   <strong>Lot</strong> : durée standard pour le lot.
@@ -299,6 +366,8 @@ export function GammeEditModal({ open, onClose, gamme, etapes, workCenters, onSa
                   <strong>Rég.</strong> : temps de réglage machine (Rüstzeit).
                   <span className="mx-1.5">·</span>
                   <strong>T°</strong> : température cible.
+                  <span className="mx-1.5">·</span>
+                  <strong>Point de contrôle</strong> : critère qualité à vérifier en fin d&apos;étape.
                 </p>
               </div>
             </div>

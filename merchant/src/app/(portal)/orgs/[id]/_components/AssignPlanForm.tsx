@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/modal'
 import { SubscriptionPlan } from '@/types/merchant'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatPlanPrice } from '@/lib/utils'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { updateFactoryPlan } from '@/lib/db-client'
 
@@ -71,7 +71,7 @@ export function AssignPlanForm({ factoryId, factoryName, plans, currentPlanId }:
               <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
                 <span>Plan actuel :</span>
                 <span className="font-medium text-gray-900">{currentPlan.name}</span>
-                <span className="text-gray-400">— {formatCurrency(currentPlan.price_monthly)}/mois</span>
+                <span className="text-gray-400">— {formatPlanPrice(currentPlan.price_monthly)}{currentPlan.price_monthly > 0 ? '/mois' : ''}</span>
               </div>
             )}
 
@@ -104,7 +104,8 @@ export function AssignPlanForm({ factoryId, factoryName, plans, currentPlanId }:
                         )}
                       </div>
                       <span className="text-sm font-bold text-gray-900">
-                        {formatCurrency(plan.price_monthly)}<span className="text-xs font-normal text-gray-400">/mois</span>
+                        {formatPlanPrice(plan.price_monthly)}
+                        {plan.price_monthly > 0 && <span className="text-xs font-normal text-gray-400">/mois</span>}
                       </span>
                     </div>
                     <div className="ml-5.5 mt-1 flex flex-wrap gap-1">

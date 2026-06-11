@@ -26,6 +26,7 @@ const STATUS_CONFIG: Record<SubscriptionStatus, {
 }
 
 function formatXOF(amount: number) {
+  if (amount === 0) return 'Sur devis'
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XOF',
@@ -73,7 +74,7 @@ export function AbonnementSection({ subscription, currentUserCount }: Props) {
       {!subscription ? (
         <p className="text-sm text-muted-foreground">
           Aucun abonnement configuré pour ce site.{' '}
-          <a href="mailto:selom@bluwa.io?cc=john@bluwa.io" className="underline underline-offset-2 hover:text-foreground transition-colors">
+          <a href="mailto:john@bluwa.io" className="underline underline-offset-2 hover:text-foreground transition-colors">
             Contacter Bluwa
           </a>
         </p>
@@ -124,7 +125,7 @@ export function AbonnementSection({ subscription, currentUserCount }: Props) {
               <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-sm text-amber-700 dark:text-amber-300">
                 Un paiement est en attente.{' '}
-                <a href="mailto:selom@bluwa.io?cc=john@bluwa.io" className="underline underline-offset-2 font-medium">
+                <a href="mailto:john@bluwa.io" className="underline underline-offset-2 font-medium">
                   Contacter Bluwa
                 </a>{' '}
                 pour régulariser la situation.
@@ -135,8 +136,8 @@ export function AbonnementSection({ subscription, currentUserCount }: Props) {
           {/* Lien contact */}
           <p className="text-xs text-muted-foreground pt-1">
             Pour modifier votre plan ou obtenir une facture, contactez-nous à{' '}
-            <a href="mailto:selom@bluwa.io?cc=john@bluwa.io" className="underline underline-offset-2 hover:text-foreground transition-colors">
-              selom@bluwa.io
+            <a href="mailto:john@bluwa.io" className="underline underline-offset-2 hover:text-foreground transition-colors">
+              john@bluwa.io
             </a>
           </p>
         </>

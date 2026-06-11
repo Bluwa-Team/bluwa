@@ -7,7 +7,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user || !user.email?.endsWith('@bluwa.io')) {
+  if (!user) {
     redirect('/login')
   }
 

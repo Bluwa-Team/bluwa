@@ -24,7 +24,7 @@ export async function getGoodsReceipts(): Promise<{
         purchase_orders!purchase_order_id (
           order_number,
           order_type,
-          suppliers!supplier_id ( name, vendor_type )
+          fournisseurs!fournisseur_id ( raison_sociale, statut )
         )
       `)
       .eq('organization_id', orgId)
@@ -46,15 +46,15 @@ export async function getGoodsReceipts(): Promise<{
 
     const headers: ReceptionHeader[] = receipts.map((r) => {
       const po       = (r as any).purchase_orders
-      const supplier = po?.suppliers
-      const vType    = (supplier?.vendor_type ?? 'Formel') as string
+      const fournisseur = po?.fournisseurs
+      const vType       = (fournisseur?.statut ?? 'Formel') as string
       return {
         id:                 r.id as string,
         numero:             (r.receipt_number as string) || `REC-${(r.id as string).substring(0, 8)}`,
         date:               ((r.received_at as string) ?? '').split('T')[0],
         deliveryNoteNumber: (r.delivery_note_number as string | null) ?? null,
         numeroBon:          po?.order_number ?? null,
-        fournisseur:        supplier?.name ?? '',
+        fournisseur:        fournisseur?.raison_sociale ?? '',
         typeFournisseur:    (vType === 'Informel' ? 'Informel' : 'Formel') as TypeFournisseur,
         statut:             r.status as StatutReception,
         qualiteStatut:      'NonJuge' as QualiteStatut,  // TODO: depuis quality_inspection_lots

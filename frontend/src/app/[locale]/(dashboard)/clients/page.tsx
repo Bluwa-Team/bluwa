@@ -243,18 +243,22 @@ export default function ClientsPage() {
         </div>
 
         <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
-          <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-36 h-9">
+            <span className="text-sm">{filterStatut === 'Tous' ? 'Statut' : filterStatut}</span>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Tous">{t('allStatuses')}</SelectItem>
+            <SelectItem value="Tous">Tous</SelectItem>
             <SelectItem value="Actif">{t('statuts.Actif')}</SelectItem>
             <SelectItem value="Inactif">{t('statuts.Inactif')}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={filterSecteur} onValueChange={(v) => setFilterSecteur(v ?? 'Tous')}>
-          <SelectTrigger className="w-52 h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-52 h-9">
+            <span className="text-sm">{filterSecteur === 'Tous' ? 'Secteurs' : filterSecteur}</span>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Tous">{t('allSectors')}</SelectItem>
+            <SelectItem value="Tous">Tous</SelectItem>
             {SECTEURS.map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}

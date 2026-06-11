@@ -17,7 +17,6 @@ import {
 import { DragDrop } from './_components/drag-drop'
 import {
   QualityInspectionLot, LaboratoryResults, ResultatsMicrobiologiques,
-  MOCK_QUALITY_INSPECTION_LOTS,
   STATUT_INSPECTION_LABELS, STATUT_INSPECTION_COLORS,
   TYPE_ANALYSE_LABELS, TYPE_ANALYSE_COLORS,
   MICROBIO_LABELS, MICROBIO_COLORS,
@@ -83,7 +82,7 @@ function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CentreLiberationPage() {
-  const [lots, setLots]               = useState<QualityInspectionLot[]>(MOCK_QUALITY_INSPECTION_LOTS)
+  const [lots, setLots]               = useState<QualityInspectionLot[]>([])
   const [search, setSearch]           = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutInspectionLot | 'Tous'>('Tous')
   const [fluxFilter, setFluxFilter]   = useState<FluxLot | 'Tous'>('Tous')

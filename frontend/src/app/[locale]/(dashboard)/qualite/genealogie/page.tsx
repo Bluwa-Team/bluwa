@@ -8,7 +8,7 @@ import {
 import { HelpPopover } from '@/components/ui/help-popover'
 import { Button } from '@/components/ui/button'
 import {
-  MOCK_GENEALOGIE, GenealogiePF, GenealogieLien, ControleProduction,
+  GenealogiePF, GenealogieLien, ControleProduction,
   STATUT_LOT_LABELS, STATUT_LOT_COLORS, TYPE_ARTICLE_COLORS,
   DestinationAval,
 } from '../_components/types'
@@ -21,26 +21,7 @@ type SearchResult =
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function doSearch(query: string): SearchResult | null {
-  const q = query.trim().toLowerCase()
-  if (!q) return null
-
-  const pfMatch = MOCK_GENEALOGIE.find(g => g.codeLotPF.toLowerCase().includes(q))
-  if (pfMatch) return { mode: 'pf', entry: pfMatch }
-
-  const usages: Array<{ pf: GenealogiePF; lien: GenealogieLien }> = []
-  for (const pf of MOCK_GENEALOGIE) {
-    for (const lien of pf.ingredients) {
-      if (lien.codeLot.toLowerCase().includes(q) || lien.article.toLowerCase().includes(q)) {
-        usages.push({ pf, lien })
-      }
-    }
-  }
-  if (usages.length > 0) {
-    const { codeLot, article } = usages[0].lien
-    return { mode: 'mp', codeLot, article, usages }
-  }
-
+function doSearch(_query: string): SearchResult | null {
   return null
 }
 
@@ -195,8 +176,8 @@ function ControlesProduction({ controles }: { controles: ControleProduction[] })
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function GenealogiePage() {
-  const [query,  setQuery]  = useState('PF-20260524-0041')
-  const [result, setResult] = useState<SearchResult | null>(() => doSearch('PF-20260524-0041'))
+  const [query,  setQuery]  = useState('')
+  const [result, setResult] = useState<SearchResult | null>(null)
 
   function handleSearch() { setResult(doSearch(query)) }
   function loadExample(code: string) { setQuery(code); setResult(doSearch(code)) }

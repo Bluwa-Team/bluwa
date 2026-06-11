@@ -22,11 +22,16 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, organization_id')
+    .select('full_name, role, organization_id, cgu_accepted_at, cgu_version')
     .eq('id', user.id)
     .maybeSingle()
 
   if (!profile) redirect(`/${locale}/onboarding`)
+
+  const CGU_CURRENT_VERSION = '1.0'
+  if (!profile.cgu_accepted_at || profile.cgu_version !== CGU_CURRENT_VERSION) {
+    redirect(`/${locale}/cgu`)
+  }
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
@@ -40,10 +45,25 @@ export default async function DashboardLayout({
 
   const cookieStore = await cookies()
   const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false'
+  const activeFactoryId = cookieStore.get('active_factory_id')?.value
+
+  let allowedModules: string[] = ['*']
+  if (activeFactoryId) {
+    const { data: factory } = await supabaseAdmin
+      .from('factories')
+      .select('subscription_plans(features_config)')
+      .eq('id', activeFactoryId)
+      .maybeSingle()
+    const plan = (factory as { subscription_plans?: { features_config?: { modules?: string[] } } } | null)
+      ?.subscription_plans
+    if (plan?.features_config?.modules?.length) {
+      allowedModules = plan.features_config.modules
+    }
+  }
 
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
-      <AppSidebar orgName={org?.name || ''} />
+      <AppSidebar orgName={org?.name || ''} allowedModules={allowedModules} />
       <SidebarInset className="min-w-0">
         <AppHeader
           fullName={profile.full_name || ''}

@@ -73,7 +73,7 @@ export default function SignupPage() {
           {/* Logo */}
           <div className="text-center">
             <Link href="/" aria-label="Accueil" className="inline-block">
-              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} priority />
+              <Image src="/bluwa_text.png" alt="Bluwa" width={120} height={36} priority className="dark:brightness-0 dark:invert" />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">Créer un compte</h1>
             <p className="text-muted-foreground text-sm">Commençons par vos informations</p>

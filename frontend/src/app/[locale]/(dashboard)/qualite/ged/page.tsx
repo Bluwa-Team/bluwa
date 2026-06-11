@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   type DocumentQualite, type TypeDocument, type StatutDocument,
-  MOCK_DOCUMENTS_QUALITE, TYPE_DOC_LABELS, TYPE_DOC_COLORS,
+  TYPE_DOC_LABELS, TYPE_DOC_COLORS,
   STATUT_DOC_COLORS, generateCode, revisionUrgente, revisionDepassee,
 } from '../_components/ged-types'
 
@@ -84,7 +84,7 @@ function RevisionBadge({ dateRevision }: { dateRevision: string }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function GEDQualitePage() {
-  const [docs,   setDocs]         = useState<DocumentQualite[]>(MOCK_DOCUMENTS_QUALITE)
+  const [docs,   setDocs]         = useState<DocumentQualite[]>([])
   const [search, setSearch]       = useState('')
   const [typeFilter,   setTypeFilter]   = useState<TypeDocument | 'Tous'>('Tous')
   const [statutFilter, setStatutFilter] = useState<StatutDocument | 'Tous'>('Actif')
