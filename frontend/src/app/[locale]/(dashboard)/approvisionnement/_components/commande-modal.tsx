@@ -682,7 +682,7 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
                 <Button onClick={handleSave} disabled={!isValid() || saving}>
                   {saving
                     ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
-                    : <><Check className="size-4 mr-1.5" />Créer &amp; imprimer {header.type}</>}
+                    : <><Check className="size-4 mr-1.5" />Créer {header.type}</>}
                 </Button>
               </div>
             </div>
