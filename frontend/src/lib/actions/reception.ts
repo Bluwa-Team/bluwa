@@ -121,7 +121,7 @@ export async function createGoodsReceipt(
   headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
   newItems: CreateGoodsReceiptItemInput[],
   directItems: DirectItemInput[] = [],
-): Promise<ReceptionHeader | null> {
+): Promise<{ header: ReceptionHeader; error: null } | { header: null; error: string }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
 
@@ -213,7 +213,7 @@ export async function createGoodsReceipt(
         const articleType = ((poItem.articles as { type?: string } | null)?.type) ?? 'MP'
         const batchNumber = generateBatchNumber(articleType, new Date(headerData.date), seqBase + idx)
 
-        await supabase.from('goods_receipt_items').insert({
+        const { error: itemErr } = await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,
           goods_receipt_id:       (receipt as any).id,
           purchase_order_item_id: item.purchaseOrderItemId,
@@ -226,6 +226,7 @@ export async function createGoodsReceipt(
           barcode:                item.codeBarres ?? null,
           lot_status:             item.statutLot ?? null,
         })
+        if (itemErr) throw new Error(`Ligne BC item: ${itemErr.message}`)
       }
     }
 
@@ -235,7 +236,7 @@ export async function createGoodsReceipt(
       for (let idx = 0; idx < directItems.length; idx++) {
         const item = directItems[idx]
         const batchNumber = generateBatchNumber(item.articleType, new Date(headerData.date), seqBase + idx)
-        await supabase.from('goods_receipt_items').insert({
+        const { error: dItemErr } = await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,
           goods_receipt_id:       (receipt as any).id,
           purchase_order_item_id: null,
@@ -248,6 +249,7 @@ export async function createGoodsReceipt(
           barcode:                item.codeBarres,
           lot_status:             item.statutLot,
         })
+        if (dItemErr) throw new Error(`Réception directe item: ${dItemErr.message}`)
       }
     }
 
@@ -262,18 +264,22 @@ export async function createGoodsReceipt(
     }
 
     return {
-      id:                 (receipt as any).id as string,
-      numero:             receiptNumber,
-      date:               headerData.date,
-      deliveryNoteNumber: headerData.deliveryNoteNumber,
-      numeroBon:          headerData.numeroBon,
-      fournisseur:        headerData.fournisseur,
-      typeFournisseur:    headerData.typeFournisseur,
-      statut:             headerData.statut,
-      qualiteStatut:      headerData.qualiteStatut,
+      header: {
+        id:                 (receipt as any).id as string,
+        numero:             receiptNumber,
+        date:               headerData.date,
+        deliveryNoteNumber: headerData.deliveryNoteNumber,
+        numeroBon:          headerData.numeroBon,
+        fournisseur:        headerData.fournisseur,
+        typeFournisseur:    headerData.typeFournisseur,
+        statut:             headerData.statut,
+        qualiteStatut:      headerData.qualiteStatut,
+      },
+      error: null,
     }
   } catch (e) {
-    console.error('[createGoodsReceipt]', e)
-    return null
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[createGoodsReceipt]', msg)
+    return { header: null, error: msg }
   }
 }

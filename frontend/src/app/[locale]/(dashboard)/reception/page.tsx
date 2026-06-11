@@ -181,13 +181,13 @@ export default function ReceptionPage() {
   async function handleSave(
     headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
     newItems: CreateGoodsReceiptItemInput[],
-  ): Promise<boolean> {
+  ): Promise<{ ok: boolean; error: string | null }> {
     const result = await createGoodsReceipt(headerData, newItems)
-    if (!result) return false
+    if (result.error) return { ok: false, error: result.error }
     const { headers, items } = await getGoodsReceipts()
     setRecHeaders(headers)
     setRecItems(items)
-    return true
+    return { ok: true, error: null }
   }
 
   async function handleSaveDirecte(
@@ -196,7 +196,7 @@ export default function ReceptionPage() {
     directItems: DirectItemInput[],
   ): Promise<boolean> {
     const result = await createGoodsReceipt(headerData, [], directItems)
-    if (!result) return false
+    if (result.error) return false
     const { headers, items } = await getGoodsReceipts()
     setRecHeaders(headers)
     setRecItems(items)

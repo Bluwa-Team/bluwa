@@ -40,7 +40,7 @@ interface Props {
   onSave: (
     header: Omit<ReceptionHeader, 'id' | 'numero'>,
     items: CreateGoodsReceiptItemInput[],
-  ) => Promise<boolean>
+  ) => Promise<{ ok: boolean; error: string | null }>
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -83,11 +83,13 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
   const [selectedHeaderId, setSelectedHeaderId] = useState('')
   const [itemForms, setItemForms]               = useState<ItemForm[]>([])
   const [saving, setSaving]                     = useState(false)
+  const [saveError, setSaveError]               = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setSelectedHeaderId('')
       setItemForms([])
+      setSaveError(null)
     }
   }, [open])
 
@@ -175,7 +177,8 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
   async function handleSave() {
     if (!selectedHeader) return
     setSaving(true)
-    const ok = await onSave(
+    setSaveError(null)
+    const { ok, error } = await onSave(
       {
         date:               new Date().toISOString().split('T')[0],
         deliveryNoteNumber: null,
@@ -199,6 +202,7 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
     )
     setSaving(false)
     if (ok) onClose()
+    else if (error) setSaveError(error)
   }
 
   return (
@@ -471,15 +475,22 @@ export function ReceptionModal({ open, onClose, bcHeaders, bcItems, onSave }: Pr
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={onClose} disabled={saving}>
-                  Annuler
-                </Button>
-                <Button onClick={handleSave} disabled={!isValid() || saving}>
-                  {saving
-                    ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
-                    : 'Enregistrer la réception'}
-                </Button>
+              <div className="flex flex-col gap-2 items-end">
+                {saveError && (
+                  <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2 w-full">
+                    Erreur : {saveError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={onClose} disabled={saving}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handleSave} disabled={!isValid() || saving}>
+                    {saving
+                      ? <><Loader2 className="size-4 animate-spin mr-1.5" />Enregistrement…</>
+                      : 'Enregistrer la réception'}
+                  </Button>
+                </div>
               </div>
             </div>
 
