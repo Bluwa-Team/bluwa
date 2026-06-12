@@ -233,19 +233,23 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
   const art         = (row as any).articles
   const today       = Date.now()
 
-  const pmp      = Number(art?.pmp) || 0
-  const quantite = Number(row.quantity_remaining) || 0
-  const dlc      = (row.expiry_date as string | null) ?? ''
+  const pmp        = Number(art?.pmp) || 0
+  const coeffAchat = Math.max(Number(art?.coeff_conversion_achat) || 1, 1)
+  const quantite   = Number(row.quantity_remaining) || 0
+  const dlc        = (row.expiry_date as string | null) ?? ''
   const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
   const receivedTs = gr?.received_at ? new Date(gr.received_at as string).getTime() : 0
 
-  // Priorité coût unitaire : lots.unit_cost > BC/BA unit_price_ht > PMP article
+  // Priorité coût unitaire : lots.unit_cost > BC/BA unit_price_ht÷coeff > PMP article
+  // unit_price_ht est exprimé par unité d'achat (ex: XOF/kg).
+  // Division par coeff_conversion_achat pour obtenir XOF/unité_stock (ex: XOF/g).
   const lotUnitCost = Number(row.unit_cost) || 0
   const griList: any[] = Array.isArray(gr?.goods_receipt_items) ? gr.goods_receipt_items : []
   const gri = griList.find((i: any) => i.batch_number === row.batch_number) ?? null
+  const priceHt = Number(gri?.purchase_order_items?.unit_price_ht) || 0
   const unitCost = lotUnitCost > 0
     ? lotUnitCost
-    : (Number(gri?.purchase_order_items?.unit_price_ht) || pmp)
+    : (priceHt > 0 ? priceHt / coeffAchat : pmp)
 
   let etat: EtatLot = 'Disponible'
   if (dlc) {
@@ -288,7 +292,7 @@ const LOT_SELECT = `
       fournisseurs!fournisseur_id ( raison_sociale, statut )
     )
   ),
-  articles!article_id ( code, designation, type, unite_stock, pmp, seuil_alerte_peremption )
+  articles!article_id ( code, designation, type, unite_stock, pmp, coeff_conversion_achat, seuil_alerte_peremption )
 `
 
 export async function getLotStocks(params: {
