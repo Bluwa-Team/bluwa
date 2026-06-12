@@ -10,6 +10,7 @@ import {
 const COLUMNS: ResizableColumn[] = [
   { id: 'lot',        defaultWidth: 200, minWidth: 150 },
   { id: 'entrepot',   defaultWidth: null },
+  { id: 'qteinit',    defaultWidth: 130, minWidth: 90  },
   { id: 'quantite',   defaultWidth: 130, minWidth: 90  },
   { id: 'reception',  defaultWidth: 110, minWidth: 86  },
   { id: 'peremption', defaultWidth: 120, minWidth: 90  },
@@ -73,7 +74,7 @@ export default function ArticleLotsTab({ articleId }: { articleId: string }) {
     setLoading(true)
     const { data } = await supabase
       .from('lots')
-      .select('id, batch_number, quantity_remaining, statut_qc, expiry_date, created_at')
+      .select('id, batch_number, quantity_initial, quantity_remaining, statut_qc, expiry_date, created_at')
       .eq('article_id', articleId)
       .not('batch_number', 'is', null)
       .order('created_at', { ascending: false })
@@ -118,6 +119,9 @@ export default function ArticleLotsTab({ articleId }: { articleId: string }) {
             </th>
             <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Entrepôt</th>
             <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
+              Qté initiale<ColumnResizer columnId="qteinit" onStart={startResize} />
+            </th>
+            <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
               Qté restante<ColumnResizer columnId="quantite" onStart={startResize} />
             </th>
             <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
@@ -150,6 +154,12 @@ export default function ArticleLotsTab({ articleId }: { articleId: string }) {
                 </td>
 
                 <td className="px-4 py-3 text-xs text-muted-foreground">—</td>
+
+                <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">
+                  {lot.quantity_initial != null
+                    ? Number(lot.quantity_initial).toLocaleString('fr-FR')
+                    : '—'}
+                </td>
 
                 <td className={`px-4 py-3 text-right font-mono tabular-nums font-semibold ${isEpuise ? 'text-muted-foreground' : ''}`}>
                   {qty.toLocaleString('fr-FR')}
