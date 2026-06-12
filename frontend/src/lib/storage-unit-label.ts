@@ -14,6 +14,7 @@ export interface StorageUnitLabelData {
   sourceRef:   string         // N° REC-YYYY-NNN ou N° OF-YYYY-NNN
   sourceDate:  string         // ISO date réception ou production
   supplier?:   string         // fournisseur (réception uniquement)
+  orgName?:    string         // nom de l'organisation — remplace "Bluwa" sur le template
 }
 
 export function printStorageLabels(
@@ -58,7 +59,7 @@ function buildHtml(
     return `
 <div class="label">
   <div class="row-top">
-    <div class="brand">Bluwa</div>
+    <div class="brand">${data.orgName || '—'}</div>
     <span class="badge" style="background:${badgeBg}">${badgeText}</span>
     <div class="qr" id="qr-${num}"></div>
   </div>

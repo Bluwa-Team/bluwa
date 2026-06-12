@@ -17,14 +17,15 @@ type TypeContenant = 'Carton' | 'Palette' | 'Sac' | 'Caisse' | 'Bidon' | 'Vrac'
 const TYPES_CONTENANTS: TypeContenant[] = ['Carton', 'Palette', 'Sac', 'Caisse', 'Bidon', 'Vrac']
 
 interface Props {
-  open:    boolean
-  row:     ReceptionFlat | null
-  onClose: () => void
+  open:     boolean
+  row:      ReceptionFlat | null
+  onClose:  () => void
+  orgName?: string
 }
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 
-export function LabelPrintModal({ open, row, onClose }: Props) {
+export function LabelPrintModal({ open, row, onClose, orgName }: Props) {
   const [type,             setType]             = useState<TypeContenant>('Carton')
   const [qtyParContenant,  setQtyParContenant]  = useState('')
   const [nbContenants,     setNbContenants]     = useState(1)
@@ -60,6 +61,7 @@ export function LabelPrintModal({ open, row, onClose }: Props) {
         sourceRef:   row.numero,
         sourceDate:  row.date,
         supplier:    row.fournisseur,
+        orgName:     orgName,
       },
       nbContenants,
       qty,

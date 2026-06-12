@@ -36,3 +36,17 @@ export async function getSupabaseWithOrg() {
 
   return { supabase, orgId, factoryId }
 }
+
+export async function getOrgName(): Promise<string> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', orgId)
+      .single()
+    return (data as any)?.name ?? ''
+  } catch {
+    return ''
+  }
+}

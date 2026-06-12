@@ -32,6 +32,7 @@ import {
   createPurchaseOrder, convertRequisition, updatePurchaseOrderStatus,
   type CreatePurchaseOrderInput,
 } from '@/lib/actions/approvisionnement'
+import { getOrgName } from '@/lib/actions/helpers'
 
 type Tab = 'da' | 'commandes' | 'strategie'
 
@@ -114,17 +115,20 @@ export default function ApprovisionnementPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [strategie, setStrategie] = useState<ArticleStrategie[]>([])
   const [loading, setLoading] = useState(true)
+  const [orgName, setOrgName] = useState('')
 
   useEffect(() => {
     Promise.all([
       getPurchaseOrders(),
       getPurchaseRequisitions(),
       getArticleStrategies(),
-    ]).then(([po, da, strat]) => {
+      getOrgName(),
+    ]).then(([po, da, strat, name]) => {
       setBcHeaders(po.headers)
       setBcItems(po.items)
       setDaRows(da)
       setStrategie(strat)
+      setOrgName(name)
       setLoading(false)
     })
   }, [])
@@ -221,7 +225,7 @@ export default function ApprovisionnementPage() {
     const h = bcHeaders.find((bh) => bh.id === headerId)
     if (!h) return
     const its = bcItems.filter((i) => i.headerId === headerId)
-    printBcDoc(h, its.map((i) => ({
+    printBcDoc({ ...h, orgName }, its.map((i) => ({
       article:         i.article,
       quantite:        i.quantite,
       unite:           i.unite || '',
