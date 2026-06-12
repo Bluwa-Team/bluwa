@@ -197,6 +197,7 @@ export async function upsertBom(
         .from('articles')
         .select('id, code, designation')
         .eq('organization_id', orgId)
+        .eq('statut', 'Actif')
         .in('code', codes)
 
       const codeToArticle: Record<string, { id: string; designation: string }> =

@@ -247,6 +247,20 @@ export async function createGoodsReceipt(
 
     // Réception directe — auto-création d'un BA lié + items
     if (directItems.length > 0) {
+      // Bloquer les articles non-Actif
+      const directArticleIds = directItems.map((i) => i.articleId).filter(Boolean) as string[]
+      if (directArticleIds.length > 0) {
+        const { data: inactive } = await supabase
+          .from('articles')
+          .select('code, statut')
+          .eq('organization_id', orgId)
+          .in('id', directArticleIds)
+          .neq('statut', 'Actif')
+        if (inactive && inactive.length > 0) {
+          throw new Error(`Articles non disponibles : ${inactive.map((a) => a.code).join(', ')}`)
+        }
+      }
+
       // 1. Générer un numéro BA
       const baYear = new Date().getFullYear()
       const { count: baCount } = await supabase

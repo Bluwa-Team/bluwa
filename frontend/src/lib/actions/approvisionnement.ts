@@ -306,6 +306,20 @@ export async function createPurchaseOrder(
       .single()
     if (orderErr) throw orderErr
 
+    // Bloquer les articles non-Actif
+    const articleIds = input.items.map((i) => i.articleId).filter(Boolean) as string[]
+    if (articleIds.length > 0) {
+      const { data: inactive } = await supabase
+        .from('articles')
+        .select('code, statut')
+        .eq('organization_id', orgId)
+        .in('id', articleIds)
+        .neq('statut', 'Actif')
+      if (inactive && inactive.length > 0) {
+        throw new Error(`Articles non disponibles : ${inactive.map((a) => a.code).join(', ')}`)
+      }
+    }
+
     // Insérer les lignes
     if (input.items.length > 0) {
       const { error: itemsErr } = await supabase

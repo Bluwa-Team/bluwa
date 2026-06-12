@@ -48,6 +48,7 @@ export async function getArticles(): Promise<Article[]> {
       .from('articles')
       .select('*')
       .eq('organization_id', orgId)
+      .eq('statut', 'Actif')
       .order('created_at', { ascending: false })
     if (error) throw error
     return (data ?? []).map(toArticle)
