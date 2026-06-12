@@ -22,6 +22,7 @@ export async function getGoodsReceipts(): Promise<{
       .from('goods_receipts')
       .select(`
         id, receipt_number, received_at, delivery_note_number, status, purchase_order_id,
+        fournisseur_nom, fournisseur_type,
         purchase_orders!purchase_order_id (
           order_number,
           order_type,
@@ -63,16 +64,16 @@ export async function getGoodsReceipts(): Promise<{
     }
 
     const headers: ReceptionHeader[] = receipts.map((r) => {
-      const po       = (r as any).purchase_orders
+      const po          = (r as any).purchase_orders
       const fournisseur = po?.fournisseurs
-      const vType       = (fournisseur?.statut ?? 'Formel') as string
+      const vType       = (fournisseur?.statut ?? (r as any).fournisseur_type ?? 'Formel') as string
       return {
         id:                 r.id as string,
         numero:             (r.receipt_number as string) || `REC-${(r.id as string).substring(0, 8)}`,
         date:               ((r.received_at as string) ?? '').split('T')[0],
         deliveryNoteNumber: (r.delivery_note_number as string | null) ?? null,
         numeroBon:          po?.order_number ?? null,
-        fournisseur:        fournisseur?.raison_sociale ?? '',
+        fournisseur:        fournisseur?.raison_sociale ?? (r as any).fournisseur_nom ?? '',
         typeFournisseur:    (vType === 'Informel' ? 'Informel' : 'Formel') as TypeFournisseur,
         statut:             r.status as StatutReception,
         qualiteStatut:      qualiteByReceipt.get(r.id as string) ?? 'EnControle',
@@ -158,6 +159,8 @@ export async function createGoodsReceipt(
         factory_id:           factoryId,
         purchase_order_id:    purchaseOrderId,
         delivery_note_number: headerData.deliveryNoteNumber,
+        fournisseur_nom:      headerData.fournisseur || null,
+        fournisseur_type:     headerData.typeFournisseur ?? 'Formel',
         status:               'DRAFT',
         received_at:          headerData.date,
         receipt_number:       receiptNumber,

@@ -214,6 +214,7 @@ export async function getLotStocks(): Promise<LotStock[]> {
         goods_receipts!goods_receipt_id (
           receipt_number,
           received_at,
+          fournisseur_type,
           purchase_orders!purchase_order_id (
             order_number,
             fournisseurs!fournisseur_id ( raison_sociale, statut )
@@ -266,7 +267,7 @@ export async function getLotStocks(): Promise<LotStock[]> {
         reception:             gr?.receipt_number ?? '',
         dateEntree,
         dlc,
-        origine:               ((fournisseur?.statut ?? 'Formel') === 'Informel' ? 'Informel' : 'Formel') as OrigineType,
+        origine:               ((fournisseur?.statut ?? gr?.fournisseur_type ?? 'Formel') === 'Informel' ? 'Informel' : 'Formel') as OrigineType,
         statutQC,
         etat,
         seuilAlertePeremption: Number(art?.seuil_alerte_peremption) || 30,
