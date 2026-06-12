@@ -832,9 +832,12 @@ export default function ApprovisionnementPage() {
                     </td>
                   </tr>
                 ) : filtered.map((h) => {
-                  const hItems   = bcItems.filter((i) => i.headerId === h.id)
-                  const nbLignes = hItems.length
-                  const totalHT  = hItems.reduce((sum, i) => sum + i.quantite * i.puHT, 0)
+                  const hItems    = bcItems.filter((i) => i.headerId === h.id)
+                  const nbLignes  = hItems.length
+                  const totalHT   = hItems.reduce((sum, i) => sum + i.quantite * i.puHT, 0)
+                  const isPartial = (h.statut === 'APPROVED' || h.statut === 'SENT') &&
+                    hItems.some((i) => i.quantiteRecue > 0) &&
+                    hItems.some((i) => i.quantiteRecue < i.quantite)
                   return (
                   <tr
                     key={h.id}
@@ -865,12 +868,19 @@ export default function ApprovisionnementPage() {
                     <td className="px-4 py-3 font-mono text-xs truncate">{h.reception}</td>
 
                     <td className="px-4 py-3 overflow-hidden">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[h.statut]}`}>
-                        {h.statut === 'RECEIVED'
-                          ? <CheckCheck className="size-3 shrink-0" />
-                          : <Clock className="size-3 shrink-0" />}
-                        {STATUT_COMMANDE_LABELS[h.statut]}
-                      </span>
+                      {isPartial ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-violet-100 text-violet-700 border border-violet-200">
+                          <PackageCheck className="size-3 shrink-0" />
+                          Partielle
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${STATUT_COMMANDE_COLORS[h.statut]}`}>
+                          {h.statut === 'RECEIVED'
+                            ? <CheckCheck className="size-3 shrink-0" />
+                            : <Clock className="size-3 shrink-0" />}
+                          {STATUT_COMMANDE_LABELS[h.statut]}
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
