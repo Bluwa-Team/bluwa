@@ -131,6 +131,7 @@ export async function createGoodsReceipt(
 
     // Résoudre purchase_order_id depuis le numéro de commande
     let purchaseOrderId: string | null = null
+    let autoBaNumber: string | null = null
     if (headerData.numeroBon) {
       const { data: po } = await supabase
         .from('purchase_orders')
@@ -228,19 +229,71 @@ export async function createGoodsReceipt(
       }
     }
 
-    // Réception directe — items sans BC lié
+    // Réception directe — auto-création d'un BA lié + items
     if (directItems.length > 0) {
+      // 1. Générer un numéro BA
+      const baYear = new Date().getFullYear()
+      const { count: baCount } = await supabase
+        .from('purchase_orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .like('order_number', `BA-${baYear}-%`)
+      autoBaNumber = `BA-${baYear}-${String((baCount ?? 0) + 1).padStart(3, '0')}`
+
+      // 2. Créer le BA (fournisseur_id nullable pour fournisseurs non référencés)
+      const { data: ba, error: baErr } = await supabase
+        .from('purchase_orders')
+        .insert({
+          organization_id: orgId,
+          factory_id:      factoryId,
+          fournisseur_id:  null,
+          fournisseur_nom: headerData.fournisseur || null,
+          order_type:      'BA',
+          order_number:    autoBaNumber,
+          status:          'RECEIVED',
+          currency:        'XOF',
+        })
+        .select()
+        .single()
+      if (baErr) throw new Error(`Création BA: ${baErr.message}`)
+      purchaseOrderId = (ba as any).id
+
+      // 3. Créer les lignes BA
+      const { data: baItems, error: baItemsErr } = await supabase
+        .from('purchase_order_items')
+        .insert(
+          directItems.map((item, idx) => ({
+            organization_id:        orgId,
+            purchase_order_id:      purchaseOrderId,
+            article_id:             item.articleId,
+            article_label:          item.article,
+            item_position:          idx + 1,
+            quantity:               item.quantite,
+            unit_price_ht:          item.puHT,
+            expected_delivery_date: headerData.date,
+          })),
+        )
+        .select()
+      if (baItemsErr) throw new Error(`Lignes BA: ${baItemsErr.message}`)
+
+      // 4. Lier la réception au BA (maintenant qu'on a l'ID)
+      await supabase
+        .from('goods_receipts')
+        .update({ purchase_order_id: purchaseOrderId })
+        .eq('id', (receipt as any).id)
+
+      // 5. Créer les goods_receipt_items liés aux lignes BA
       const seqBase = parseInt(receiptNumber.split('-').pop() ?? '1', 10)
       for (let idx = 0; idx < directItems.length; idx++) {
-        const item = directItems[idx]
+        const item    = directItems[idx]
+        const baItem  = (baItems ?? [])[idx]
         const batchNumber = generateBatchNumber(item.articleType, new Date(headerData.date), seqBase + idx)
         const { error: dItemErr } = await supabase.from('goods_receipt_items').insert({
           organization_id:        orgId,
           goods_receipt_id:       (receipt as any).id,
-          purchase_order_item_id: null,
+          purchase_order_item_id: baItem?.id ?? null,
           article_id:             item.articleId,
           quantity_received:      item.quantite,
-          unit_price_ht:          item.puHT,
           batch_number:           batchNumber,
           supplier_batch_number:  item.lotFourn,
           expiry_date:            item.dlc,
@@ -268,7 +321,7 @@ export async function createGoodsReceipt(
         numero:             receiptNumber,
         date:               headerData.date,
         deliveryNoteNumber: headerData.deliveryNoteNumber,
-        numeroBon:          headerData.numeroBon,
+        numeroBon:          autoBaNumber ?? headerData.numeroBon,
         fournisseur:        headerData.fournisseur,
         typeFournisseur:    headerData.typeFournisseur,
         statut:             headerData.statut,

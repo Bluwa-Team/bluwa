@@ -1,20 +1,29 @@
 -- ══════════════════════════════════════════════════════════════════════════════
--- Migration 010 — Réceptions directes : prix unitaire + fournisseur persistés
+-- Migration 010 — Réceptions directes : auto-création BA + fournisseur persisté
 --
--- Bug 1 : pour les réceptions directes (purchase_order_item_id IS NULL),
---         le trigger lisait le prix depuis purchase_order_items → NULL → PMP = 0.
--- Bug 2 : fournisseur_nom et fournisseur_type n'étaient pas stockés sur
---         goods_receipts → origine toujours "Formel" dans la page Stocks.
+-- Nouvelle architecture : la réception directe crée automatiquement un BA
+-- (purchase_orders type='BA', status='RECEIVED') avant d'enregistrer la réception.
+-- Cela permet au trigger de lire unit_price_ht depuis purchase_order_items →
+-- PMP calculé correctement, BA imprimable et partageable avec le fournisseur.
 --
--- Fix :
---   1. Ajouter unit_price_ht sur goods_receipt_items
---   2. Ajouter fournisseur_nom + fournisseur_type sur goods_receipts
---   3. Mettre à jour fn_validate_goods_receipt pour utiliser unit_price_ht en priorité
+-- Changements :
+--   1. purchase_orders.fournisseur_id devient nullable (fournisseurs informels non référencés)
+--   2. Ajouter purchase_orders.fournisseur_nom pour les BAs sans fournisseur référencé
+--   3. Ajouter goods_receipt_items.unit_price_ht (fallback si pas de POI)
+--   4. Ajouter goods_receipts.fournisseur_nom + fournisseur_type
+--   5. Mettre à jour fn_validate_goods_receipt pour utiliser unit_price_ht en priorité
 -- ══════════════════════════════════════════════════════════════════════════════
 
+-- 1. purchase_orders : fournisseur_id nullable + nom libre
+ALTER TABLE public.purchase_orders
+    ALTER COLUMN fournisseur_id DROP NOT NULL,
+    ADD COLUMN IF NOT EXISTS fournisseur_nom TEXT;
+
+-- 2. goods_receipt_items : prix unitaire direct (fallback réceptions directes)
 ALTER TABLE public.goods_receipt_items
     ADD COLUMN IF NOT EXISTS unit_price_ht NUMERIC NOT NULL DEFAULT 0;
 
+-- 3. goods_receipts : fournisseur libre + type
 ALTER TABLE public.goods_receipts
     ADD COLUMN IF NOT EXISTS fournisseur_nom  TEXT,
     ADD COLUMN IF NOT EXISTS fournisseur_type TEXT NOT NULL DEFAULT 'Formel'

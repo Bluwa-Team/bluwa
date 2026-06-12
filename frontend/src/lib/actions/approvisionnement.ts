@@ -36,7 +36,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
 
     const { data: orders, error: ordersErr } = await supabase
       .from('purchase_orders')
-      .select('*, fournisseurs!fournisseur_id(raison_sociale, statut)')
+      .select('*, fournisseur_nom, fournisseurs!fournisseur_id(raison_sociale, statut)')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (ordersErr) throw ordersErr
@@ -85,7 +85,7 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       numero:      o.order_number as string,
       type:        o.order_type as TypeCommande,
       date:        ((o.created_at as string) ?? '').split('T')[0],
-      fournisseur: ((o as any).fournisseurs as any)?.raison_sociale ?? '',
+      fournisseur: ((o as any).fournisseurs as any)?.raison_sociale ?? (o as any).fournisseur_nom ?? '',
       contrat:     (o.contract_number as string | null) ?? null,
       currency:    (o.currency as string) ?? 'XOF',
       reception:   receiptMap.get(o.id as string) ?? null,
