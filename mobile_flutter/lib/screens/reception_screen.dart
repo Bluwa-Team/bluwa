@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import '../widgets/help_button.dart';
+import '../widgets/label_format_picker.dart';
 import '../widgets/shared.dart';
 
 // ── Types alignés ERP ─────────────────────────────────────────────────────────
@@ -720,7 +721,7 @@ class ReceptionDetailScreen extends StatelessWidget {
                       'Bordereau de livraison', header.deliveryNoteNumber),
                 ]),
               ),
-              for (final item in items) _itemCard(item),
+              for (final item in items) _itemCard(context, item),
               if (header.statut == StatutReception.draft) ...[
                 BigButton(
                   label: 'Valider la réception',
@@ -738,6 +739,25 @@ class ReceptionDetailScreen extends StatelessWidget {
                   onTap: () {},
                 ),
               ],
+              BigButton(
+                label: 'Imprimer les étiquettes',
+                icon: Icons.print_outlined,
+                outlined: true,
+                borderColor: C.border,
+                textColor: C.textSub,
+                margin: const EdgeInsets.only(top: 4, bottom: 10),
+                onTap: () async {
+                  final format = await showLabelFormatPicker(context);
+                  if (format != null && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                          'Format ${format.code} · ${format.perSheet} étiquette${format.perSheet > 1 ? 's' : ''}/feuille'),
+                      backgroundColor: C.success,
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  }
+                },
+              ),
             ]),
           ),
         ],
@@ -745,7 +765,7 @@ class ReceptionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _itemCard(ReceptionItem item) {
+  Widget _itemCard(BuildContext context, ReceptionItem item) {
     final qc = item.statutLot != null ? _statutQcCfg[item.statutLot]! : null;
     return SectionCard(
       margin: const EdgeInsets.only(bottom: 10),
@@ -758,8 +778,34 @@ class ReceptionDetailScreen extends StatelessWidget {
           children: [
             Expanded(
                 child: Text(item.article, style: ts(15, F.semiBold, C.text))),
-            if (qc != null)
+            if (qc != null) ...[
               StatusPill(label: qc.label, color: qc.color, bg: qc.bg),
+              const SizedBox(width: 8),
+            ],
+            // Bouton impression par lot
+            GestureDetector(
+              onTap: () async {
+                final format = await showLabelFormatPicker(context);
+                if (format != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                        '${item.article} · Format ${format.code} · ${format.perSheet}/feuille'),
+                    backgroundColor: C.success,
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: C.bg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: C.border),
+                ),
+                child: const Icon(Icons.print_outlined,
+                    size: 15, color: C.textSub),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),

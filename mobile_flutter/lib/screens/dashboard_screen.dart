@@ -1,57 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/dashboard_service.dart';
+import '../services/supabase.dart';
 import '../theme.dart';
 import '../widgets/shared.dart';
 
-// ── Supabase dispo ─────────────────────────────────────────────────────────────
-const _kSupaUrl = String.fromEnvironment('SUPABASE_URL');
-bool get _supaAvail => _kSupaUrl.isNotEmpty;
-
-// ── Modèles ────────────────────────────────────────────────────────────────────
-
-enum _AlertType { danger, warning, info }
-
-class _AlertItem {
-  const _AlertItem(this.message, this.time, this.type);
-  final String message, time;
-  final _AlertType type;
-}
-
-class _DashData {
-  const _DashData({
-    required this.userName,
-    required this.initials,
-    required this.role,
-    required this.orgName,
-    required this.orgLocation,
-    required this.bcbaPending,
-    required this.lotsEnControle,
-    required this.lotsRejetes,
-    required this.receptionsEnCours,
-    required this.alerts,
-  });
-
-  final String userName, initials, role, orgName, orgLocation;
-  final int bcbaPending, lotsEnControle, lotsRejetes, receptionsEnCours;
-  final List<_AlertItem> alerts;
-
-  factory _DashData.empty() => const _DashData(
-        userName: '',
-        initials: '?',
-        role: '',
-        orgName: '',
-        orgLocation: '',
-        bcbaPending: 0,
-        lotsEnControle: 0,
-        lotsRejetes: 0,
-        receptionsEnCours: 0,
-        alerts: [],
-      );
-}
-
-// ── Utilitaires ────────────────────────────────────────────────────────────────
+// ── Utilitaire UI ──────────────────────────────────────────────────────────────
 
 String _roleLabel(String r) => switch (r) {
       'owner' => 'Propriétaire',
@@ -61,25 +16,6 @@ String _roleLabel(String r) => switch (r) {
       'viewer' => 'Lecteur',
       _ => r,
     };
-
-String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+'));
-  if (parts.isEmpty || parts.first.isEmpty) return '?';
-  if (parts.length == 1) return parts[0][0].toUpperCase();
-  return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-}
-
-String _relTime(String isoTs) {
-  try {
-    final diff = DateTime.now().difference(DateTime.parse(isoTs).toLocal());
-    if (diff.inMinutes < 1) return 'à l\'instant';
-    if (diff.inMinutes < 60) return 'il y a ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'il y a ${diff.inHours} h';
-    return 'il y a ${diff.inDays} j';
-  } catch (_) {
-    return '';
-  }
-}
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -91,7 +27,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  _DashData _data = _DashData.empty();
+  DashData _data = DashData.empty();
   bool _loading = true;
   String? _error;
 
@@ -102,140 +38,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _load() async {
-    if (!_supaAvail) {
+    if (!supabaseReady) {
       if (mounted) setState(() => _loading = false);
       return;
     }
     if (mounted) setState(() { _loading = true; _error = null; });
-
     try {
-      final supa = Supabase.instance.client;
-      final user = supa.auth.currentUser;
-      if (user == null) {
-        if (mounted) setState(() => _loading = false);
-        return;
-      }
-
-      // ── Profil + organisation ──────────────────────────────────────────
-      final profileRow = await supa
-          .from('profiles')
-          .select('full_name, role, organization_id')
-          .eq('id', user.id)
-          .single();
-
-      final orgId = profileRow['organization_id'] as String;
-      final fullName = (profileRow['full_name'] as String? ?? '').trim();
-      final role = profileRow['role'] as String? ?? '';
-
-      final orgRow = await supa
-          .from('organizations')
-          .select('name, country_headquarters')
-          .eq('id', orgId)
-          .single();
-
-      final orgName = orgRow['name'] as String? ?? '';
-      final orgLoc = orgRow['country_headquarters'] as String? ?? '';
-
-      // ── KPIs en parallèle ──────────────────────────────────────────────
-      final kpiResults = await Future.wait([
-        // BC / BA en attente (brouillon ou soumis)
-        supa
-            .from('purchase_orders')
-            .select('id')
-            .eq('organization_id', orgId)
-            .or('status.eq.PENDING,status.eq.DRAFT'),
-        // Lots en contrôle qualité
-        supa
-            .from('lots')
-            .select('id')
-            .eq('organization_id', orgId)
-            .eq('statut_qc', 'EnControle'),
-        // Lots rejetés
-        supa
-            .from('lots')
-            .select('id')
-            .eq('organization_id', orgId)
-            .eq('statut_qc', 'Rejete'),
-        // Réceptions en cours (brouillon)
-        supa
-            .from('goods_receipts')
-            .select('id')
-            .eq('organization_id', orgId)
-            .eq('status', 'DRAFT'),
-      ]);
-
-      // ── Alertes en parallèle ───────────────────────────────────────────
-      final alertResults = await Future.wait([
-        // Lots rejetés récents → danger
-        supa
-            .from('lots')
-            .select('batch_number, created_at')
-            .eq('organization_id', orgId)
-            .eq('statut_qc', 'Rejete')
-            .order('created_at', ascending: false)
-            .limit(2),
-        // BC/BA en attente d'approbation → warning
-        supa
-            .from('purchase_orders')
-            .select('order_number, created_at')
-            .eq('organization_id', orgId)
-            .eq('status', 'PENDING')
-            .order('created_at', ascending: false)
-            .limit(2),
-        // Réceptions récemment validées → info
-        supa
-            .from('goods_receipts')
-            .select('receipt_number, created_at')
-            .eq('organization_id', orgId)
-            .eq('status', 'VALIDATED')
-            .order('created_at', ascending: false)
-            .limit(2),
-      ]);
-
-      final alerts = <_AlertItem>[
-        for (final r in alertResults[0] as List)
-          _AlertItem(
-            'Lot ${r['batch_number']} — hors norme QC',
-            _relTime(r['created_at'] as String),
-            _AlertType.danger,
-          ),
-        for (final r in alertResults[1] as List)
-          _AlertItem(
-            '${r['order_number']} en attente d\'approbation',
-            _relTime(r['created_at'] as String),
-            _AlertType.warning,
-          ),
-        for (final r in alertResults[2] as List)
-          _AlertItem(
-            'Réception ${r['receipt_number']} validée',
-            _relTime(r['created_at'] as String),
-            _AlertType.info,
-          ),
-      ];
-
-      if (mounted) {
-        setState(() {
-          _data = _DashData(
-            userName: fullName,
-            initials: _initials(fullName),
-            role: role,
-            orgName: orgName,
-            orgLocation: orgLoc,
-            bcbaPending: (kpiResults[0] as List).length,
-            lotsEnControle: (kpiResults[1] as List).length,
-            lotsRejetes: (kpiResults[2] as List).length,
-            receptionsEnCours: (kpiResults[3] as List).length,
-            alerts: alerts,
-          );
-          _loading = false;
-        });
-      }
-    } catch (e) {
+      final data = await DashboardService(supabase).load();
+      if (mounted) setState(() { _data = data; _loading = false; });
+    } catch (_) {
       if (mounted) setState(() { _error = 'Impossible de charger les données.'; _loading = false; });
     }
   }
-
-  Future<void> _onRefresh() => _load();
 
   Future<void> _confirmLogout() async {
     final ok = await showDialog<bool>(
@@ -259,9 +73,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-    if (ok == true && _supaAvail) {
-      await Supabase.instance.client.auth.signOut();
-      // AuthGate redirige automatiquement vers LoginScreen via le stream.
+    if (ok == true && supabaseReady) {
+      await supabase.auth.signOut();
     }
   }
 
@@ -272,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return RefreshIndicator(
       color: C.primary,
-      onRefresh: _onRefresh,
+      onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -281,7 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Logo + marque
                 Row(children: [
                   const BluwaLogo(size: 24),
                   const SizedBox(width: 10),
@@ -289,7 +101,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: ts(14, F.extraBold, Colors.white,
                           letterSpacing: 1.2)),
                 ]),
-                // Avatar + déconnexion
                 Row(children: [
                   _Avatar(initials: d.initials),
                   const SizedBox(width: 14),
@@ -307,8 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 20),
             Text(
               dateStr[0].toUpperCase() + dateStr.substring(1),
-              style:
-                  ts(12, F.regular, Colors.white.withValues(alpha: 0.50)),
+              style: ts(12, F.regular, Colors.white.withValues(alpha: 0.50)),
             ),
             const SizedBox(height: 5),
             if (d.userName.isNotEmpty)
@@ -317,24 +127,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             else
               Text('Tableau de bord', style: ts(24, F.bold, Colors.white)),
             const SizedBox(height: 4),
-            // Organisation + rôle
             Row(children: [
               if (d.orgName.isNotEmpty)
-                Text(
-                  d.orgName,
-                  style: ts(
-                      13, F.medium, Colors.white.withValues(alpha: 0.55)),
-                ),
+                Text(d.orgName,
+                    style: ts(13, F.medium,
+                        Colors.white.withValues(alpha: 0.55))),
               if (d.orgName.isNotEmpty && d.role.isNotEmpty)
                 Text(' · ',
                     style: ts(13, F.regular,
                         Colors.white.withValues(alpha: 0.35))),
               if (d.role.isNotEmpty)
-                Text(
-                  _roleLabel(d.role),
-                  style: ts(
-                      13, F.medium, Colors.white.withValues(alpha: 0.55)),
-                ),
+                Text(_roleLabel(d.role),
+                    style: ts(13, F.medium,
+                        Colors.white.withValues(alpha: 0.55))),
             ]),
           ]),
 
@@ -350,8 +155,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Padding(
               padding: const EdgeInsets.all(28),
               child: Column(children: [
-                Icon(Icons.wifi_off_rounded,
-                    size: 36, color: C.textMuted),
+                const Icon(Icons.wifi_off_rounded, size: 36, color: C.textMuted),
                 const SizedBox(height: 12),
                 Text(_error!,
                     textAlign: TextAlign.center,
@@ -359,8 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 14),
                 TextButton(
                   onPressed: _load,
-                  child: Text('Réessayer',
-                      style: ts(14, F.semiBold, C.primary)),
+                  child: Text('Réessayer', style: ts(14, F.semiBold, C.primary)),
                 ),
               ]),
             )
@@ -372,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── KPIs ─────────────────────────────────────────────
+                  // KPIs
                   Row(children: [
                     Expanded(
                       child: _KpiCard(
@@ -418,24 +221,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ]),
                   const SizedBox(height: 24),
 
-                  // ── Actions rapides ───────────────────────────────────
-                  Text('Actions rapides',
-                      style: ts(14, F.semiBold, C.text)),
+                  // Actions rapides
+                  Text('Actions rapides', style: ts(14, F.semiBold, C.text)),
                   const SizedBox(height: 12),
                   Row(children: [
                     for (final (i, a) in const [
-                      (
-                        'Nouvelle\nréception',
-                        Icons.local_shipping_outlined
-                      ),
+                      ('Nouvelle\nréception', Icons.local_shipping_outlined),
                       ('Saisie\nqualité', Icons.science_outlined),
                       ('Pointage\nOF', Icons.factory_outlined),
                     ].indexed) ...[
                       if (i > 0) const SizedBox(width: 8),
                       Expanded(
                         child: Container(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             color: C.surface,
                             borderRadius: BorderRadius.circular(14),
@@ -449,8 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: C.primarySoft,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child:
-                                  Icon(a.$2, size: 19, color: C.primary),
+                              child: Icon(a.$2, size: 19, color: C.primary),
                             ),
                             const SizedBox(height: 8),
                             Text(a.$1,
@@ -464,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ]),
                   const SizedBox(height: 28),
 
-                  // ── Alertes ───────────────────────────────────────────
+                  // Alertes
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -513,7 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ── Avatar initiales ───────────────────────────────────────────────────────────
+// ── Widgets locaux ─────────────────────────────────────────────────────────────
 
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.initials});
@@ -536,8 +333,6 @@ class _Avatar extends StatelessWidget {
     );
   }
 }
-
-// ── Carte KPI ──────────────────────────────────────────────────────────────────
 
 class _KpiCard extends StatelessWidget {
   const _KpiCard({
@@ -582,39 +377,35 @@ class _KpiCard extends StatelessWidget {
             ),
             child: Icon(icon, size: 18, color: iconColor),
           ),
-          Text('$value',
-              style: ts(28, F.extraBold, C.text, height: 32)),
+          Text('$value', style: ts(28, F.extraBold, C.text, height: 32)),
           const SizedBox(height: 6),
-          Text(label,
-              style: ts(12, F.medium, C.textSub, height: 16)),
+          Text(label, style: ts(12, F.medium, C.textSub, height: 16)),
         ],
       ),
     );
   }
 }
 
-// ── Ligne alerte ───────────────────────────────────────────────────────────────
-
 class _AlertRow extends StatelessWidget {
   const _AlertRow(this.alert);
-  final _AlertItem alert;
+  final DashAlert alert;
 
   @override
   Widget build(BuildContext context) {
     final (border, bg, icon, iconColor) = switch (alert.type) {
-      _AlertType.danger => (
+      DashAlertType.danger => (
           const Color(0xFFFECACA),
           const Color(0xFFFEF7F7),
           Icons.warning_amber_rounded,
           C.danger,
         ),
-      _AlertType.warning => (
+      DashAlertType.warning => (
           const Color(0xFFFDE68A),
           const Color(0xFFFFFBF0),
           Icons.hourglass_top_rounded,
           C.warning,
         ),
-      _AlertType.info => (
+      DashAlertType.info => (
           const Color(0xFFBFDBFE),
           const Color(0xFFF5F8FF),
           Icons.check_circle_outline_rounded,

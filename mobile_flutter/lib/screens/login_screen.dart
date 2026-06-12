@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
+import '../services/supabase.dart';
 import '../theme.dart';
 import '../widgets/shared.dart';
 
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _loading = true;
     });
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      await supabase.auth.signInWithPassword(
         email: _email.text.trim(),
         password: _password.text,
       );

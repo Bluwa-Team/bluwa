@@ -12,6 +12,7 @@ import 'screens/of_screen.dart';
 import 'screens/qualite_screen.dart';
 import 'screens/reception_screen.dart';
 import 'screens/ventes_screen.dart';
+import 'services/supabase.dart';
 import 'theme.dart';
 
 // Clés injectées au build :
@@ -28,8 +29,6 @@ Future<void> main() async {
   }
   runApp(const BluwaApp());
 }
-
-bool get supabaseReady => _supabaseUrl.isNotEmpty;
 
 class BluwaApp extends StatelessWidget {
   const BluwaApp({super.key});
