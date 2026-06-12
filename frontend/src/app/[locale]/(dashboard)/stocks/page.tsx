@@ -213,7 +213,7 @@ export default function StocksPage() {
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Valeur totale"
-          value={`${fmtK(stats.valeurTotale)} FCFA`}
+          value={fmtK(stats.valeurTotale)}
           sub={`${lots.length} lot${lots.length > 1 ? 's' : ''} · Valorisation PMP`}
           bgClass="bg-blue-50 dark:bg-blue-950/30"
           iconBgClass="bg-blue-100 dark:bg-blue-900/50"
@@ -222,7 +222,7 @@ export default function StocksPage() {
         />
         <StatCard
           label="Stocks dormants"
-          value={`${fmtK(stats.dormants)} FCFA`}
+          value={fmtK(stats.dormants)}
           sub="Sans sortie ≥ 60j"
           bgClass="bg-orange-50 dark:bg-orange-950/30"
           iconBgClass="bg-orange-100 dark:bg-orange-900/50"
@@ -231,7 +231,7 @@ export default function StocksPage() {
         />
         <StatCard
           label="Obsolètes"
-          value={`${fmtK(stats.obsoletes)} FCFA`}
+          value={fmtK(stats.obsoletes)}
           sub="À détruire / destocker"
           bgClass="bg-red-50 dark:bg-red-950/30"
           iconBgClass="bg-red-100 dark:bg-red-900/50"
@@ -415,13 +415,11 @@ export default function StocksPage() {
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.pmp, locale)}{' '}
-                  <span className="text-muted-foreground text-xs">FCFA</span>
+                  {formatNumber(l.pmp, locale)}
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.valeur, locale)}{' '}
-                  <span className="text-muted-foreground text-xs">FCFA</span>
+                  {formatNumber(l.valeur, locale)}
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs truncate">{l.bcBa}</td>
