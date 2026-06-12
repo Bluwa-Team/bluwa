@@ -33,17 +33,22 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      setError('Email ou mot de passe incorrect.')
+      if (error) {
+        setError('Email ou mot de passe incorrect.')
+        return
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   async function handleGoogleLogin() {
@@ -119,7 +124,7 @@ export default function LoginPage() {
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </div>
