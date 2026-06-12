@@ -237,6 +237,7 @@ export async function createGoodsReceipt(
           purchase_order_item_id: null,
           article_id:             item.articleId,
           quantity_received:      item.quantite,
+          unit_price_ht:          item.puHT,
           batch_number:           batchNumber,
           supplier_batch_number:  item.lotFourn,
           expiry_date:            item.dlc,
