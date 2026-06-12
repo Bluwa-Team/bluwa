@@ -1,16 +1,24 @@
 -- ══════════════════════════════════════════════════════════════════════════════
--- Migration 010 — Prix unitaire sur goods_receipt_items (réception directe)
+-- Migration 010 — Réceptions directes : prix unitaire + fournisseur persistés
 --
--- Bug : pour les réceptions directes (purchase_order_item_id IS NULL),
---       le trigger lisait le prix depuis purchase_order_items → NULL → PMP = 0.
+-- Bug 1 : pour les réceptions directes (purchase_order_item_id IS NULL),
+--         le trigger lisait le prix depuis purchase_order_items → NULL → PMP = 0.
+-- Bug 2 : fournisseur_nom et fournisseur_type n'étaient pas stockés sur
+--         goods_receipts → origine toujours "Formel" dans la page Stocks.
 --
 -- Fix :
 --   1. Ajouter unit_price_ht sur goods_receipt_items
---   2. Mettre à jour fn_validate_goods_receipt pour utiliser ce champ en priorité
+--   2. Ajouter fournisseur_nom + fournisseur_type sur goods_receipts
+--   3. Mettre à jour fn_validate_goods_receipt pour utiliser unit_price_ht en priorité
 -- ══════════════════════════════════════════════════════════════════════════════
 
 ALTER TABLE public.goods_receipt_items
     ADD COLUMN IF NOT EXISTS unit_price_ht NUMERIC NOT NULL DEFAULT 0;
+
+ALTER TABLE public.goods_receipts
+    ADD COLUMN IF NOT EXISTS fournisseur_nom  TEXT,
+    ADD COLUMN IF NOT EXISTS fournisseur_type TEXT NOT NULL DEFAULT 'Formel'
+        CHECK (fournisseur_type IN ('Formel', 'Informel'));
 
 -- ── Trigger mis à jour ────────────────────────────────────────────────────────
 
