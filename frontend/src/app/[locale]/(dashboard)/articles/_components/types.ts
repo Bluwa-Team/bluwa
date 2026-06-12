@@ -1,5 +1,5 @@
 export type ArticleType = 'MP' | 'PSF' | 'PF' | 'AC' | 'CS'
-export type ArticleStatut = 'Actif' | 'Bloque' | 'EnCreation'
+export type ArticleStatut = 'Actif' | 'Bloque' | 'EnCreation' | 'Archive'
 export type ArticleAppro = 'Achete' | 'Fabrique' | 'Interne'
 
 export interface Article {
@@ -36,6 +36,9 @@ export interface Article {
   qrCode: string
   createdAt: string
   updatedAt: string
+  remplaceParId: string | null
+  remplaceParCode: string | null
+  remplaceParDesignation: string | null
 }
 
 export const FAMILLES: Record<string, { sousFamilles: Record<string, string[]> }> = {
@@ -90,12 +93,14 @@ export const STATUT_COLORS: Record<ArticleStatut, string> = {
   Actif: 'bg-emerald-100 text-emerald-800',
   Bloque: 'bg-red-600 text-white',
   EnCreation: 'bg-orange-400 text-orange-950',
+  Archive: 'bg-gray-200 text-gray-500',
 }
 
 export const STATUT_LABELS: Record<ArticleStatut, string> = {
   Actif: 'Actif',
   Bloque: 'Bloqué',
   EnCreation: 'En création',
+  Archive: 'Archivé',
 }
 
 export const APPRO_COLORS: Record<ArticleAppro, string> = {

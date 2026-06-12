@@ -38,6 +38,9 @@ function toArticle(row: Record<string, unknown>): Article {
     qrCode: (row.qr_code as string) ?? '',
     createdAt: ((row.created_at as string) ?? '').split('T')[0],
     updatedAt: ((row.updated_at as string) ?? '').split('T')[0],
+    remplaceParId: (row.remplace_par_id as string) ?? null,
+    remplaceParCode: (row.remplace_par as any)?.code ?? null,
+    remplaceParDesignation: (row.remplace_par as any)?.designation ?? null,
   }
 }
 
@@ -115,7 +118,7 @@ export async function getArticleById(id: string): Promise<Article | null> {
     const { supabase, orgId } = await getSupabaseWithOrg()
     const { data, error } = await supabase
       .from('articles')
-      .select('*')
+      .select('*, remplace_par:articles!remplace_par_id(id, code, designation)')
       .eq('id', id)
       .eq('organization_id', orgId)
       .single()
@@ -225,6 +228,7 @@ export async function updateArticle(id: string, article: Partial<Article>): Prom
         delai_controle: article.delaiControle,
         seuil_alerte_peremption: article.seuilAlertePeremption,
         protocole_controle: article.protocoleControle,
+        remplace_par_id: article.remplaceParId ?? null,
       })
       .eq('id', id)
       .eq('organization_id', orgId)

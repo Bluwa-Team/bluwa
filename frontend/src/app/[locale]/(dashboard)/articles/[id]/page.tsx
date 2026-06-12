@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Pencil, Archive, Printer, Package,
   TrendingUp, Clock, BookOpen, Settings2, CheckCircle2, XCircle, ListChecks, ShieldCheck,
+  Info,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -164,6 +165,22 @@ export default function ArticleDetailPage() {
           </Button>
         </div>
       </div>
+
+      {article.statut === 'Archive' && article.remplaceParId && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Info className="size-4 mt-0.5 shrink-0 text-amber-500" />
+          <span>
+            Cet article est obsolète. Il est remplacé par l&apos;article{' '}
+            <Link
+              href={`../articles/${article.remplaceParId}`}
+              className="font-semibold underline underline-offset-2 hover:text-amber-900"
+            >
+              {article.remplaceParCode ?? article.remplaceParId}
+              {article.remplaceParDesignation ? ` — ${article.remplaceParDesignation}` : ''}
+            </Link>
+          </span>
+        </div>
+      )}
 
       <Tabs defaultValue="fiche">
         <TabsList className="w-full">

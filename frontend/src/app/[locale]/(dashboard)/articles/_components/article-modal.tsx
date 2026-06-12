@@ -16,6 +16,7 @@ import {
 import {
   getReferentielValues, addReferentielValue, type ReferentielValue,
 } from '@/lib/actions/referentiel'
+import { getArticles } from '@/lib/actions/articles'
 import { DEVISES } from '@/config'
 
 interface Props {
@@ -66,6 +67,7 @@ const EMPTY_FORM = {
   delaiControle: '',
   seuilAlertePeremption: '',
   protocoleControle: '',
+  remplaceParId: '',
 }
 
 export function ArticleModal({ open, onClose, article, onSave }: Props) {
@@ -73,17 +75,20 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
   const tCommon = useTranslations('common')
 
   const isEdit = !!article
-  const isFieldsLocked = form.statut === 'Actif' || form.statut === 'Bloque'
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [referentiel, setReferentiel] = useState<ReferentielValue[]>([])
+  const [articlesActifs, setArticlesActifs] = useState<{ id: string; code: string; designation: string }[]>([])
 
-  // Charge les valeurs de référentiel personnalisées de l'organisation
+  const isFieldsLocked = form.statut === 'Actif' || form.statut === 'Bloque' || form.statut === 'Archive'
+
+  // Charge les valeurs de référentiel + articles actifs pour le sélecteur de remplacement
   useEffect(() => {
     if (!open) return
     getReferentielValues().then(setReferentiel)
+    getArticles().then(setArticlesActifs)
   }, [open])
 
   function refValues(kind: ReferentielValue['kind'], parent?: string | null): string[] {
@@ -164,6 +169,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
         delaiControle: article.delaiControle?.toString() ?? '',
         seuilAlertePeremption: article.seuilAlertePeremption?.toString() ?? '',
         protocoleControle: article.protocoleControle ?? '',
+        remplaceParId: article.remplaceParId ?? '',
       })
     } else {
       setForm(EMPTY_FORM)
@@ -313,9 +319,39 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         <SelectItem value="EnCreation">{t('statuts.EnCreation')}</SelectItem>
                         <SelectItem value="Actif">{t('statuts.Actif')}</SelectItem>
                         <SelectItem value="Bloque">{t('statuts.Bloque')}</SelectItem>
+                        <SelectItem value="Archive">{t('statuts.Archive')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>
+                  {form.statut === 'Archive' && (
+                    <div className="col-span-2">
+                      <Field label="Article de remplacement">
+                        <Select
+                          value={form.remplaceParId}
+                          onValueChange={(v) => set('remplaceParId', v ?? '')}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sélectionner l'article remplaçant…">
+                              {(value: string) => {
+                                const a = articlesActifs.find((x) => x.id === value)
+                                return a ? `${a.code} — ${a.designation}` : 'Sélectionner…'
+                              }}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {articlesActifs
+                              .filter((a) => a.id !== article?.id)
+                              .map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  <span className="font-mono font-semibold mr-2">{a.code}</span>
+                                  <span className="text-muted-foreground">{a.designation}</span>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    </div>
+                  )}
                   <Field label={t('modal.fields.family')}>
                     <SelectWithAdd
                       value={form.famille}

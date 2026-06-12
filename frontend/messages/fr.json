@@ -137,7 +137,8 @@
     "statuts": {
       "Actif": "Actif",
       "Bloque": "Bloqué",
-      "EnCreation": "En création"
+      "EnCreation": "En création",
+      "Archive": "Archivé"
     },
     "appro": {
       "Achete": "Acheté",
