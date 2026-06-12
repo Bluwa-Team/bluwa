@@ -73,6 +73,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
   const tCommon = useTranslations('common')
 
   const isEdit = !!article
+  const isFieldsLocked = form.statut === 'Actif' || form.statut === 'Bloque'
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -283,7 +284,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                     />
                   </Field>
                   <Field label={t('modal.fields.type')} required>
-                    <Select value={form.type} onValueChange={(v) => set('type', v ?? '')}>
+                    <Select value={form.type} onValueChange={(v) => set('type', v ?? '')} disabled={isFieldsLocked}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choisir un type">
                           {(value: string) => value
@@ -366,6 +367,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         placeholder="kg, sachet…"
                         addPlaceholder="Nouvelle unité"
                         onAdd={(v) => addRef('unite_stock', v)}
+                        disabled={isFieldsLocked}
                       />
                     </Field>
                     <Field label={t('modal.fields.saleUnit')}>
@@ -376,6 +378,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         placeholder="t, carton…"
                         addPlaceholder="Nouvelle unité"
                         onAdd={(v) => addRef('unite_stock', v)}
+                        disabled={isFieldsLocked}
                       />
                     </Field>
                     <Field label={t('modal.fields.convCoeff')}>
@@ -384,6 +387,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                         value={form.coeffConversion}
                         onChange={(e) => set('coeffConversion', parseFloat(e.target.value) || 1)}
                         placeholder="1"
+                        disabled={isFieldsLocked}
                       />
                     </Field>
                   </div>
@@ -401,6 +405,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                           placeholder="boite, kg, sac…"
                           addPlaceholder="Nouvelle unité"
                           onAdd={(v) => addRef('unite_stock', v)}
+                          disabled={isFieldsLocked}
                         />
                       </Field>
                       <Field label="Coefficient de conversion">
@@ -411,6 +416,7 @@ export function ArticleModal({ open, onClose, article, onSave }: Props) {
                           value={form.coeffConversionAchat}
                           onChange={(e) => set('coeffConversionAchat', parseFloat(e.target.value) || 1)}
                           placeholder="3552"
+                          disabled={isFieldsLocked}
                         />
                       </Field>
                       <div className="flex items-end pb-1">
