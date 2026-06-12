@@ -6,6 +6,7 @@ import type {
   ProductionOutputRow,
   ProductionOutputStatus,
 } from '@/types/erp'
+import { computeRealPmpFromOf } from './pf-cost'
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
 
@@ -273,6 +274,17 @@ export async function postProductionOutput(
       .select(SELECT_FRAGMENT)
       .single()
     if (error) throw error
+
+    // Calcul du PMP réel du PF depuis les consommations de l'OF (écrase le théorique)
+    if (data) {
+      const row = data as any
+      await computeRealPmpFromOf(
+        row.production_order_id as string,
+        row.article_id          as string,
+        Number(row.quantity_produced) || 0,
+      )
+    }
+
     return data
       ? toProductionOutputRow(data as unknown as Record<string, unknown>)
       : null

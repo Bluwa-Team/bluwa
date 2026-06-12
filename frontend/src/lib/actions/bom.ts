@@ -3,6 +3,7 @@
 import { getSupabaseWithOrg } from './helpers'
 import { BillOfMaterial, BOMIngredient } from '@/app/[locale]/(dashboard)/articles/_components/bom'
 import { GammeFabrication, GammeEtape } from '@/app/[locale]/(dashboard)/articles/_components/gamme'
+import { computeTheoreticalPmp } from './pf-cost'
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
 
@@ -222,6 +223,9 @@ export async function upsertBom(
         if (error) throw error
       }
     }
+
+    // Pour les PF, recalculer le PMP théorique depuis la nouvelle nomenclature
+    await computeTheoreticalPmp(articleId)
 
     return getBomByArticleId(articleId)
   } catch (e) {
