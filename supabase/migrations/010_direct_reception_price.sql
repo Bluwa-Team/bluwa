@@ -73,6 +73,11 @@ BEGIN
         SELECT COALESCE(pmp, 0) INTO v_pmp_before
         FROM   public.articles WHERE id = v_item.article_id;
 
+        IF v_item.unit_price_achat <= 0 AND v_pmp_before = 0 THEN
+            RAISE EXCEPTION 'Prix unitaire manquant pour l''article % (réception %) — PMP ne peut pas être calculé.',
+                v_item.article_id, NEW.receipt_number;
+        END IF;
+
         v_unit_price := CASE
             WHEN v_item.unit_price_achat > 0
             THEN v_item.unit_price_achat / GREATEST(v_item.coeff_achat, 1)

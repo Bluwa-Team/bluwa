@@ -289,6 +289,7 @@ export function CommandeModal({ open, onClose, prefill, onSave }: Props) {
         !isNaN(parseFloat(i.quantite)) &&
         i.puHT !== '' &&
         !isNaN(parseFloat(i.puHT)) &&
+        parseFloat(i.puHT) > 0 &&
         i.livraisonPrevue !== '',
     )
   }

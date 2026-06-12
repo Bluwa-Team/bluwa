@@ -154,7 +154,7 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
     return items.length > 0 && items.every((i) =>
       i.articleId !== '' &&
       i.quantite !== '' && !isNaN(parseFloat(i.quantite)) && parseFloat(i.quantite) > 0 &&
-      i.puHT !== '' && !isNaN(parseFloat(i.puHT))
+      i.puHT !== '' && !isNaN(parseFloat(i.puHT)) && parseFloat(i.puHT) > 0
     )
   }
 
