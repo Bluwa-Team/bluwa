@@ -453,13 +453,11 @@ export default function ArticlesPage() {
                   </TableCell>
                   <TableCell className="text-right text-sm font-mono">{article.uniteStock}</TableCell>
                   <TableCell className="text-right text-sm font-mono">
-                    {article.pmp ? (
-                      <span>{formatNumber(article.pmp, locale)} <span className="text-muted-foreground text-xs">F</span></span>
-                    ) : fmt(null, locale)}
+                    {article.pmp ? formatNumber(article.pmp, locale) : fmt(null, locale)}
                   </TableCell>
                   <TableCell className="text-right text-sm font-mono">
                     {article.type === 'PF' && article.prixVente ? (
-                      <span className="text-emerald-700 font-medium">{formatNumber(article.prixVente, locale)} <span className="text-xs">F</span></span>
+                      <span className="text-emerald-700 font-medium">{formatNumber(article.prixVente, locale)}</span>
                     ) : fmt(null, locale)}
                   </TableCell>
                   <TableCell className="text-right text-sm font-mono">{fmt(article.stockSecurite, locale)}</TableCell>

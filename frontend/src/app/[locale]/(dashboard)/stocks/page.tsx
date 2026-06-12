@@ -8,7 +8,7 @@ import {
   ShieldAlert, Layers, Plus, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
-import { formatNumber, formatAmount } from '@/lib/format'
+import { formatNumber } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
@@ -373,10 +373,10 @@ export default function StocksPage() {
                 Qté<ColumnResizer columnId="quantite" onStart={startResize} />
               </th>
               <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                Coût unit.<ColumnResizer columnId="pmp" onStart={startResize} />
+                Coût unit. <span className="font-normal text-muted-foreground/60 text-[9px]">XOF</span><ColumnResizer columnId="pmp" onStart={startResize} />
               </th>
               <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                Valeur<ColumnResizer columnId="valeur" onStart={startResize} />
+                Valeur <span className="font-normal text-muted-foreground/60 text-[9px]">XOF</span><ColumnResizer columnId="valeur" onStart={startResize} />
               </th>
               <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">
                 BC / BA<ColumnResizer columnId="bcBa" onStart={startResize} />
@@ -440,11 +440,11 @@ export default function StocksPage() {
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatAmount(l.unitCost, locale, 'XOF')}
+                  {formatNumber(l.unitCost, locale)}
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatAmount(l.valeur, locale, 'XOF')}
+                  {formatNumber(l.valeur, locale)}
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs truncate">{l.bcBa}</td>
