@@ -24,11 +24,12 @@ import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mappe
 import { HelpPopover } from '@/components/ui/help-popover'
 
 const STOCK_INIT_CSV_FIELDS: CsvField[] = [
-  { key: 'code_article', label: 'Code article',   required: true  },
-  { key: 'quantite',     label: 'Quantité',        required: true  },
-  { key: 'numero_lot',   label: 'N° lot',          required: false },
-  { key: 'date_entree',  label: "Date d'entrée",   required: false },
-  { key: 'motif',        label: 'Motif',           required: false },
+  { key: 'code_article',   label: 'Code article',         required: true  },
+  { key: 'quantite',       label: 'Quantité',             required: true  },
+  { key: 'cout_unitaire',  label: "Coût unitaire (XOF)",  required: true  },
+  { key: 'numero_lot',     label: 'N° lot',               required: false },
+  { key: 'date_entree',    label: "Date d'entrée",        required: false },
+  { key: 'motif',          label: 'Motif',                required: false },
 ]
 
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
@@ -154,9 +155,9 @@ export default function StocksPage() {
   }, [lots])
 
   async function handleSaveInitStock(
-    articleCode: string, lot: string, quantite: number, date: string, motif: string,
+    articleCode: string, lot: string, quantite: number, date: string, motif: string, unitCost: number,
   ): Promise<boolean> {
-    const ok = await createInitStock(articleCode, lot, quantite, date, motif)
+    const ok = await createInitStock(articleCode, lot, quantite, date, motif, unitCost)
     if (ok) refreshAll()
     return ok
   }
@@ -166,8 +167,9 @@ export default function StocksPage() {
     let errors  = 0
     const today = new Date().toISOString().split('T')[0]
     for (const row of rows) {
-      const code = row.code_article?.trim()
-      const qty  = parseFloat(row.quantite ?? '')
+      const code      = row.code_article?.trim()
+      const qty       = parseFloat(row.quantite ?? '')
+      const unitCost  = parseFloat(row.cout_unitaire ?? '0') || 0
       if (!code || isNaN(qty) || qty <= 0) { errors++; continue }
       const ok = await createInitStock(
         code,
@@ -175,6 +177,7 @@ export default function StocksPage() {
         qty,
         row.date_entree?.trim() || today,
         row.motif?.trim() || 'Import CSV stock initial',
+        unitCost,
       )
       ok ? created++ : errors++
     }

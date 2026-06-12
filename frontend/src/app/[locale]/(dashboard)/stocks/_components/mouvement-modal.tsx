@@ -14,7 +14,7 @@ export type ArticleOption = { code: string; designation: string; unite: string }
 interface Props {
   open:     boolean
   onClose:  () => void
-  onSave:   (articleCode: string, lot: string, quantite: number, date: string, motif: string) => Promise<boolean>
+  onSave:   (articleCode: string, lot: string, quantite: number, date: string, motif: string, unitCost: number) => Promise<boolean>
   articles: ArticleOption[]
 }
 
@@ -30,7 +30,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   )
 }
 
-const EMPTY = { articleCode: '', lot: '', quantite: '', date: '', motif: '' }
+const EMPTY = { articleCode: '', lot: '', quantite: '', date: '', motif: '', coutUnitaire: '' }
 
 export function MouvementModal({ open, onClose, onSave, articles }: Props) {
   const [form, setForm] = useState(EMPTY)
@@ -45,7 +45,10 @@ export function MouvementModal({ open, onClose, onSave, articles }: Props) {
   }
 
   const article = articles.find((a) => a.code === form.articleCode)
-  const isValid = !!form.articleCode && !!form.quantite && parseFloat(form.quantite) > 0
+  const isValid =
+    !!form.articleCode &&
+    !!form.quantite && parseFloat(form.quantite) > 0 &&
+    !!form.coutUnitaire && parseFloat(form.coutUnitaire) > 0
 
   async function handleSave() {
     setSaving(true)
@@ -55,6 +58,7 @@ export function MouvementModal({ open, onClose, onSave, articles }: Props) {
       parseFloat(form.quantite),
       form.date,
       form.motif.trim(),
+      parseFloat(form.coutUnitaire),
     )
     setSaving(false)
     if (ok) onClose()
@@ -129,6 +133,17 @@ export function MouvementModal({ open, onClose, onSave, articles }: Props) {
                   </div>
                 </Field>
 
+                <Field label="Coût unitaire d'entrée (XOF)" required>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.coutUnitaire}
+                    onChange={(e) => set('coutUnitaire', e.target.value)}
+                    placeholder="Ex : 450"
+                  />
+                </Field>
+
                 <Field label="Date d'entrée">
                   <Input
                     type="date"
@@ -145,13 +160,15 @@ export function MouvementModal({ open, onClose, onSave, articles }: Props) {
                   />
                 </Field>
 
-                <Field label="Motif">
-                  <Input
-                    value={form.motif}
-                    onChange={(e) => set('motif', e.target.value)}
-                    placeholder="Ex: Stock initial go-live"
-                  />
-                </Field>
+                <div className="col-span-2">
+                  <Field label="Motif">
+                    <Input
+                      value={form.motif}
+                      onChange={(e) => set('motif', e.target.value)}
+                      placeholder="Ex: Stock initial go-live"
+                    />
+                  </Field>
+                </div>
               </div>
             </div>
 

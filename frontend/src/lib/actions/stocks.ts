@@ -12,14 +12,15 @@ export async function createInitStock(
   quantite: number,
   date: string,
   motif: string,
+  unitCost: number,
 ): Promise<boolean> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
 
-    // Résoudre article
+    // Résoudre article + stock actuel
     const { data: art } = await supabase
       .from('articles')
-      .select('id, gestion_lot, pmp')
+      .select('id, gestion_lot, pmp, type')
       .eq('organization_id', orgId)
       .eq('code', articleCode)
       .maybeSingle()
@@ -34,9 +35,27 @@ export async function createInitStock(
     const factoryId = (profile as any)?.factory_id
     if (!factoryId) throw new Error('Aucune usine trouvée')
 
-    const articleId  = (art as any).id as string
-    const pmp        = Number((art as any).pmp) || 0
-    const batchNumber = lot || `INIT-${date.replace(/-/g, '')}-${articleCode}`
+    const articleId   = (art as any).id as string
+    const currentPmp  = Number((art as any).pmp) || 0
+    // Si le coût unitaire n'est pas fourni, on garde le PMP existant
+    const effectiveCost = unitCost > 0 ? unitCost : currentPmp
+    const batchNumber   = lot || `INIT-${date.replace(/-/g, '')}-${articleCode}`
+
+    // Recalcul PMP pondéré si coût fourni
+    let newPmp = currentPmp
+    if (unitCost > 0) {
+      const { data: stockRow } = await supabase
+        .from('article_stocks')
+        .select('quantity_available')
+        .eq('organization_id', orgId)
+        .eq('article_id', articleId)
+        .maybeSingle()
+      const currentQty = Number((stockRow as any)?.quantity_available) || 0
+      newPmp = currentQty + quantite > 0
+        ? (currentQty * currentPmp + quantite * unitCost) / (currentQty + quantite)
+        : unitCost
+      newPmp = Math.round(newPmp * 100) / 100
+    }
 
     // Journal mouvement — entrée initiale go-live traitée comme ajustement
     await supabase.from('stock_movements').insert({
@@ -45,9 +64,9 @@ export async function createInitStock(
       article_id:      articleId,
       movement_type:   'AJUSTEMENT_INVENTAIRE',
       quantity:        quantite,
-      unit_price:      pmp,
-      pmp_before:      pmp,
-      pmp_after:       pmp,
+      unit_price:      effectiveCost,
+      pmp_before:      currentPmp,
+      pmp_after:       newPmp,
       batch_number:    batchNumber,
       reference_type:  'manual',
       reference_id:    null,
@@ -55,26 +74,36 @@ export async function createInitStock(
 
     // Lot (toujours Libere pour un stock initial)
     await supabase.from('lots').insert({
-      organization_id:   orgId,
-      factory_id:        factoryId,
-      article_id:        articleId,
-      batch_number:      batchNumber,
-      quantity_initial:  quantite,
+      organization_id:    orgId,
+      factory_id:         factoryId,
+      article_id:         articleId,
+      batch_number:       batchNumber,
+      quantity_initial:   quantite,
       quantity_remaining: quantite,
-      statut_qc:         'Libere',
-      goods_receipt_id:  null,
-      expiry_date:       null,
+      unit_cost:          effectiveCost,
+      statut_qc:          'Libere',
+      goods_receipt_id:   null,
+      expiry_date:        null,
     }).select().maybeSingle()
 
-    // article_stocks
+    // Mise à jour PMP article (sauf PF dont le PMP vient de la nomenclature)
+    if (unitCost > 0 && (art as any).type !== 'PF') {
+      await supabase
+        .from('articles')
+        .update({ pmp: newPmp, updated_at: new Date().toISOString() })
+        .eq('id', articleId)
+        .eq('organization_id', orgId)
+    }
+
+    // article_stocks — cumul de la quantité disponible
     await supabase.from('article_stocks').upsert({
-      organization_id:   orgId,
-      factory_id:        factoryId,
-      article_id:        articleId,
+      organization_id:    orgId,
+      factory_id:         factoryId,
+      article_id:         articleId,
       quantity_available: quantite,
-      updated_at:        new Date().toISOString(),
+      updated_at:         new Date().toISOString(),
     }, {
-      onConflict: 'organization_id,factory_id,article_id',
+      onConflict:       'organization_id,factory_id,article_id',
       ignoreDuplicates: false,
     })
 
@@ -210,10 +239,13 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
   const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
   const receivedTs = gr?.received_at ? new Date(gr.received_at as string).getTime() : 0
 
-  // Coût unitaire propre au lot : prix de la ligne BC/BA dont le batch_number correspond
+  // Priorité coût unitaire : lots.unit_cost > BC/BA unit_price_ht > PMP article
+  const lotUnitCost = Number(row.unit_cost) || 0
   const griList: any[] = Array.isArray(gr?.goods_receipt_items) ? gr.goods_receipt_items : []
   const gri = griList.find((i: any) => i.batch_number === row.batch_number) ?? null
-  const unitCost = Number(gri?.purchase_order_items?.unit_price_ht) || pmp
+  const unitCost = lotUnitCost > 0
+    ? lotUnitCost
+    : (Number(gri?.purchase_order_items?.unit_price_ht) || pmp)
 
   let etat: EtatLot = 'Disponible'
   if (dlc) {
@@ -247,7 +279,7 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
 }
 
 const LOT_SELECT = `
-  id, batch_number, quantity_initial, quantity_remaining, statut_qc, expiry_date, created_at,
+  id, batch_number, unit_cost, quantity_initial, quantity_remaining, statut_qc, expiry_date, created_at,
   goods_receipts!goods_receipt_id (
     receipt_number, received_at, fournisseur_type,
     goods_receipt_items ( batch_number, purchase_order_items!purchase_order_item_id ( unit_price_ht ) ),
