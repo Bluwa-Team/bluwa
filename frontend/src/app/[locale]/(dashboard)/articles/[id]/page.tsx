@@ -28,12 +28,9 @@ import {
   GammeFabrication, GammeEtape,
 } from '../_components/gamme'
 import { GammeEditModal } from '../_components/gamme-edit-modal'
-import {
-  Lot, STATUT_LOT_COLORS, STATUT_LOT_LABELS,
-} from '../../stocks/_components/types'
 import { getArticleById, updateArticle } from '@/lib/actions/articles'
-import { getLotsByArticle } from '@/lib/actions/stocks'
 import MouvementsStockTab from './_components/MouvementsStockTab'
+import ArticleLotsTab from './_components/ArticleLotsTab'
 import {
   getBomByArticleId, upsertBom,
   getGammeByArticleId, upsertGamme,
@@ -74,16 +71,6 @@ function EmptyTab({ label }: { label: string }) {
   )
 }
 
-const LOTS_COLUMNS: ResizableColumn[] = [
-  { id: 'lot',        defaultWidth: 160, minWidth: 120 },
-  { id: 'entrepot',   defaultWidth: null },
-  { id: 'quantite',   defaultWidth: 130, minWidth: 90  },
-  { id: 'reception',  defaultWidth: 110, minWidth: 86  },
-  { id: 'peremption', defaultWidth: 110, minWidth: 86  },
-  { id: 'statut',     defaultWidth: 130, minWidth: 100 },
-]
-const ENTREPOT_MIN = 180
-
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -91,7 +78,6 @@ export default function ArticleDetailPage() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const [article, setArticle] = useState<Article | null | undefined>(undefined)
-  const [lots, setLots] = useState<Lot[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [bom, setBom] = useState<BillOfMaterial | null>(null)
   const [bomIngredients, setBomIngredients] = useState<BOMIngredient[]>([])
@@ -101,17 +87,11 @@ export default function ArticleDetailPage() {
   const [gammeEditOpen, setGammeEditOpen] = useState(false)
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
 
-  const { widths: lWidths, startResize: startLResize } = useResizableColumns('bluwa:cols:article-lots', LOTS_COLUMNS)
-  const lotsMinWidth = LOTS_COLUMNS.reduce(
-    (s, c) => s + (c.defaultWidth == null ? ENTREPOT_MIN : (lWidths[c.id] ?? c.defaultWidth!)), 0,
-  )
-
   useEffect(() => {
     getWorkCenters().then(setWorkCenters)
     getArticleById(id).then((art) => {
       setArticle(art)
       if (art) {
-        getLotsByArticle(art.code).then(setLots)
         getBomByArticleId(id).then(({ bom: b, ingredients }) => {
           setBom(b)
           setBomIngredients(ingredients)
@@ -310,47 +290,9 @@ export default function ArticleDetailPage() {
           <EmptyTab label={tCommon('noData')} />
         </TabsContent>
 
-        {/* Lots en cours */}
+        {/* Lots */}
         <TabsContent value="lots" className="mt-4">
-          {lots.length === 0 ? (
-            <EmptyTab label={tCommon('noData')} />
-          ) : (
-            <div className="rounded-lg border overflow-x-auto">
-              <table className="w-full text-sm table-fixed" style={{ minWidth: lotsMinWidth }}>
-                <colgroup>
-                  {LOTS_COLUMNS.map(c => (
-                    <col key={c.id} style={c.defaultWidth == null ? undefined : { width: lWidths[c.id] }} />
-                  ))}
-                </colgroup>
-                <thead>
-                  <tr className="bg-muted/40 border-b">
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot<ColumnResizer columnId="lot" onStart={startLResize} /></th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Entrepôt</th>
-                    <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité<ColumnResizer columnId="quantite" onStart={startLResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Réception<ColumnResizer columnId="reception" onStart={startLResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Péremption<ColumnResizer columnId="peremption" onStart={startLResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut<ColumnResizer columnId="statut" onStart={startLResize} /></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lots.map((l) => (
-                    <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
-                      <td className="px-4 py-3 font-mono text-xs">{l.lotCode}</td>
-                      <td className="px-4 py-3 text-xs">{l.entrepot || 'N/A'}</td>
-                      <td className="px-4 py-3 text-right font-mono">{formatNumber(l.quantite, locale)} {l.unite}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{l.dateReception || 'N/A'}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{l.datePeremption || 'N/A'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${STATUT_LOT_COLORS[l.statut]}`}>
-                          {STATUT_LOT_LABELS[l.statut]}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ArticleLotsTab articleId={article.id} />
         </TabsContent>
 
         {/* Contrôle Qualité */}
