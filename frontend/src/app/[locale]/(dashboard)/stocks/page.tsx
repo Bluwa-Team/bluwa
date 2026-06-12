@@ -83,7 +83,7 @@ function StatCard({
   )
 }
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 5
 
 export default function StocksPage() {
   const locale = useLocale()

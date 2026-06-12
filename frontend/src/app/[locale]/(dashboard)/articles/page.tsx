@@ -26,7 +26,7 @@ import {
 import { getArticles, getArticlesPage, createArticle, updateArticle } from '@/lib/actions/articles'
 import { Paginator } from '@/components/ui/paginator'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 5
 import { downloadCsv } from '@/lib/csv-utils'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import type { ArticleAppro } from './_components/types'
