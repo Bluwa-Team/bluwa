@@ -29,11 +29,11 @@ import {
 } from '../_components/gamme'
 import { GammeEditModal } from '../_components/gamme-edit-modal'
 import {
-  Mouvement, Lot, MOUVEMENT_COLORS, MOUVEMENT_LABELS,
-  STATUT_LOT_COLORS, STATUT_LOT_LABELS,
+  Lot, STATUT_LOT_COLORS, STATUT_LOT_LABELS,
 } from '../../stocks/_components/types'
 import { getArticleById, updateArticle } from '@/lib/actions/articles'
-import { getMouvementsByArticle, getLotsByArticle } from '@/lib/actions/stocks'
+import { getLotsByArticle } from '@/lib/actions/stocks'
+import MouvementsStockTab from './_components/MouvementsStockTab'
 import {
   getBomByArticleId, upsertBom,
   getGammeByArticleId, upsertGamme,
@@ -74,16 +74,6 @@ function EmptyTab({ label }: { label: string }) {
   )
 }
 
-const MOUVEMENTS_COLUMNS: ResizableColumn[] = [
-  { id: 'date',      defaultWidth: 110, minWidth: 90  },
-  { id: 'type',      defaultWidth: 130, minWidth: 100 },
-  { id: 'lot',       defaultWidth: 140, minWidth: 100 },
-  { id: 'quantite',  defaultWidth: 120, minWidth: 90  },
-  { id: 'reference', defaultWidth: 140, minWidth: 100 },
-  { id: 'motif',     defaultWidth: null },
-]
-const MOTIF_MIN = 180
-
 const LOTS_COLUMNS: ResizableColumn[] = [
   { id: 'lot',        defaultWidth: 160, minWidth: 120 },
   { id: 'entrepot',   defaultWidth: null },
@@ -101,7 +91,6 @@ export default function ArticleDetailPage() {
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const [article, setArticle] = useState<Article | null | undefined>(undefined)
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
   const [lots, setLots] = useState<Lot[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [bom, setBom] = useState<BillOfMaterial | null>(null)
@@ -111,11 +100,6 @@ export default function ArticleDetailPage() {
   const [gammeEtapes, setGammeEtapes] = useState<GammeEtape[]>([])
   const [gammeEditOpen, setGammeEditOpen] = useState(false)
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
-
-  const { widths: mWidths, startResize: startMResize } = useResizableColumns('bluwa:cols:article-mouvements', MOUVEMENTS_COLUMNS)
-  const mouvementsMinWidth = MOUVEMENTS_COLUMNS.reduce(
-    (s, c) => s + (c.defaultWidth == null ? MOTIF_MIN : (mWidths[c.id] ?? c.defaultWidth!)), 0,
-  )
 
   const { widths: lWidths, startResize: startLResize } = useResizableColumns('bluwa:cols:article-lots', LOTS_COLUMNS)
   const lotsMinWidth = LOTS_COLUMNS.reduce(
@@ -127,7 +111,6 @@ export default function ArticleDetailPage() {
     getArticleById(id).then((art) => {
       setArticle(art)
       if (art) {
-        getMouvementsByArticle(art.code).then(setMouvements)
         getLotsByArticle(art.code).then(setLots)
         getBomByArticleId(id).then(({ bom: b, ingredients }) => {
           setBom(b)
@@ -319,45 +302,7 @@ export default function ArticleDetailPage() {
 
         {/* Mouvements */}
         <TabsContent value="mouvements" className="mt-4">
-          {mouvements.length === 0 ? (
-            <EmptyTab label={tCommon('noData')} />
-          ) : (
-            <div className="rounded-lg border overflow-x-auto">
-              <table className="w-full text-sm table-fixed" style={{ minWidth: mouvementsMinWidth }}>
-                <colgroup>
-                  {MOUVEMENTS_COLUMNS.map(c => (
-                    <col key={c.id} style={c.defaultWidth == null ? undefined : { width: mWidths[c.id] }} />
-                  ))}
-                </colgroup>
-                <thead>
-                  <tr className="bg-muted/40 border-b">
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Date<ColumnResizer columnId="date" onStart={startMResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Type<ColumnResizer columnId="type" onStart={startMResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot<ColumnResizer columnId="lot" onStart={startMResize} /></th>
-                    <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité<ColumnResizer columnId="quantite" onStart={startMResize} /></th>
-                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Référence<ColumnResizer columnId="reference" onStart={startMResize} /></th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Motif</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mouvements.map((m) => (
-                    <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
-                      <td className="px-4 py-3 font-mono text-xs">{m.date}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${MOUVEMENT_COLORS[m.type]}`}>
-                          {MOUVEMENT_LABELS[m.type]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{m.lot || 'N/A'}</td>
-                      <td className="px-4 py-3 text-right font-mono">{formatNumber(m.quantite, locale)} {m.unite}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{m.reference || 'N/A'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{m.motif || 'N/A'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <MouvementsStockTab articleId={article.id} />
         </TabsContent>
 
         {/* Historique prix */}
