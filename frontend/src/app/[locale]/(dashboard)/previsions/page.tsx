@@ -115,7 +115,7 @@ export default function PrevisionsPage() {
     setArticles(articlesRes.data ?? [])
 
     const grid: Record<string, number> = {}
-    gridRes.data?.forEach((row: ArticlePrevision) => {
+    gridRes.data?.forEach((row) => {
       if (row.factory_id === factoryId && row.week_code) {
         grid[`${row.article_id}_${row.week_code}`] = Number(row.quantity)
       }
