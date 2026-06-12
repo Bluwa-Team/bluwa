@@ -168,12 +168,12 @@ export const MOCK_BC_HEADERS: BCHeader[] = [
 ]
 
 export const MOCK_BC_ITEMS: BCItem[] = [
-  { id: 'i1', headerId: 'h1', itemPosition: 1, article: "Fleurs d'hibiscus séchées", quantite: 300,   quantiteRecue: 0,   unite: 'kg', puHT: 2500,  livraisonPrevue: '2026-05-17', dureeVie: 365,  purchaseRequisitionId: 'da-001' },
-  { id: 'i2', headerId: 'h2', itemPosition: 1, article: 'Sucre cristallisé',          quantite: 500,   quantiteRecue: 500, unite: 'kg', puHT: 800,   livraisonPrevue: '2026-05-09', dureeVie: 730,  purchaseRequisitionId: 'da-002' },
-  { id: 'i3', headerId: 'h3', itemPosition: 1, article: 'Bouteille verre 1L',          quantite: 5000,  quantiteRecue: 0,   unite: 'u',  puHT: 250,   livraisonPrevue: '2026-05-19', dureeVie: null, purchaseRequisitionId: null     },
-  { id: 'i4', headerId: 'h4', itemPosition: 1, article: 'Gousses de vanille',          quantite: 5,     quantiteRecue: 0,   unite: 'kg', puHT: 45000, livraisonPrevue: '2026-05-30', dureeVie: 180,  purchaseRequisitionId: null     },
-  { id: 'i5', headerId: 'h5', itemPosition: 1, article: 'Gingembre frais',             quantite: 30,    quantiteRecue: 30,  unite: 'kg', puHT: 1200,  livraisonPrevue: '2026-05-02', dureeVie: 30,   purchaseRequisitionId: 'da-003' },
-  { id: 'i6', headerId: 'h6', itemPosition: 1, article: 'Étiquettes Pourpre 1L',       quantite: 10000, quantiteRecue: 0,   unite: 'u',  puHT: 15,    livraisonPrevue: '2026-05-12', dureeVie: null, purchaseRequisitionId: null     },
+  { id: 'i1', headerId: 'h1', itemPosition: 1, articleId: null, article: "Fleurs d'hibiscus séchées", quantite: 300,   quantiteRecue: 0,   unite: 'kg', puHT: 2500,  livraisonPrevue: '2026-05-17', dureeVie: 365,  purchaseRequisitionId: 'da-001' },
+  { id: 'i2', headerId: 'h2', itemPosition: 1, articleId: null, article: 'Sucre cristallisé',          quantite: 500,   quantiteRecue: 500, unite: 'kg', puHT: 800,   livraisonPrevue: '2026-05-09', dureeVie: 730,  purchaseRequisitionId: 'da-002' },
+  { id: 'i3', headerId: 'h3', itemPosition: 1, articleId: null, article: 'Bouteille verre 1L',          quantite: 5000,  quantiteRecue: 0,   unite: 'u',  puHT: 250,   livraisonPrevue: '2026-05-19', dureeVie: null, purchaseRequisitionId: null     },
+  { id: 'i4', headerId: 'h4', itemPosition: 1, articleId: null, article: 'Gousses de vanille',          quantite: 5,     quantiteRecue: 0,   unite: 'kg', puHT: 45000, livraisonPrevue: '2026-05-30', dureeVie: 180,  purchaseRequisitionId: null     },
+  { id: 'i5', headerId: 'h5', itemPosition: 1, articleId: null, article: 'Gingembre frais',             quantite: 30,    quantiteRecue: 30,  unite: 'kg', puHT: 1200,  livraisonPrevue: '2026-05-02', dureeVie: 30,   purchaseRequisitionId: 'da-003' },
+  { id: 'i6', headerId: 'h6', itemPosition: 1, articleId: null, article: 'Étiquettes Pourpre 1L',       quantite: 10000, quantiteRecue: 0,   unite: 'u',  puHT: 15,    livraisonPrevue: '2026-05-12', dureeVie: null, purchaseRequisitionId: null     },
 ]
 
 /** Vue aplatie — rétrocompatibilité avec les composants existants */
