@@ -298,7 +298,7 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
                           className="w-full h-9 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                         >
                           <option value="">Sélectionner…</option>
-                          {articles.map((a) => (
+                          {articles.filter((a) => !['PF', 'PSF'].includes(a.type)).map((a) => (
                             <option key={a.id} value={a.id}>
                               {a.designation} ({a.code})
                             </option>
