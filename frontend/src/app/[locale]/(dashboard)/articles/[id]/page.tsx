@@ -40,6 +40,7 @@ import {
 } from '@/lib/actions/bom'
 import { getWorkCenters } from '@/lib/actions/work-centers'
 import { WorkCenter } from '@/types/erp'
+import ConfigPlanControle from '@/components/quality/ConfigPlanControle'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -174,6 +175,7 @@ export default function ArticleDetailPage() {
           <TabsTrigger value="mouvements" className="flex-1">Mouvements de stock</TabsTrigger>
           <TabsTrigger value="prix" className="flex-1">Historique des prix</TabsTrigger>
           <TabsTrigger value="lots" className="flex-1">Lots</TabsTrigger>
+          <TabsTrigger value="quality" className="flex-1">Contrôle Qualité</TabsTrigger>
           <TabsTrigger value="nomenclatures" className="flex-1">Nomenclatures</TabsTrigger>
           <TabsTrigger value="gamme" className="flex-1">Gamme de fabrication</TabsTrigger>
         </TabsList>
@@ -361,6 +363,16 @@ export default function ArticleDetailPage() {
               </table>
             </div>
           )}
+        </TabsContent>
+
+        {/* Contrôle Qualité */}
+        <TabsContent value="quality" className="mt-4">
+          <div className="space-y-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900">
+              <strong>Configuration Laboratoire :</strong> Les spécifications enregistrées ci-dessous s&apos;appliqueront automatiquement à toutes les futures réceptions du lot <strong>{article.code}</strong> pour forcer les validations du laboratoire avant mise en stock.
+            </div>
+            <ConfigPlanControle articleId={article.id} />
+          </div>
         </TabsContent>
 
         {/* Nomenclatures */}

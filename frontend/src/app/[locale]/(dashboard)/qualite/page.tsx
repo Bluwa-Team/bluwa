@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   FlaskConical, CheckCircle2, XCircle, Clock, ShieldCheck,
-  Search, X, Loader2, Shield, Microscope, Magnet,
+  Search, X, Check, Loader2, Shield, Microscope, Magnet,
   ThermometerSun, AlertTriangle, ShoppingBag,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -91,6 +91,8 @@ export default function CentreLiberationPage() {
   const [modalLotId, setModalLotId]   = useState<string | null>(null)
   const [caFile, setCaFile]           = useState<File | null>(null)
   const [savingDecision, setSavingDecision] = useState<'usage_interne' | 'marche' | 'rejeter' | null>(null)
+  const [labInputs, setLabInputs]         = useState<Record<string, Record<string, string>>>({})
+  const [savingLotId, setSavingLotId]     = useState<string | null>(null)
 
   // Formulaire d'analyse
   const [physique, setPhysique]       = useState({ corps_etrangers: '', aspect: '' })
@@ -185,6 +187,41 @@ export default function CentreLiberationPage() {
 
     setSavingDecision(null)
     setModalLotId(null)
+    await loadLots()
+  }
+
+  async function handleSaveLabResult(
+    lot:          QualityInspectionLot,
+    targetStatus: 'Libéré — Marché' | 'Rejeté',
+  ) {
+    setSavingLotId(lot.id)
+    const inputs  = labInputs[lot.id] ?? {}
+    const decision: 'marche' | 'rejeter' = targetStatus === 'Libéré — Marché' ? 'marche' : 'rejeter'
+
+    // Construit LaboratoryResults depuis les inputs inline
+    const labResults: LaboratoryResults = {}
+    for (const [name, val] of Object.entries(inputs)) {
+      const num = val !== '' ? parseFloat(val) : NaN
+      if (isNaN(num)) continue
+      const k = name.toLowerCase()
+      if      (k === 'ph' || k === 'acidité')                        labResults.ph            = num
+      else if (k.includes('brix') || k.includes('sucre'))           labResults.brix_degree   = num
+      else if (k.includes('humid'))                                  labResults.humidity_pct  = num
+      else if (k.includes('temp'))                                   labResults.temperature_c = num
+    }
+
+    await saveQualityDecision({
+      lotId:             lot.id,
+      decision,
+      laboratoryResults: labResults,
+      microbioResultats: null,
+      microbioStatus:    decision === 'marche' ? 'CONFORME' : null,
+      typesAnalyse:      lot.typesAnalyse,
+      analyste:          '',
+      commentaire:       '',
+    })
+
+    setSavingLotId(null)
     await loadLots()
   }
 
@@ -303,78 +340,95 @@ export default function CentreLiberationPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin inline-block mr-2" />Chargement des lots…
+                <Loader2 className="size-4 animate-spin inline-block mr-2" />Connexion au laboratoire en cours…
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Aucun lot ne correspond aux filtres.</td></tr>
-            ) : filtered.map(lot => (
-              <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/20">
+              <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">Aucun lot en attente de validation.</td></tr>
+            ) : filtered.map(lot => {
+              const isSaving = savingLotId === lot.id
+              const tests = Array.isArray(lot.laboratoryResults)
+                ? (lot.laboratoryResults as any[])
+                : lot.typesAnalyse.map(t => ({ test_name: TYPE_ANALYSE_LABELS[t], min_value: null, max_value: null }))
 
-                <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{lot.batchNumber}</td>
+              return (
+                <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/20 text-xs">
 
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    lot.flux === 'Reception' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
-                  }`}>
-                    {FLUX_LOT_LABELS[lot.flux]}
-                  </span>
-                </td>
+                  <td className="px-4 py-3 font-mono font-semibold truncate">{lot.batchNumber}</td>
 
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${TYPE_ARTICLE_COLORS[lot.articleType]}`}>
-                    {lot.articleType}
-                  </span>
-                </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      lot.flux === 'Reception' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
+                    }`}>
+                      {FLUX_LOT_LABELS[lot.flux]}
+                    </span>
+                  </td>
 
-                <td className="px-4 py-3 text-sm truncate">{lot.articleDesignation}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground truncate">{lot.origine}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold ${TYPE_ARTICLE_COLORS[lot.articleType]}`}>
+                      {lot.articleType}
+                    </span>
+                  </td>
 
-                {/* Tests requis */}
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {lot.typesAnalyse.map(t => {
-                      const Icon = TYPE_ANALYSE_ICONS[t]
-                      return (
-                        <span key={t} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${TYPE_ANALYSE_COLORS[t]}`}>
-                          <Icon className="size-2.5" />
-                          {t === 'PHYSICO_CHIMIQUE' ? 'P-C' : TYPE_ANALYSE_LABELS[t].slice(0, 5)}
+                  <td className="px-4 py-3 truncate">[{lot.articleCode}] {lot.articleDesignation}</td>
+                  <td className="px-4 py-3 text-muted-foreground truncate">{lot.origine}</td>
+
+                  {/* Saisie inline des tests */}
+                  <td className="px-4 py-3 space-y-1.5 min-w-[200px]">
+                    {tests.map((test: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between gap-2 bg-muted/30 px-1.5 py-1 rounded border">
+                        <span className="font-medium text-muted-foreground text-[11px] truncate max-w-[100px]">
+                          {test.test_name}
                         </span>
-                      )
-                    })}
-                    {/* Microbio status si requis */}
-                    {lot.microbioStatus && (
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${MICROBIO_COLORS[lot.microbioStatus]}`}>
-                        <Microscope className="size-2.5" />
-                        {lot.microbioStatus === 'PENDING' ? `⏳ ${lot.microbioDelaiJours}j` : lot.microbioStatus === 'CONFORME' ? '✓' : '✗'}
-                      </span>
+                        <input
+                          type="number"
+                          placeholder={test.min_value != null ? `[${test.min_value}–${test.max_value ?? '∞'}]` : '—'}
+                          value={labInputs[lot.id]?.[test.test_name] ?? ''}
+                          disabled={lot.status !== 'En contrôle'}
+                          onChange={e => setLabInputs(prev => ({
+                            ...prev,
+                            [lot.id]: { ...prev[lot.id], [test.test_name]: e.target.value },
+                          }))}
+                          className="w-20 px-1.5 py-0.5 text-right border font-mono text-[11px] rounded bg-background outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                        />
+                      </div>
+                    ))}
+                  </td>
+
+                  {/* Statut */}
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${STATUT_INSPECTION_COLORS[lot.status]}`}>
+                      {STATUT_INSPECTION_LABELS[lot.status]}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-3 text-right">
+                    {isSaving ? (
+                      <Loader2 className="size-4 animate-spin ml-auto text-muted-foreground" />
+                    ) : lot.status === 'En contrôle' ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleSaveLabResult(lot, 'Libéré — Marché')}
+                          title="Libérer — Marché"
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded border border-emerald-200 transition-colors"
+                        >
+                          <Check className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleSaveLabResult(lot, 'Rejeté')}
+                          title="Rejeter / Bloquer"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-red-200 transition-colors"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground italic">Arbitré</span>
                     )}
-                  </div>
-                </td>
-
-                {/* Statut */}
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_INSPECTION_COLORS[lot.status]}`}>
-                    {STATUT_INSPECTION_LABELS[lot.status]}
-                  </span>
-                </td>
-
-                {/* Action */}
-                <td className="px-4 py-3 text-right">
-                  {lot.status === 'En contrôle' && (
-                    <Button size="sm" variant="outline" onClick={() => openAnalyse(lot.id)} className="h-7 px-2.5 text-xs gap-1.5">
-                      <FlaskConical className="size-3" />
-                      Analyser
-                    </Button>
-                  )}
-                  {lot.status === 'Libéré — Usage interne' && lot.microbioStatus === 'PENDING' && (
-                    <Button size="sm" variant="outline" onClick={() => openAnalyse(lot.id)} className="h-7 px-2.5 text-xs gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50">
-                      <Microscope className="size-3" />
-                      Saisir microbio
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
