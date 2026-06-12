@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   FlaskConical, CheckCircle2, XCircle, Clock, ShieldCheck,
   Search, X, Loader2, Shield, Microscope, Magnet,
@@ -19,11 +19,12 @@ import {
   QualityInspectionLot, LaboratoryResults, ResultatsMicrobiologiques,
   STATUT_INSPECTION_LABELS, STATUT_INSPECTION_COLORS,
   TYPE_ANALYSE_LABELS, TYPE_ANALYSE_COLORS,
-  MICROBIO_LABELS, MICROBIO_COLORS,
+  MICROBIO_COLORS,
   FLUX_LOT_LABELS, TYPE_ARTICLE_COLORS,
   StatutInspectionLot, FluxLot, TypeAnalyse,
 } from './_components/types'
 import { HelpPopover } from '@/components/ui/help-popover'
+import { getQualityInspectionLots, saveQualityDecision } from '@/lib/actions/qualite'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ function StatCard({ label, value, icon: Icon, bgClass, iconBg, iconColor }: {
 
 export default function CentreLiberationPage() {
   const [lots, setLots]               = useState<QualityInspectionLot[]>([])
+  const [loading, setLoading]         = useState(true)
   const [search, setSearch]           = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutInspectionLot | 'Tous'>('Tous')
   const [fluxFilter, setFluxFilter]   = useState<FluxLot | 'Tous'>('Tous')
@@ -99,6 +101,15 @@ export default function CentreLiberationPage() {
   })
   const [analyste, setAnalyste]       = useState(ANALYSTES[0])
   const [commentaire, setCommentaire] = useState('')
+
+  const loadLots = useCallback(async () => {
+    setLoading(true)
+    const data = await getQualityInspectionLots()
+    setLots(data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { loadLots() }, [loadLots])
 
   const { widths, startResize } = useResizableColumns('bluwa:cols:qualite-lots', LOT_COLUMNS)
   const tableMinWidth = LOT_COLUMNS.reduce((s, c) => s + (widths[c.id] ?? c.defaultWidth ?? 0), 0)
@@ -144,18 +155,12 @@ export default function CentreLiberationPage() {
   async function handleDecision(decision: 'usage_interne' | 'marche' | 'rejeter') {
     if (!modalLot) return
     setSavingDecision(decision)
-    await new Promise(r => setTimeout(r, 700))
 
     const labResults: LaboratoryResults = {}
     if (physicochem.ph)          labResults.ph            = parseFloat(physicochem.ph)
     if (physicochem.brix)        labResults.brix_degree   = parseFloat(physicochem.brix)
     if (physicochem.humidite)    labResults.humidity_pct  = parseFloat(physicochem.humidite)
     if (physicochem.temperature) labResults.temperature_c = parseFloat(physicochem.temperature)
-
-    const newStatus: StatutInspectionLot =
-      decision === 'rejeter'       ? 'Rejeté' :
-      decision === 'usage_interne' ? 'Libéré — Usage interne' :
-                                     'Libéré — Marché'
 
     const microbioResultats: ResultatsMicrobiologiques | null =
       decision === 'marche' ? {
@@ -167,19 +172,20 @@ export default function CentreLiberationPage() {
         laboratoire:  microbioForm.laboratoire || undefined,
       } : null
 
-    setLots(prev => prev.map(l => l.id === modalLot.id ? {
-      ...l,
-      status:            newStatus,
-      laboratoryResults: Object.keys(labResults).length ? labResults : l.laboratoryResults,
-      microbioStatus:    decision === 'marche' ? 'CONFORME' : l.microbioStatus,
-      microbioResultats: microbioResultats ?? l.microbioResultats,
-      decisionBy:        analyste,
-      decisionComments:  commentaire || null,
-      decisionAt:        new Date().toISOString(),
-    } : l))
+    await saveQualityDecision({
+      lotId:             modalLot.id,
+      decision,
+      laboratoryResults: labResults,
+      microbioResultats,
+      microbioStatus:    decision === 'marche' ? 'CONFORME' : null,
+      typesAnalyse:      modalLot.typesAnalyse,
+      analyste,
+      commentaire,
+    })
 
     setSavingDecision(null)
     setModalLotId(null)
+    await loadLots()
   }
 
   const STATUT_FILTER_OPTIONS: Array<StatutInspectionLot | 'Tous'> = [
@@ -272,7 +278,7 @@ export default function CentreLiberationPage() {
         </div>
 
         <span className="ml-auto text-xs text-muted-foreground">
-          {filtered.length} lot{filtered.length !== 1 ? 's' : ''}
+          {loading ? '…' : `${filtered.length} lot${filtered.length !== 1 ? 's' : ''}`}
         </span>
       </div>
 
@@ -295,7 +301,11 @@ export default function CentreLiberationPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin inline-block mr-2" />Chargement des lots…
+              </td></tr>
+            ) : filtered.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Aucun lot ne correspond aux filtres.</td></tr>
             ) : filtered.map(lot => (
               <tr key={lot.id} className="border-b last:border-0 hover:bg-muted/20">
