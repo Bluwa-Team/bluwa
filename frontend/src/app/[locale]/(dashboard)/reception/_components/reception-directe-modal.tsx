@@ -6,7 +6,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { X, Loader2, Plus, Trash2, CheckCircle2, Clock } from 'lucide-react'
+import { X, Loader2, Plus, Trash2, CheckCircle2, Clock, Wand2 } from 'lucide-react'
 import type { Article } from '@/app/[locale]/(dashboard)/articles/_components/types'
 import type { ReceptionHeader, ReceptionItem, QualiteStatut } from './types'
 import type { StatutQC } from '@/types/erp'
@@ -109,9 +109,16 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
     setItems((prev) => prev.map((i) => i._key === key ? { ...i, [field]: value } : i))
   }
 
+  function autoLotValue(idx: number): string {
+    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    return `LF-${datePart}-${String(idx + 1).padStart(4, '0')}`
+  }
+
   function selectArticle(key: string, articleId: string) {
     const art = articles.find((a) => a.id === articleId)
     if (!art) return
+    const idx = items.findIndex((i) => i._key === key)
+    const lotAuto = art.gestionLot ? '' : autoLotValue(idx >= 0 ? idx : 0)
     setItems((prev) => prev.map((i) =>
       i._key === key
         ? {
@@ -123,8 +130,15 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
             unite:           art.uniteAchat || art.uniteStock,
             coeffConversion: art.coeffConversionAchat || 1,
             statutLot:       art.gestionLot ? 'EnControle' : 'Libere',
+            lotFourn:        lotAuto,
           }
         : i
+    ))
+  }
+
+  function autoGenerateLot(key: string, idx: number) {
+    setItems((prev) => prev.map((i) =>
+      i._key === key ? { ...i, lotFourn: autoLotValue(idx) } : i
     ))
   }
 
@@ -316,11 +330,30 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
                   {/* Lot + DLC + Humidité */}
                   <div className="grid grid-cols-3 gap-3">
                     <Field label="Lot fournisseur">
-                      <Input
-                        placeholder="Ex : LOT-240501"
-                        value={item.lotFourn}
-                        onChange={(e) => setI(item._key, 'lotFourn', e.target.value)}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder={item.gestionLot ? 'ex: BATCH-A23-08' : 'Auto-généré'}
+                          value={item.lotFourn}
+                          onChange={(e) => setI(item._key, 'lotFourn', e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 gap-1.5 text-xs px-2.5"
+                          title="Générer un numéro de lot automatique"
+                          onClick={() => autoGenerateLot(item._key, idx)}
+                        >
+                          <Wand2 className="size-3.5" />
+                          Auto
+                        </Button>
+                      </div>
+                      {!item.gestionLot && (
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Article sans gestion de lot — lot proposé automatiquement
+                        </p>
+                      )}
                     </Field>
                     <Field label="DLC">
                       <Input
