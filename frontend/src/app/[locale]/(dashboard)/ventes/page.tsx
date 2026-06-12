@@ -19,6 +19,7 @@ import {
   getSalesOrders, createSalesOrder, updateSalesOrderStatus,
   type CreateSalesOrderInput,
 } from '@/lib/actions/ventes'
+import { Paginator } from '@/components/ui/paginator'
 
 // ── Colonnes ──────────────────────────────────────────────────────────────────
 
@@ -78,13 +79,19 @@ function StatutBadge({ statut }: { statut: StatutCommande }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function VentesPage() {
-  const [headers, setHeaders] = useState<CommandeClientHeader[]>([])
-  const [items,   setItems]   = useState<CommandeClientItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const PAGE_SIZE = 50
+
+  const [headers,     setHeaders]     = useState<CommandeClientHeader[]>([])
+  const [items,       setItems]       = useState<CommandeClientItem[]>([])
+  const [loading,     setLoading]     = useState(true)
   const [modalOpen,   setModalOpen]   = useState(false)
+  const [searchInput, setSearchInput] = useState('')
   const [search,      setSearch]      = useState('')
   const [statutFilt,  setStatutFilt]  = useState<StatutCommande | 'all'>('all')
   const [advancingId, setAdvancingId] = useState<string | null>(null)
+  const [page,  setPage]  = useState(0)
+  const [total, setTotal] = useState(0)
+  const [tick,  setTick]  = useState(0)
 
   const commandes = useMemo<CommandeClientFlat[]>(
     () => flattenCommandes(headers, items),
@@ -100,12 +107,20 @@ export default function VentesPage() {
   )
 
   useEffect(() => {
-    getSalesOrders().then(({ headers: h, items: i }) => {
-      setHeaders(h)
-      setItems(i)
-      setLoading(false)
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  useEffect(() => {
+    setLoading(true)
+    getSalesOrders({
+      page, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      statut: statutFilt !== 'all' ? statutFilt : undefined,
+    }).then(({ headers: h, items: i, total: t }) => {
+      setHeaders(h); setItems(i); setTotal(t); setLoading(false)
     })
-  }, [])
+  }, [page, search, statutFilt, tick])
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -114,51 +129,31 @@ export default function VentesPage() {
       return s + hItems.reduce((ss, i) => ss + i.quantite * i.puHT * (1 - i.remisePct / 100), 0)
     }, 0)
     return {
-      total:     headers.length,
+      total,
       enCours:   headers.filter((h) => ['DRAFT','CONFIRMED','IN_PREPARATION'].includes(h.statut)).length,
       aExpedier: headers.filter((h) => h.statut === 'CONFIRMED' || h.statut === 'IN_PREPARATION').length,
       caTotal:   Math.round(caTotal),
     }
-  }, [headers, items])
+  }, [headers, items, total])
 
   // ── Filtrage ───────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    // Déduplique par headerId pour éviter N lignes / commande dans les stats globales
-    const seen = new Set<string>()
-    return commandes.filter((c) => {
-      if (statutFilt !== 'all' && c.statut !== statutFilt) return false
-      if (q && !(
-        c.numero.toLowerCase().includes(q)
-        || c.client.toLowerCase().includes(q)
-        || c.article.toLowerCase().includes(q)
-      )) return false
-      return true
-    }).filter((c) => {
-      if (seen.has(c.id + c.itemId)) return true
-      seen.add(c.id + c.itemId)
-      return true
-    })
-  }, [commandes, search, statutFilt])
+  const filtered = commandes
 
-  const hasFilters = search !== '' || statutFilt !== 'all'
+  const hasFilters = searchInput !== '' || statutFilt !== 'all'
 
   // ── Actions ────────────────────────────────────────────────────────────────
   async function handleSave(input: CreateSalesOrderInput): Promise<boolean> {
     const result = await createSalesOrder(input)
     if (!result) return false
-    const { headers: h, items: i } = await getSalesOrders()
-    setHeaders(h); setItems(i)
+    setPage(0)
+    setTick((k) => k + 1)
     return true
   }
 
   async function handleAdvance(id: string, next: StatutCommande) {
     setAdvancingId(id)
     const ok = await updateSalesOrderStatus(id, next)
-    if (ok) {
-      const { headers: h, items: i } = await getSalesOrders()
-      setHeaders(h); setItems(i)
-    }
+    if (ok) setTick((k) => k + 1)
     setAdvancingId(null)
   }
 
@@ -224,15 +219,15 @@ export default function VentesPage() {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Rechercher n°, client, article…"
             className="w-full h-9 pl-9 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
         <select
           value={statutFilt}
-          onChange={(e) => setStatutFilt(e.target.value as StatutCommande | 'all')}
+          onChange={(e) => { setStatutFilt(e.target.value as StatutCommande | 'all'); setPage(0) }}
           className="h-9 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         >
           <option value="all">Tous statuts</option>
@@ -242,7 +237,7 @@ export default function VentesPage() {
         </select>
         {hasFilters && (
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground"
-            onClick={() => { setSearch(''); setStatutFilt('all') }}>
+            onClick={() => { setSearchInput(''); setSearch(''); setStatutFilt('all'); setPage(0) }}>
             <X className="size-3.5" /> Effacer
           </Button>
         )}
@@ -373,6 +368,8 @@ export default function VentesPage() {
           </div>
         )}
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       <CommandeModal
         open={modalOpen}

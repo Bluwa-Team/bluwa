@@ -84,28 +84,31 @@ const SELECT_FRAGMENT =
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
-/** Toutes les déclarations, filtrables par statut. */
 export async function getProductionOutputs(
-  filter: ProductionOutputStatus | 'ALL' = 'ALL',
-): Promise<ProductionOutputRow[]> {
+  filter:   ProductionOutputStatus | 'ALL' = 'ALL',
+  page:     number = 0,
+  pageSize: number = 50,
+): Promise<{ data: ProductionOutputRow[]; total: number }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
-    let query = supabase
+    let q = supabase
       .from('production_outputs')
-      .select(SELECT_FRAGMENT)
+      .select(SELECT_FRAGMENT, { count: 'exact' })
       .eq('organization_id', orgId)
+
+    if (filter !== 'ALL') q = q.eq('status', filter)
+
+    const { data, error, count } = await q
       .order('declared_at', { ascending: false })
-
-    if (filter !== 'ALL') query = query.eq('status', filter)
-
-    const { data, error } = await query
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (error) throw error
-    return (data ?? []).map((r) =>
-      toProductionOutputRow(r as unknown as Record<string, unknown>),
-    )
+    return {
+      data:  (data ?? []).map((r) => toProductionOutputRow(r as unknown as Record<string, unknown>)),
+      total: count ?? 0,
+    }
   } catch (e) {
     console.error('[production-outputs] getProductionOutputs:', e)
-    return []
+    return { data: [], total: 0 }
   }
 }
 

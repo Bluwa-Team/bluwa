@@ -197,84 +197,195 @@ export async function getLotsByArticle(articleCode: string): Promise<Lot[]> {
 // Une ligne = un lot traçable, tous statuts QC confondus (vue SAP MMBE).
 // quantity_remaining = stock réel courant (decremented à chaque sortie/rejet).
 
-export async function getLotStocks(): Promise<LotStock[]> {
+function mapLotRow(row: Record<string, unknown>): LotStock {
+  const gr          = (row as any).goods_receipts
+  const po          = gr?.purchase_orders
+  const fournisseur = po?.fournisseurs
+  const art         = (row as any).articles
+  const today       = Date.now()
+
+  const pmp      = Number(art?.pmp) || 0
+  const quantite = Number(row.quantity_remaining) || 0
+  const dlc      = (row.expiry_date as string | null) ?? ''
+  const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
+  const receivedTs = gr?.received_at ? new Date(gr.received_at as string).getTime() : 0
+
+  let etat: EtatLot = 'Disponible'
+  if (dlc) {
+    if (Math.floor((new Date(dlc).getTime() - today) / 86_400_000) < 0) etat = 'Obsolete'
+  }
+  if (etat === 'Disponible' && receivedTs && Math.floor((today - receivedTs) / 86_400_000) >= 60) etat = 'Dormant'
+
+  const rawQC    = (row.statut_qc as string) ?? 'Libere'
+  const statutQC: StatutQC = (rawQC === 'EnControle' || rawQC === 'Libere' || rawQC === 'Bloque')
+    ? (rawQC as StatutQC) : 'Libere'
+
+  return {
+    id:                    row.id as string,
+    numero:                (row.batch_number as string) || `XX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}−${(row.id as string).substring(0, 4)}`,
+    sku:                   art?.code ?? '',
+    designation:           art?.designation ?? '',
+    type:                  (art?.type ?? 'MP') as ArticleType,
+    quantite,
+    unite:                 art?.unite_stock ?? '',
+    pmp,
+    valeur:                Math.round(pmp * quantite),
+    bcBa:                  po?.order_number ?? '',
+    reception:             gr?.receipt_number ?? '',
+    dateEntree,
+    dlc,
+    origine:               ((fournisseur?.statut ?? gr?.fournisseur_type ?? 'Formel') === 'Informel' ? 'Informel' : 'Formel') as OrigineType,
+    statutQC,
+    etat,
+    seuilAlertePeremption: Number(art?.seuil_alerte_peremption) || 30,
+  }
+}
+
+const LOT_SELECT = `
+  id, batch_number, quantity_initial, quantity_remaining, statut_qc, expiry_date, created_at,
+  goods_receipts!goods_receipt_id (
+    receipt_number, received_at, fournisseur_type,
+    purchase_orders!purchase_order_id (
+      order_number,
+      fournisseurs!fournisseur_id ( raison_sociale, statut )
+    )
+  ),
+  articles!article_id ( code, designation, type, unite_stock, pmp, seuil_alerte_peremption )
+`
+
+export async function getLotStocks(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  type?:     string
+  qc?:       string
+  etat?:     string
+} = {}): Promise<{ lots: LotStock[]; total: number }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, type, qc, etat } = params
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('lots')
-      .select(`
-        id,
-        batch_number,
-        quantity_initial,
-        quantity_remaining,
-        statut_qc,
-        expiry_date,
-        created_at,
-        goods_receipts!goods_receipt_id (
-          receipt_number,
-          received_at,
-          fournisseur_type,
-          purchase_orders!purchase_order_id (
-            order_number,
-            fournisseurs!fournisseur_id ( raison_sociale, statut )
-          )
-        ),
-        articles!article_id ( code, designation, type, unite_stock, pmp, seuil_alerte_peremption )
-      `)
+      .select(LOT_SELECT, { count: 'exact' })
       .eq('organization_id', orgId)
+
+    // Filtre type article — pré-résoudre les IDs
+    if (type && type !== 'all') {
+      const { data: arts } = await supabase
+        .from('articles').select('id')
+        .eq('organization_id', orgId).eq('type', type)
+      const ids = (arts ?? []).map((a) => a.id as string)
+      if (ids.length === 0) return { lots: [], total: 0 }
+      query = query.in('article_id', ids)
+    }
+
+    // Filtre statut QC (colonne directe)
+    if (qc && qc !== 'all') query = query.eq('statut_qc', qc)
+
+    // Filtre état — calculé depuis les dates
+    const todayStr = new Date().toISOString().split('T')[0]
+    const cutoff60 = new Date(Date.now() - 60 * 86_400_000).toISOString()
+    if (etat === 'Obsolete') {
+      query = query.not('expiry_date', 'is', null).lt('expiry_date', todayStr)
+    } else if (etat === 'Dormant') {
+      query = query.lt('created_at', cutoff60)
+        .or(`expiry_date.is.null,expiry_date.gte.${todayStr}`)
+    }
+
+    // Recherche texte — pré-résoudre article IDs + goods_receipt IDs
+    if (search && search.trim()) {
+      const q = search.trim()
+      const like = `%${q}%`
+
+      const [{ data: arts }, { data: grs }, { data: pos }] = await Promise.all([
+        supabase.from('articles').select('id').eq('organization_id', orgId)
+          .or(`code.ilike.${like},designation.ilike.${like}`),
+        supabase.from('goods_receipts').select('id').eq('organization_id', orgId)
+          .ilike('receipt_number', like),
+        supabase.from('purchase_orders').select('id').eq('organization_id', orgId)
+          .ilike('order_number', like),
+      ])
+
+      const artIds = (arts ?? []).map((a) => a.id as string)
+      const grIds  = (grs  ?? []).map((g) => g.id as string)
+      const poIds  = (pos  ?? []).map((p) => p.id as string)
+
+      if (poIds.length > 0) {
+        const { data: poGrs } = await supabase
+          .from('goods_receipts').select('id').eq('organization_id', orgId)
+          .in('purchase_order_id', poIds)
+        grIds.push(...(poGrs ?? []).map((g) => g.id as string))
+      }
+
+      const allGrIds = [...new Set(grIds)]
+      const parts = [`batch_number.ilike.${like}`]
+      if (artIds.length > 0) parts.push(`article_id.in.(${artIds.join(',')})`)
+      if (allGrIds.length > 0) parts.push(`goods_receipt_id.in.(${allGrIds.join(',')})`)
+      query = query.or(parts.join(','))
+    }
+
+    const from = page * pageSize
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1)
     if (error) throw error
 
-    const today = Date.now()
-
-    return (data ?? []).map((row) => {
-      const gr         = (row as any).goods_receipts
-      const po         = gr?.purchase_orders
-      const fournisseur = po?.fournisseurs
-      const art        = (row as any).articles
-
-      const pmp      = Number(art?.pmp) || 0
-      const quantite = Number(row.quantity_remaining) || 0
-      const dlc      = (row.expiry_date as string | null) ?? ''
-      const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
-      const receivedTs = gr?.received_at ? new Date(gr.received_at).getTime() : 0
-      const daysSinceEntry = receivedTs ? Math.floor((today - receivedTs) / 86_400_000) : 0
-
-      let etat: EtatLot = 'Disponible'
-      if (dlc) {
-        const daysLeft = Math.floor((new Date(dlc).getTime() - today) / 86_400_000)
-        if (daysLeft < 0) etat = 'Obsolete'
-      }
-      if (etat === 'Disponible' && daysSinceEntry >= 60) etat = 'Dormant'
-
-      const rawQC = (row.statut_qc as string) ?? 'Libere'
-      const statutQC: StatutQC = (rawQC === 'EnControle' || rawQC === 'Libere' || rawQC === 'Bloque')
-        ? (rawQC as StatutQC)
-        : 'Libere'
-
-      return {
-        id:                    row.id as string,
-        numero:                (row.batch_number as string) || `XX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}−${(row.id as string).substring(0, 4)}`,
-        sku:                   art?.code ?? '',
-        designation:           art?.designation ?? '',
-        type:                  (art?.type ?? 'MP') as ArticleType,
-        quantite,
-        unite:                 art?.unite_stock ?? '',
-        pmp,
-        valeur:                Math.round(pmp * quantite),
-        bcBa:                  po?.order_number ?? '',
-        reception:             gr?.receipt_number ?? '',
-        dateEntree,
-        dlc,
-        origine:               ((fournisseur?.statut ?? gr?.fournisseur_type ?? 'Formel') === 'Informel' ? 'Informel' : 'Formel') as OrigineType,
-        statutQC,
-        etat,
-        seuilAlertePeremption: Number(art?.seuil_alerte_peremption) || 30,
-      }
-    })
+    return { lots: (data ?? []).map(mapLotRow), total: count ?? 0 }
   } catch (e) {
     console.error('[getLotStocks]', e)
-    return []
+    return { lots: [], total: 0 }
+  }
+}
+
+// ── Statistiques agrégées (indépendant de la pagination) ─────────────────────
+
+export async function getLotStocksStats(): Promise<{
+  valeurTotale: number
+  dormants:     number
+  obsoletes:    number
+  rotation:     number
+  total:        number
+}> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { data } = await supabase
+      .from('lots')
+      .select('quantity_remaining, expiry_date, created_at, articles!article_id(pmp)')
+      .eq('organization_id', orgId)
+
+    const now    = Date.now()
+    const cutoff = now - 60 * 86_400_000
+    let valeurTotale = 0, dormants = 0, obsoletes = 0, actifs = 0
+    const total = (data ?? []).length
+
+    for (const row of data ?? []) {
+      const pmp    = Number((row as any).articles?.pmp) || 0
+      const qty    = Number(row.quantity_remaining) || 0
+      const valeur = Math.round(pmp * qty)
+      valeurTotale += valeur
+
+      const dlcTs       = row.expiry_date ? new Date(row.expiry_date as string).getTime() : null
+      const receivedTs  = row.created_at  ? new Date(row.created_at  as string).getTime() : 0
+
+      if (dlcTs && dlcTs < now) {
+        obsoletes += valeur
+      } else if (receivedTs && receivedTs < cutoff) {
+        dormants += valeur
+      } else {
+        actifs++
+      }
+    }
+
+    return {
+      valeurTotale,
+      dormants,
+      obsoletes,
+      rotation: total > 0 ? Math.round((actifs / total) * 100) : 0,
+      total,
+    }
+  } catch (e) {
+    console.error('[getLotStocksStats]', e)
+    return { valeurTotale: 0, dormants: 0, obsoletes: 0, rotation: 0, total: 0 }
   }
 }

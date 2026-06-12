@@ -19,20 +19,42 @@ async function resolveFactoryId(supabase: SC, orgId: string): Promise<string> {
 
 // ── Lecture des commandes clients ─────────────────────────────────────────────
 
-export async function getSalesOrders(): Promise<{
+export async function getSalesOrders(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  statut?:   string
+} = {}): Promise<{
   headers: CommandeClientHeader[]
   items:   CommandeClientItem[]
+  total:   number
 }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, statut } = params
 
-    const { data: orders, error: ordersErr } = await supabase
+    let q = supabase
       .from('sales_orders')
-      .select('*, clients!client_id(raison_sociale)')
+      .select('*, clients!client_id(raison_sociale)', { count: 'exact' })
       .eq('organization_id', orgId)
+
+    if (statut && statut !== 'all') q = q.eq('status', statut)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      const { data: cli } = await supabase
+        .from('clients').select('id').eq('organization_id', orgId)
+        .ilike('raison_sociale', like)
+      const cliIds = (cli ?? []).map((c) => c.id as string)
+      const parts = [`order_number.ilike.${like}`]
+      if (cliIds.length > 0) parts.push(`client_id.in.(${cliIds.join(',')})`)
+      q = q.or(parts.join(','))
+    }
+
+    const { data: orders, error: ordersErr, count } = await q
       .order('order_date', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (ordersErr) throw ordersErr
-    if (!orders?.length) return { headers: [], items: [] }
+    if (!orders?.length) return { headers: [], items: [], total: count ?? 0 }
 
     const orderIds = orders.map((o) => o.id as string)
 
@@ -67,10 +89,10 @@ export async function getSalesOrders(): Promise<{
       remisePct:    Number(i.discount_pct) || 0,
     }))
 
-    return { headers, items }
+    return { headers, items, total: count ?? 0 }
   } catch (e) {
     console.error('[getSalesOrders]', e)
-    return { headers: [], items: [] }
+    return { headers: [], items: [], total: 0 }
   }
 }
 

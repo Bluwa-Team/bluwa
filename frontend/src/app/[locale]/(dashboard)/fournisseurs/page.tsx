@@ -16,7 +16,10 @@ import {
   QUALIFICATION_COLORS, STATUT_COLORS,
   CATEGORIES_FOURNISSEUR, scoreColor,
 } from './_components/types'
-import { getFournisseurs, createFournisseur, updateFournisseur } from '@/lib/actions/fournisseurs'
+import { getFournisseurs, getFournisseursPage, createFournisseur, updateFournisseur } from '@/lib/actions/fournisseurs'
+import { Paginator } from '@/components/ui/paginator'
+
+const PAGE_SIZE = 50
 import { downloadCsv } from '@/lib/csv-utils'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import Link from 'next/link'
@@ -78,6 +81,9 @@ export default function FournisseursPage() {
 
   const [fournisseurs,  setFournisseurs]  = useState<Fournisseur[]>([])
   const [loading,       setLoading]       = useState(true)
+  const [page,          setPage]          = useState(0)
+  const [total,         setTotal]         = useState(0)
+  const [searchInput,   setSearchInput]   = useState('')
   const [search,        setSearch]        = useState('')
   const [filterQualif,  setFilterQualif]  = useState<'Tous' | FournisseurQualification>('Tous')
   const [filterStatut,  setFilterStatut]  = useState<'Tous' | FournisseurStatut>('Tous')
@@ -96,21 +102,30 @@ export default function FournisseursPage() {
   )
 
   useEffect(() => {
-    getFournisseurs().then((data) => { setFournisseurs(data); setLoading(false) })
-  }, [])
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
-  const filtered = useMemo(() => {
-    return fournisseurs.filter((f) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!f.code.toLowerCase().includes(q) && !f.raisonSociale.toLowerCase().includes(q)) return false
-      }
-      if (filterQualif !== 'Tous' && f.qualification !== filterQualif) return false
-      if (filterStatut !== 'Tous' && f.statut !== filterStatut) return false
-      if (filterCategorie !== 'Toutes' && f.categorie !== filterCategorie) return false
-      return true
-    })
-  }, [fournisseurs, search, filterQualif, filterStatut, filterCategorie])
+  useEffect(() => {
+    setLoading(true)
+    getFournisseursPage({
+      page, pageSize: PAGE_SIZE,
+      search:    search          || undefined,
+      qualif:    filterQualif    !== 'Tous'   ? filterQualif    : undefined,
+      statut:    filterStatut    !== 'Tous'   ? filterStatut    : undefined,
+      categorie: filterCategorie !== 'Toutes' ? filterCategorie : undefined,
+    }).then(({ data, total: t }) => { setFournisseurs(data); setTotal(t); setLoading(false) })
+  }, [page, search, filterQualif, filterStatut, filterCategorie])
+
+  function resetAndRefresh() {
+    setPage(0)
+    getFournisseursPage({ page: 0, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      qualif: filterQualif !== 'Tous' ? filterQualif : undefined,
+      statut: filterStatut !== 'Tous' ? filterStatut : undefined,
+      categorie: filterCategorie !== 'Toutes' ? filterCategorie : undefined,
+    }).then(({ data, total: t }) => { setFournisseurs(data); setTotal(t) })
+  }
 
   async function handleSave(data: Partial<Fournisseur>): Promise<boolean> {
     if (editFournisseur) {
@@ -123,7 +138,7 @@ export default function FournisseursPage() {
     const code = generateCode(data.pays || '', seq)
     const created = await createFournisseur({ ...data, code } as Fournisseur & { code: string })
     if (!created) return false
-    setFournisseurs((prev) => [created, ...prev])
+    resetAndRefresh()
     return true
   }
 
@@ -180,8 +195,7 @@ export default function FournisseursPage() {
     setModalOpen(true)
   }
 
-  const count = filtered.length
-  const countLabel = count > 1 ? t('countPlural', { count }) : t('count', { count })
+  const countLabel = total > 1 ? t('countPlural', { count: total }) : t('count', { count: total })
 
   return (
     <div className="space-y-5">
@@ -217,8 +231,8 @@ export default function FournisseursPage() {
           <Input
             className="pl-9"
             placeholder={t('searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
@@ -226,7 +240,7 @@ export default function FournisseursPage() {
           {QUALIFICATIONS.map((q) => (
             <button
               key={q}
-              onClick={() => setFilterQualif(q)}
+              onClick={() => { setFilterQualif(q); setPage(0) }}
               className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                 filterQualif === q
                   ? 'bg-background shadow-sm text-foreground'
@@ -238,7 +252,7 @@ export default function FournisseursPage() {
           ))}
         </div>
 
-        <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
+        <Select value={filterStatut} onValueChange={(v) => { setFilterStatut(v as typeof filterStatut); setPage(0) }}>
           <SelectTrigger className="w-36 h-9">
             <span className="text-sm">{filterStatut === 'Tous' ? 'Type' : filterStatut}</span>
           </SelectTrigger>
@@ -249,7 +263,7 @@ export default function FournisseursPage() {
           </SelectContent>
         </Select>
 
-        <Select value={filterCategorie} onValueChange={(v) => setFilterCategorie(v ?? 'Toutes')}>
+        <Select value={filterCategorie} onValueChange={(v) => { setFilterCategorie(v ?? 'Toutes'); setPage(0) }}>
           <SelectTrigger className="w-52 h-9">
             <span className="text-sm">{filterCategorie === 'Toutes' ? 'Catégories' : filterCategorie}</span>
           </SelectTrigger>
@@ -332,14 +346,14 @@ export default function FournisseursPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filtered.length === 0 ? (
+              ) : fournisseurs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
                     {t('empty')}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((f) => (
+                fournisseurs.map((f) => (
                   <TableRow key={f.id}>
                     <TableCell>
                       <Link href={`fournisseurs/${f.id}`} className="font-mono text-sm font-medium hover:text-primary hover:underline underline-offset-4">
@@ -380,6 +394,8 @@ export default function FournisseursPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       <FournisseurModal
         open={modalOpen}

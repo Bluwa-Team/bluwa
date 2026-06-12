@@ -17,7 +17,10 @@ import {
   Client, ClientStatut, ClientType,
   CLIENT_TYPE_COLORS, STATUT_COLORS, SECTEURS,
 } from './_components/types'
-import { getClients, createClient, updateClient } from '@/lib/actions/clients'
+import { getClients, getClientsPage, createClient, updateClient } from '@/lib/actions/clients'
+import { Paginator } from '@/components/ui/paginator'
+
+const PAGE_SIZE = 50
 import { downloadCsv } from '@/lib/csv-utils'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 
@@ -75,6 +78,9 @@ export default function ClientsPage() {
 
   const [clients,      setClients]      = useState<Client[]>([])
   const [loading,      setLoading]      = useState(true)
+  const [page,         setPage]         = useState(0)
+  const [total,        setTotal]        = useState(0)
+  const [searchInput,  setSearchInput]  = useState('')
   const [search,       setSearch]       = useState('')
   const [filterType,   setFilterType]   = useState<'Tous' | ClientType>('Tous')
   const [filterStatut, setFilterStatut] = useState<'Tous' | ClientStatut>('Tous')
@@ -93,21 +99,30 @@ export default function ClientsPage() {
   )
 
   useEffect(() => {
-    getClients().then((data) => { setClients(data); setLoading(false) })
-  }, [])
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
-  const filtered = useMemo(() => {
-    return clients.filter((c) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!c.code.toLowerCase().includes(q) && !c.raisonSociale.toLowerCase().includes(q)) return false
-      }
-      if (filterType !== 'Tous' && c.type !== filterType) return false
-      if (filterStatut !== 'Tous' && c.statut !== filterStatut) return false
-      if (filterSecteur !== 'Tous' && c.secteur !== filterSecteur) return false
-      return true
-    })
-  }, [clients, search, filterType, filterStatut, filterSecteur])
+  useEffect(() => {
+    setLoading(true)
+    getClientsPage({
+      page, pageSize: PAGE_SIZE,
+      search:  search        || undefined,
+      type:    filterType    !== 'Tous'   ? filterType    : undefined,
+      statut:  filterStatut  !== 'Tous'   ? filterStatut  : undefined,
+      secteur: filterSecteur !== 'Tous'   ? filterSecteur : undefined,
+    }).then(({ data, total: t }) => { setClients(data); setTotal(t); setLoading(false) })
+  }, [page, search, filterType, filterStatut, filterSecteur])
+
+  function resetAndRefresh() {
+    setPage(0)
+    getClientsPage({ page: 0, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      type: filterType !== 'Tous' ? filterType : undefined,
+      statut: filterStatut !== 'Tous' ? filterStatut : undefined,
+      secteur: filterSecteur !== 'Tous' ? filterSecteur : undefined,
+    }).then(({ data, total: t }) => { setClients(data); setTotal(t) })
+  }
 
   async function handleSave(data: Partial<Client>): Promise<boolean> {
     if (editClient) {
@@ -120,7 +135,7 @@ export default function ClientsPage() {
     const code = generateCode(data.pays || '', seq)
     const created = await createClient({ ...data, code } as Client & { code: string })
     if (!created) return false
-    setClients((prev) => [created, ...prev])
+    resetAndRefresh()
     return true
   }
 
@@ -184,8 +199,7 @@ export default function ClientsPage() {
     return { created, errors }
   }
 
-  const count = filtered.length
-  const countLabel = count > 1 ? t('countPlural', { count }) : t('count', { count })
+  const countLabel = total > 1 ? t('countPlural', { count: total }) : t('count', { count: total })
 
   return (
     <div className="space-y-5">
@@ -221,8 +235,8 @@ export default function ClientsPage() {
           <Input
             className="pl-9"
             placeholder={t('searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
@@ -242,7 +256,7 @@ export default function ClientsPage() {
           ))}
         </div>
 
-        <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
+        <Select value={filterStatut} onValueChange={(v) => { setFilterStatut(v as typeof filterStatut); setPage(0) }}>
           <SelectTrigger className="w-36 h-9">
             <span className="text-sm">{filterStatut === 'Tous' ? 'Statut' : filterStatut}</span>
           </SelectTrigger>
@@ -253,7 +267,7 @@ export default function ClientsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={filterSecteur} onValueChange={(v) => setFilterSecteur(v ?? 'Tous')}>
+        <Select value={filterSecteur} onValueChange={(v) => { setFilterSecteur(v ?? 'Tous'); setPage(0) }}>
           <SelectTrigger className="w-52 h-9">
             <span className="text-sm">{filterSecteur === 'Tous' ? 'Secteurs' : filterSecteur}</span>
           </SelectTrigger>
@@ -332,14 +346,14 @@ export default function ClientsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filtered.length === 0 ? (
+              ) : clients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     {t('empty')}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((c) => (
+                clients.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
                       <Link href={`clients/${c.id}`} className="font-mono text-sm font-medium hover:text-primary hover:underline underline-offset-4">
@@ -377,6 +391,8 @@ export default function ClientsPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       <ClientModal
         open={modalOpen}

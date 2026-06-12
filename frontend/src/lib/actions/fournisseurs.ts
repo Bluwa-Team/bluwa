@@ -41,6 +41,40 @@ export async function getFournisseurs(): Promise<Fournisseur[]> {
   }
 }
 
+export async function getFournisseursPage(params: {
+  page?:      number
+  pageSize?:  number
+  search?:    string
+  qualif?:    string
+  statut?:    string
+  categorie?: string
+}): Promise<{ data: Fournisseur[]; total: number }> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, qualif, statut, categorie } = params
+
+    let q = supabase.from('fournisseurs').select('*', { count: 'exact' })
+      .eq('organization_id', orgId)
+
+    if (qualif    && qualif    !== 'Tous')   q = q.eq('qualification', qualif)
+    if (statut    && statut    !== 'Tous')   q = q.eq('statut',        statut)
+    if (categorie && categorie !== 'Toutes') q = q.eq('categorie',     categorie)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      q = q.or(`code.ilike.${like},raison_sociale.ilike.${like}`)
+    }
+
+    const { data, error, count } = await q
+      .order('created_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
+    if (error) throw error
+    return { data: (data ?? []).map(toFournisseur), total: count ?? 0 }
+  } catch (e) {
+    console.error('[getFournisseursPage]', e)
+    return { data: [], total: 0 }
+  }
+}
+
 export async function getFournisseurById(id: string): Promise<Fournisseur | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()

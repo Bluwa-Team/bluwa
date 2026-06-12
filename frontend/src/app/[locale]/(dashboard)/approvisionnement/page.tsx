@@ -23,6 +23,7 @@ import { CommandeModal }       from './_components/commande-modal'
 import { printBcDoc }         from './_components/bc-print'
 import { CommandeDetailModal } from './_components/commande-detail-modal'
 import { HelpPopover }         from '@/components/ui/help-popover'
+import { Paginator }           from '@/components/ui/paginator'
 import {
   type PurchaseRequisitionRow, type StatutDA,
   STATUT_DA_LABELS, STATUT_DA_COLORS,
@@ -116,27 +117,49 @@ export default function ApprovisionnementPage() {
   const [strategie, setStrategie] = useState<ArticleStrategie[]>([])
   const [loading, setLoading] = useState(true)
   const [orgName, setOrgName] = useState('')
+  const [page,  setPage]  = useState(0)
+  const [total, setTotal] = useState(0)
+  const [tick,  setTick]  = useState(0)
 
+  const PAGE_SIZE = 50
+
+  const [sSearch, setSSearch] = useState('')
+  const [sStatutFilter, setSStatutFilter] = useState<'all' | 'aCommander' | 'ok'>('all')
+  const [searchInput, setSearchInput] = useState('')
+  const [search,      setSearch]      = useState('')
+  const [statutFilter, setStatutFilter] = useState<StatutCommande | 'all'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'BC' | 'BA'>('all')
+
+  // Reference data: DAs, strategies, org name — loaded once
   useEffect(() => {
     Promise.all([
-      getPurchaseOrders(),
       getPurchaseRequisitions(),
       getArticleStrategies(),
       getOrgName(),
-    ]).then(([po, da, strat, name]) => {
-      setBcHeaders(po.headers)
-      setBcItems(po.items)
+    ]).then(([da, strat, name]) => {
       setDaRows(da)
       setStrategie(strat)
       setOrgName(name)
-      setLoading(false)
     })
   }, [])
-  const [sSearch, setSSearch] = useState('')
-  const [sStatutFilter, setSStatutFilter] = useState<'all' | 'aCommander' | 'ok'>('all')
-  const [search, setSearch] = useState('')
-  const [statutFilter, setStatutFilter] = useState<StatutCommande | 'all'>('all')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'BC' | 'BA'>('all')
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // Paginated purchase orders
+  useEffect(() => {
+    setLoading(true)
+    getPurchaseOrders({
+      page, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      type:   typeFilter !== 'all' ? typeFilter : undefined,
+      statut: statutFilter !== 'all' ? statutFilter : undefined,
+    }).then(({ headers, items, total: t }) => {
+      setBcHeaders(headers); setBcItems(items); setTotal(t); setLoading(false)
+    })
+  }, [page, search, statutFilter, typeFilter, tick])
 
   // ── DA state ───────────────────────────────────────────────────────────────
   const [daRows, setDaRows] = useState<PurchaseRequisitionRow[]>([])
@@ -208,17 +231,14 @@ export default function ApprovisionnementPage() {
       setPrefillDa(null)
     }
 
-    const { headers, items } = await getPurchaseOrders()
-    setBcHeaders(headers)
-    setBcItems(items)
+    setPage(0)
+    setTick((k) => k + 1)
     return result
   }
 
   async function handleStatusChange(orderId: string, newStatus: StatutCommande) {
     await updatePurchaseOrderStatus(orderId, newStatus)
-    const { headers, items } = await getPurchaseOrders()
-    setBcHeaders(headers)
-    setBcItems(items)
+    setTick((k) => k + 1)
   }
 
   function handlePrintDoc(headerId: string) {
@@ -240,24 +260,9 @@ export default function ApprovisionnementPage() {
     total:   bcHeaders.length,
   }), [bcHeaders])
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return bcHeaders.filter((h) => {
-      if (statutFilter !== 'all' && h.statut !== statutFilter) return false
-      if (typeFilter !== 'all' && h.type !== typeFilter) return false
-      if (q) {
-        return (
-          h.numero.toLowerCase().includes(q)
-          || h.fournisseur.toLowerCase().includes(q)
-          || (h.contrat?.toLowerCase().includes(q) ?? false)
-          || (h.reception?.toLowerCase().includes(q) ?? false)
-        )
-      }
-      return true
-    })
-  }, [bcHeaders, search, statutFilter, typeFilter])
+  const filtered = bcHeaders
 
-  const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
+  const hasActiveFilters = searchInput !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
   const TODAY = new Date().toISOString().split('T')[0]
 
@@ -725,15 +730,15 @@ export default function ApprovisionnementPage() {
               <input
                 type="text"
                 placeholder="Rechercher par N°, fournisseur, article, contrat…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
               />
             </div>
 
             <select
               value={statutFilter}
-              onChange={(e) => setStatutFilter(e.target.value as StatutCommande | 'all')}
+              onChange={(e) => { setStatutFilter(e.target.value as StatutCommande | 'all'); setPage(0) }}
               className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
             >
               <option value="all">Tous statuts</option>
@@ -747,7 +752,7 @@ export default function ApprovisionnementPage() {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'BC' | 'BA')}
+              onChange={(e) => { setTypeFilter(e.target.value as 'all' | 'BC' | 'BA'); setPage(0) }}
               className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
             >
               <option value="all">Tous types</option>
@@ -758,7 +763,7 @@ export default function ApprovisionnementPage() {
             <div className="flex items-center gap-2 ml-auto">
               {hasActiveFilters && (
                 <button
-                  onClick={() => { setSearch(''); setStatutFilter('all'); setTypeFilter('all') }}
+                  onClick={() => { setSearchInput(''); setSearch(''); setStatutFilter('all'); setTypeFilter('all'); setPage(0) }}
                   className="h-7 px-2.5 text-xs rounded-md flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                   <X className="size-3" />
@@ -766,7 +771,7 @@ export default function ApprovisionnementPage() {
                 </button>
               )}
               <span className="text-xs text-muted-foreground">
-                {filtered.length} résultat{filtered.length !== 1 ? 's' : ''}
+                {total} résultat{total !== 1 ? 's' : ''}
               </span>
               {isCustomized && (
                 <Button
@@ -902,6 +907,7 @@ export default function ApprovisionnementPage() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
         </>
       )}
 

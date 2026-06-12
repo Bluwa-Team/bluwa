@@ -23,6 +23,7 @@ import type { DirectItemInput }   from './_components/reception-directe-modal'
 import { LabelPrintModal }        from './_components/label-print-modal'
 import type { BCHeader, BCItem }  from '../approvisionnement/_components/types'
 import { getGoodsReceipts, createGoodsReceipt, type CreateGoodsReceiptItemInput } from '@/lib/actions/reception'
+import { Paginator } from '@/components/ui/paginator'
 import { getPurchaseOrders }      from '@/lib/actions/approvisionnement'
 import { getArticles }            from '@/lib/actions/articles'
 import { getOrgName }             from '@/lib/actions/helpers'
@@ -102,28 +103,47 @@ export default function ReceptionPage() {
   const [articlesRef, setArticlesRef] = useState<Article[]>([])
   const [loading,    setLoading]    = useState(true)
   const [orgName,    setOrgName]    = useState('')
+  const [page,       setPage]       = useState(0)
+  const [total,      setTotal]      = useState(0)
+  const [tick,       setTick]       = useState(0)
 
+  const PAGE_SIZE = 50
+
+  // Reference data loaded once
   useEffect(() => {
     Promise.all([
-      getGoodsReceipts(),
-      getPurchaseOrders(),
+      getPurchaseOrders({ pageSize: 200 }),
       getArticles(),
       getOrgName(),
-    ]).then(([rec, po, arts, name]) => {
-      setRecHeaders(rec.headers)
-      setRecItems(rec.items)
+    ]).then(([po, arts, name]) => {
       setBcHeaders(po.headers.filter((h) =>
         h.statut === 'APPROVED' || h.statut === 'SENT',
       ))
       setBcItems(po.items)
       setArticlesRef(arts)
       setOrgName(name)
-      setLoading(false)
     })
   }, [])
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [search,      setSearch]      = useState('')
   const [statutFilter, setStatutFilter] = useState<StatutReception | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'Formel' | 'Informel'>('all')
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  useEffect(() => {
+    setLoading(true)
+    getGoodsReceipts({
+      page, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      statut: statutFilter !== 'all' ? statutFilter : undefined,
+    }).then(({ headers, items, total: t }) => {
+      setRecHeaders(headers); setRecItems(items); setTotal(t); setLoading(false)
+    })
+  }, [page, search, statutFilter, tick])
 
   const { widths, startResize, reset, isCustomized } = useResizableColumns(
     'bluwa:cols:reception',
@@ -143,26 +163,12 @@ export default function ReceptionPage() {
     bloquees:     recHeaders.filter((h) => h.qualiteStatut === 'Bloque').length,
   }), [recHeaders])
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return receptions.filter((r) => {
-      if (statutFilter !== 'all' && r.statut !== statutFilter) return false
-      if (typeFilter !== 'all' && r.typeFournisseur !== typeFilter) return false
-      if (q) {
-        return (
-          r.numero.toLowerCase().includes(q)
-          || r.fournisseur.toLowerCase().includes(q)
-          || r.article.toLowerCase().includes(q)
-          || (r.numeroBon?.toLowerCase().includes(q) ?? false)
-          || (r.lot?.toLowerCase().includes(q) ?? false)
-          || (r.lotFourn?.toLowerCase().includes(q) ?? false)
-        )
-      }
-      return true
-    })
-  }, [receptions, search, statutFilter, typeFilter])
+  const filtered = useMemo(
+    () => typeFilter === 'all' ? receptions : receptions.filter((r) => r.typeFournisseur === typeFilter),
+    [receptions, typeFilter],
+  )
 
-  const hasActiveFilters = search !== '' || statutFilter !== 'all' || typeFilter !== 'all'
+  const hasActiveFilters = searchInput !== '' || statutFilter !== 'all' || typeFilter !== 'all'
 
   async function handleSave(
     headerData: Omit<ReceptionHeader, 'id' | 'numero'>,
@@ -170,9 +176,8 @@ export default function ReceptionPage() {
   ): Promise<{ ok: boolean; error: string | null }> {
     const result = await createGoodsReceipt(headerData, newItems)
     if (result.error) return { ok: false, error: result.error }
-    const { headers, items } = await getGoodsReceipts()
-    setRecHeaders(headers)
-    setRecItems(items)
+    setPage(0)
+    setTick((k) => k + 1)
     return { ok: true, error: null }
   }
 
@@ -183,16 +188,17 @@ export default function ReceptionPage() {
   ): Promise<boolean> {
     const result = await createGoodsReceipt(headerData, [], directItems)
     if (result.error) return false
-    const { headers, items } = await getGoodsReceipts()
-    setRecHeaders(headers)
-    setRecItems(items)
+    setPage(0)
+    setTick((k) => k + 1)
     return true
   }
 
   function clearFilters() {
+    setSearchInput('')
     setSearch('')
     setStatutFilter('all')
     setTypeFilter('all')
+    setPage(0)
   }
 
   return (
@@ -224,14 +230,14 @@ export default function ReceptionPage() {
       {/* Filter tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: 'all'       as const, label: 'Tous',      count: recHeaders.length },
+          { key: 'all'       as const, label: 'Tous',      count: total             },
           { key: 'DRAFT'     as const, label: 'En cours',  count: stats.enCours     },
           { key: 'VALIDATED' as const, label: 'Validée',   count: stats.validees    },
           { key: 'CANCELLED' as const, label: 'Annulée',   count: recHeaders.filter((h) => h.statut === 'CANCELLED').length },
         ] as { key: StatutReception | 'all'; label: string; count: number }[]).map((t) => (
           <button
             key={t.key}
-            onClick={() => setStatutFilter(t.key)}
+            onClick={() => { setStatutFilter(t.key); setPage(0) }}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               statutFilter === t.key
                 ? 'border-foreground text-foreground'
@@ -256,8 +262,8 @@ export default function ReceptionPage() {
           <input
             type="text"
             placeholder="Rechercher par N°, fournisseur, article, lot…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-8 pl-8 pr-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
           />
         </div>
@@ -461,6 +467,8 @@ export default function ReceptionPage() {
           </tbody>
         </table>
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       <LabelPrintModal
         open={printRow !== null}

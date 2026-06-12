@@ -30,17 +30,34 @@ async function resolveFactoryId(supabase: SC, orgId: string): Promise<string> {
 
 // ── Commandes fournisseurs ────────────────────────────────────────────────────
 
-export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items: BCItem[] }> {
+export async function getPurchaseOrders(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  type?:     string
+  statut?:   string
+} = {}): Promise<{ headers: BCHeader[]; items: BCItem[]; total: number }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, type, statut } = params
 
-    const { data: orders, error: ordersErr } = await supabase
+    let q = supabase
       .from('purchase_orders')
-      .select('*, fournisseur_nom, fournisseurs!fournisseur_id(raison_sociale, statut)')
+      .select('*, fournisseur_nom, fournisseurs!fournisseur_id(raison_sociale, statut)', { count: 'exact' })
       .eq('organization_id', orgId)
+
+    if (type   && type   !== 'all') q = q.eq('order_type', type)
+    if (statut && statut !== 'all') q = q.eq('status',     statut)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      q = q.ilike('order_number', like)
+    }
+
+    const { data: orders, error: ordersErr, count } = await q
       .order('created_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (ordersErr) throw ordersErr
-    if (!orders?.length) return { headers: [], items: [] }
+    if (!orders?.length) return { headers: [], items: [], total: count ?? 0 }
 
     const orderIds = orders.map((o) => o.id as string)
 
@@ -115,10 +132,10 @@ export async function getPurchaseOrders(): Promise<{ headers: BCHeader[]; items:
       }
     })
 
-    return { headers, items }
+    return { headers, items, total: count ?? 0 }
   } catch (e) {
     console.error('[getPurchaseOrders]', e)
-    return { headers: [], items: [] }
+    return { headers: [], items: [], total: 0 }
   }
 }
 

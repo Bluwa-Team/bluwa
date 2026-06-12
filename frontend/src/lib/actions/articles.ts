@@ -56,6 +56,37 @@ export async function getArticles(): Promise<Article[]> {
   }
 }
 
+export async function getArticlesPage(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  type?:     string
+  statut?:   string
+}): Promise<{ data: Article[]; total: number }> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, type, statut } = params
+
+    let q = supabase.from('articles').select('*', { count: 'exact' })
+      .eq('organization_id', orgId)
+
+    if (type   && type   !== 'TOUS') q = q.eq('type',   type)
+    if (statut && statut !== 'Tous') q = q.eq('statut', statut)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      q = q.or(`code.ilike.${like},designation.ilike.${like}`)
+    }
+
+    const { data, error, count } = await q
+      .order('created_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
+    if (error) throw error
+    return { data: (data ?? []).map(toArticle), total: count ?? 0 }
+  } catch {
+    return { data: [], total: 0 }
+  }
+}
+
 export async function getPFArticles(): Promise<{ id: string; code: string; designation: string; uniteStock: string }[]> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()

@@ -53,6 +53,40 @@ export async function getClients(): Promise<Client[]> {
   }
 }
 
+export async function getClientsPage(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  type?:     string
+  statut?:   string
+  secteur?:  string
+}): Promise<{ data: Client[]; total: number }> {
+  try {
+    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, type, statut, secteur } = params
+
+    let q = supabase.from('clients').select('*', { count: 'exact' })
+      .eq('organization_id', orgId)
+
+    if (type    && type    !== 'Tous')   q = q.eq('type',    type)
+    if (statut  && statut  !== 'Tous')   q = q.eq('statut',  statut)
+    if (secteur && secteur !== 'Tous')   q = q.eq('secteur', secteur)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      q = q.or(`code.ilike.${like},raison_sociale.ilike.${like},contact_principal.ilike.${like}`)
+    }
+
+    const { data, error, count } = await q
+      .order('created_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
+    if (error) throw error
+    return { data: (data ?? []).map((r) => toClient(r)), total: count ?? 0 }
+  } catch (e) {
+    console.error('[getClientsPage]', e)
+    return { data: [], total: 0 }
+  }
+}
+
 export async function getClientById(id: string): Promise<Client | null> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()

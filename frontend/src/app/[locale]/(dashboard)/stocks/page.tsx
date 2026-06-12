@@ -5,7 +5,7 @@ import {
   Search, X, RotateCcw,
   Check, Moon, AlertTriangle, Clock, Lock,
   FileText, Leaf, Wallet, TrendingUp,
-  ShoppingBasket, ShieldAlert, Layers, Plus,
+  ShieldAlert, Layers, Plus, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { formatNumber } from '@/lib/format'
@@ -18,7 +18,7 @@ import {
   ETAT_COLORS, ETAT_LABELS, TYPE_COLORS, TYPE_LABELS,
   STATUT_QC_COLORS, STATUT_QC_LABELS,
 } from './_components/types'
-import { getLotStocks, createInitStock } from '@/lib/actions/stocks'
+import { getLotStocks, getLotStocksStats, createInitStock } from '@/lib/actions/stocks'
 import { MouvementModal, type ArticleOption } from './_components/mouvement-modal'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import { HelpPopover } from '@/components/ui/help-popover'
@@ -82,24 +82,68 @@ function StatCard({
   )
 }
 
+const PAGE_SIZE = 50
+
 export default function StocksPage() {
   const locale = useLocale()
-  const [lots, setLots] = useState<LotStock[]>([])
+  const [lots,    setLots]    = useState<LotStock[]>([])
   const [loading, setLoading] = useState(true)
+  const [page,    setPage]    = useState(0)
+  const [total,   setTotal]   = useState(0)
+  const [stats,   setStats]   = useState({ valeurTotale: 0, dormants: 0, obsoletes: 0, rotation: 0, total: 0 })
 
-  useEffect(() => {
-    getLotStocks().then((data) => {
-      setLots(data)
-      setLoading(false)
-    })
-  }, [])
-  const [search, setSearch] = useState('')
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
-  const [typeFilter, setTypeFilter] = useState<TypeArticle | 'all'>('all')
-  const [qcFilter, setQcFilter] = useState<StatutQC | 'all'>('all')
+  const [searchInput,  setSearchInput]  = useState('')
+  const [search,       setSearch]       = useState('')
+  const [quickFilter,  setQuickFilter]  = useState<QuickFilter>('all')
+  const [typeFilter,   setTypeFilter]   = useState<TypeArticle | 'all'>('all')
+  const [qcFilter,     setQcFilter]     = useState<StatutQC | 'all'>('all')
   const [mouvementOpen, setMouvementOpen] = useState(false)
   const [csvOpen,       setCsvOpen]       = useState(false)
-  // Derive article options for the modal from current lot list
+
+  // Debounce search input → reset page to 0 on change
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // Fetch lots on page / filter change
+  useEffect(() => {
+    setLoading(true)
+    getLotStocks({
+      page,
+      pageSize: PAGE_SIZE,
+      search:   search || undefined,
+      type:     typeFilter !== 'all' ? typeFilter : undefined,
+      qc:       qcFilter   !== 'all' ? qcFilter   : undefined,
+      etat:     quickFilter !== 'all' ? quickFilter : undefined,
+    }).then(({ lots: data, total: t }) => {
+      setLots(data)
+      setTotal(t)
+      setLoading(false)
+    })
+  }, [page, search, typeFilter, qcFilter, quickFilter])
+
+  // Stats chargées une seule fois (indépendant de la pagination)
+  useEffect(() => {
+    getLotStocksStats().then(setStats)
+  }, [])
+
+  function refreshAll() {
+    getLotStocksStats().then(setStats)
+    getLotStocks({
+      page,
+      pageSize: PAGE_SIZE,
+      search:   search || undefined,
+      type:     typeFilter !== 'all' ? typeFilter : undefined,
+      qc:       qcFilter   !== 'all' ? qcFilter   : undefined,
+      etat:     quickFilter !== 'all' ? quickFilter : undefined,
+    }).then(({ lots: data, total: t }) => { setLots(data); setTotal(t) })
+  }
+
+  function setFilterAndReset<T>(setter: (v: T) => void) {
+    return (v: T) => { setter(v); setPage(0) }
+  }
+
   const articleOptions = useMemo<ArticleOption[]>(() => {
     const seen = new Set<string>()
     return lots.flatMap((l): ArticleOption[] => {
@@ -113,7 +157,7 @@ export default function StocksPage() {
     articleCode: string, lot: string, quantite: number, date: string, motif: string,
   ): Promise<boolean> {
     const ok = await createInitStock(articleCode, lot, quantite, date, motif)
-    if (ok) getLotStocks().then(setLots)
+    if (ok) refreshAll()
     return ok
   }
 
@@ -134,7 +178,7 @@ export default function StocksPage() {
       )
       ok ? created++ : errors++
     }
-    getLotStocks().then(setLots)
+    refreshAll()
     return { created, errors }
   }
 
@@ -147,35 +191,8 @@ export default function StocksPage() {
     0,
   )
 
-  const stats = useMemo(() => {
-    const valeurTotale = lots.reduce((s, l) => s + l.valeur, 0)
-    const dormants = lots.filter((l) => l.etat === 'Dormant').reduce((s, l) => s + l.valeur, 0)
-    const obsoletes = lots.filter((l) => l.etat === 'Obsolete').reduce((s, l) => s + l.valeur, 0)
-    const actifs = lots.filter((l) => l.etat === 'Disponible').length
-    const rotation = Math.round((actifs / lots.length) * 100)
-    return { valeurTotale, dormants, obsoletes, rotation }
-  }, [lots])
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    return lots.filter((l) => {
-      if (quickFilter !== 'all' && l.etat !== quickFilter) return false
-      if (typeFilter !== 'all' && l.type !== typeFilter) return false
-      if (qcFilter !== 'all' && l.statutQC !== qcFilter) return false
-      if (q) {
-        return (
-          l.numero.toLowerCase().includes(q)
-          || l.sku.toLowerCase().includes(q)
-          || l.designation.toLowerCase().includes(q)
-          || l.bcBa.toLowerCase().includes(q)
-          || l.reception.toLowerCase().includes(q)
-        )
-      }
-      return true
-    })
-  }, [lots, search, quickFilter, typeFilter])
-
-  const hasActiveFilters = search !== '' || quickFilter !== 'all' || typeFilter !== 'all' || qcFilter !== 'all'
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const hasActiveFilters = searchInput !== '' || quickFilter !== 'all' || typeFilter !== 'all' || qcFilter !== 'all'
 
   function fmtK(n: number) {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
@@ -258,7 +275,7 @@ export default function StocksPage() {
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
-            onClick={() => setQuickFilter(key)}
+            onClick={() => setFilterAndReset(setQuickFilter)(key)}
             className={`h-8 px-3.5 text-sm rounded-full font-medium border transition-colors inline-flex items-center gap-1.5 ${
               quickFilter === key
                 ? 'bg-foreground text-background border-foreground'
@@ -280,14 +297,14 @@ export default function StocksPage() {
           <input
             type="text"
             placeholder="ex : MP-FAR-001 ou Farine…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-8 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring w-full"
           />
         </div>
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as TypeArticle | 'all')}
+          onChange={(e) => setFilterAndReset(setTypeFilter)(e.target.value as TypeArticle | 'all')}
           className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
         >
           <option value="all">Tous types</option>
@@ -298,7 +315,7 @@ export default function StocksPage() {
         </select>
         <select
           value={qcFilter}
-          onChange={(e) => setQcFilter(e.target.value as StatutQC | 'all')}
+          onChange={(e) => setFilterAndReset(setQcFilter)(e.target.value as StatutQC | 'all')}
           className="h-8 px-2.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
         >
           <option value="all">Tous statuts QC</option>
@@ -309,7 +326,7 @@ export default function StocksPage() {
         <div className="flex items-center gap-2 ml-auto">
           {hasActiveFilters && (
             <button
-              onClick={() => { setSearch(''); setQuickFilter('all'); setTypeFilter('all'); setQcFilter('all') }}
+              onClick={() => { setSearchInput(''); setSearch(''); setQuickFilter('all'); setTypeFilter('all'); setQcFilter('all'); setPage(0) }}
               className="h-7 px-2.5 text-xs rounded-md flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <X className="size-3" />
@@ -317,7 +334,7 @@ export default function StocksPage() {
             </button>
           )}
           <span className="text-xs text-muted-foreground">
-            {filtered.length} lot{filtered.length !== 1 ? 's' : ''}
+            {loading ? '…' : `${total} lot${total !== 1 ? 's' : ''}`}
           </span>
           {isCustomized && (
             <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground" onClick={reset}>
@@ -383,13 +400,19 @@ export default function StocksPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/50">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={14} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  Chargement…
+                </td>
+              </tr>
+            ) : lots.length === 0 ? (
               <tr>
                 <td colSpan={14} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   Aucun lot ne correspond aux filtres.
                 </td>
               </tr>
-            ) : filtered.map((l) => (
+            ) : lots.map((l) => (
               <tr key={l.id} className="hover:bg-muted/20">
 
                 <td className="px-4 py-3 font-mono text-xs font-semibold truncate">{l.numero}</td>
@@ -480,6 +503,36 @@ export default function StocksPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1">
+          <span className="text-sm text-muted-foreground">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} sur {total} lots
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline" size="sm"
+              className="h-8 w-8 p-0"
+              disabled={page === 0 || loading}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="text-sm font-medium px-3">
+              {page + 1} / {totalPages}
+            </span>
+            <Button
+              variant="outline" size="sm"
+              className="h-8 w-8 p-0"
+              disabled={page >= totalPages - 1 || loading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <MouvementModal
         open={mouvementOpen}

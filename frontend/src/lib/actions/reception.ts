@@ -11,14 +11,21 @@ import type { StatutQC } from '@/types/erp'
 
 // ── Lecture des bons de réception ─────────────────────────────────────────────
 
-export async function getGoodsReceipts(): Promise<{
+export async function getGoodsReceipts(params: {
+  page?:     number
+  pageSize?: number
+  search?:   string
+  statut?:   string
+} = {}): Promise<{
   headers: ReceptionHeader[]
-  items: ReceptionItem[]
+  items:   ReceptionItem[]
+  total:   number
 }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
+    const { page = 0, pageSize = 50, search, statut } = params
 
-    const { data: receipts, error: recErr } = await supabase
+    let q = supabase
       .from('goods_receipts')
       .select(`
         id, receipt_number, received_at, delivery_note_number, status, purchase_order_id,
@@ -28,11 +35,20 @@ export async function getGoodsReceipts(): Promise<{
           order_type,
           fournisseurs!fournisseur_id ( raison_sociale, statut )
         )
-      `)
+      `, { count: 'exact' })
       .eq('organization_id', orgId)
+
+    if (statut && statut !== 'all') q = q.eq('status', statut)
+    if (search && search.trim()) {
+      const like = `%${search.trim()}%`
+      q = q.or(`receipt_number.ilike.${like},fournisseur_nom.ilike.${like}`)
+    }
+
+    const { data: receipts, error: recErr, count } = await q
       .order('received_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (recErr) throw recErr
-    if (!receipts?.length) return { headers: [], items: [] }
+    if (!receipts?.length) return { headers: [], items: [], total: count ?? 0 }
 
     const receiptIds = receipts.map((r) => r.id as string)
 
@@ -98,10 +114,10 @@ export async function getGoodsReceipts(): Promise<{
       }
     })
 
-    return { headers, items }
+    return { headers, items, total: count ?? 0 }
   } catch (e) {
     console.error('[getGoodsReceipts]', e)
-    return { headers: [], items: [] }
+    return { headers: [], items: [], total: 0 }
   }
 }
 

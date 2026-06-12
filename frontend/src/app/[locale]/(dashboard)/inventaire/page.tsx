@@ -24,6 +24,7 @@ import {
   postInventoryDocument,
 } from '@/lib/actions/inventaire'
 import { HelpPopover } from '@/components/ui/help-popover'
+import { Paginator }   from '@/components/ui/paginator'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -269,24 +270,32 @@ function DetailModal({ doc, items, itemsLoading, onClose, onSave, onPost }: Deta
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function InventairePage() {
+  const PAGE_SIZE = 50
+
   const [docs,         setDocs]         = useState<InventoryDocument[]>([])
   const [docsLoading,  setDocsLoading]  = useState(true)
   const [creating,     setCreating]     = useState(false)
   const [filterStatus, setFilterStatus] = useState<InventoryStatus | 'ALL'>('ALL')
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
+  const [page,  setPage]  = useState(0)
+  const [total, setTotal] = useState(0)
+  const [tick,  setTick]  = useState(0)
 
   // Cache items par doc pour ne pas recharger à chaque ouverture
   const [itemsCache,   setItemsCache]   = useState<Record<string, InventoryDocumentItem[]>>({})
   const [itemsLoading, setItemsLoading] = useState(false)
 
-  // ── Chargement initial ────────────────────────────────────────────────────
+  // ── Chargement paginé des documents ──────────────────────────────────────
 
   useEffect(() => {
-    getInventoryDocuments().then((data) => {
-      setDocs(data)
-      setDocsLoading(false)
+    setDocsLoading(true)
+    getInventoryDocuments({
+      page, pageSize: PAGE_SIZE,
+      statut: filterStatus !== 'ALL' ? filterStatus : undefined,
+    }).then(({ data, total: t }) => {
+      setDocs(data); setTotal(t); setDocsLoading(false)
     })
-  }, [])
+  }, [page, filterStatus, tick])
 
   // ── Chargement des lignes à l'ouverture d'un document ─────────────────────
 
@@ -310,19 +319,16 @@ export default function InventairePage() {
     const totalEcart = allItems.reduce((s, i) => s + (i.differenceQuantity ?? 0), 0)
     const nbEcarts   = allItems.filter((i) => (i.differenceQuantity ?? 0) !== 0).length
     return {
-      total:    docs.length,
+      total:    total,
       proposed: docs.filter((d) => d.status === 'PROPOSED').length,
       counted:  docs.filter((d) => d.status === 'COUNTED').length,
       posted:   docs.filter((d) => d.status === 'POSTED').length,
       totalEcart,
       nbEcarts,
     }
-  }, [docs, itemsCache])
+  }, [docs, itemsCache, total])
 
-  const filtered = useMemo(
-    () => filterStatus === 'ALL' ? docs : docs.filter((d) => d.status === filterStatus),
-    [docs, filterStatus],
-  )
+  const filtered = docs
 
   const FILTER_TABS = [
     { key: 'ALL'      as const, label: 'Tous',    count: kpis.total    },
@@ -337,8 +343,9 @@ export default function InventairePage() {
     setCreating(true)
     const doc = await createInventoryDocument()
     if (doc) {
-      setDocs((prev) => [doc, ...prev])
-      setSelectedDocId(doc.id)   // ouvre directement le nouveau document
+      setSelectedDocId(doc.id)
+      setPage(0)
+      setTick((k) => k + 1)
     }
     setCreating(false)
   }, [])
@@ -399,7 +406,7 @@ export default function InventairePage() {
         {FILTER_TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setFilterStatus(t.key)}
+            onClick={() => { setFilterStatus(t.key); setPage(0) }}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               filterStatus === t.key
                 ? 'border-foreground text-foreground'
@@ -511,6 +518,8 @@ export default function InventairePage() {
           </table>
         )}
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={docsLoading} onPage={setPage} />
 
       {/* Modal */}
       {selectedDoc && (

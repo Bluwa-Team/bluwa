@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Package, CheckCircle2, BookCheck, AlertTriangle,
   RotateCcw, Trash2, Loader2, Plus, Calculator, Printer,
@@ -26,6 +26,7 @@ import {
 import { DeclareOutputModal } from './_components/declare-output-modal'
 import { LotLabelModal }     from './_components/lot-label-modal'
 import { HelpPopover }       from '@/components/ui/help-popover'
+import { Paginator }         from '@/components/ui/paginator'
 
 // ── Colonnes ──────────────────────────────────────────────────────────────────
 
@@ -50,12 +51,17 @@ export default function LotsProductionPage() {
   const locale  = useLocale()
   const today   = new Date().toISOString().split('T')[0]
 
+  const PAGE_SIZE = 50
+
   const [outputs,    setOutputs]    = useState<ProductionOutputRow[]>([])
   const [loading,    setLoading]    = useState(true)
   const [actingId,   setActingId]   = useState<string | null>(null)
   const [filter,     setFilter]     = useState<FilterTab>('ALL')
   const [showModal,  setShowModal]  = useState(false)
   const [labelRow,   setLabelRow]   = useState<ProductionOutputRow | null>(null)
+  const [page,  setPage]  = useState(0)
+  const [total, setTotal] = useState(0)
+  const [tick,  setTick]  = useState(0)
 
   const { widths: wO, startResize: srO, reset: rO, isCustomized: icO } =
     useResizableColumns('bluwa:cols:lots-production', OUTPUT_COLS)
@@ -64,14 +70,13 @@ export default function LotsProductionPage() {
 
   // ── Chargement ──────────────────────────────────────────────────────────────
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     setLoading(true)
-    const data = await getProductionOutputs('ALL')
-    setOutputs(data)
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
+    getProductionOutputs(filter === 'ALL' ? 'ALL' : filter, page, PAGE_SIZE)
+      .then(({ data, total: t }) => {
+        setOutputs(data); setTotal(t); setLoading(false)
+      })
+  }, [page, filter, tick])
 
   // ── Stats ───────────────────────────────────────────────────────────────────
 
@@ -96,31 +101,28 @@ export default function LotsProductionPage() {
 
   // ── Filtrage ────────────────────────────────────────────────────────────────
 
-  const visible = useMemo(
-    () => filter === 'ALL' ? outputs : outputs.filter((o) => o.status === filter),
-    [outputs, filter],
-  )
+  const visible = outputs
 
   const counts = useMemo(() => ({
-    ALL:       outputs.length,
+    ALL:       total,
     DRAFT:     outputs.filter((o) => o.status === 'DRAFT').length,
     CONFIRMED: outputs.filter((o) => o.status === 'CONFIRMED').length,
     POSTED:    outputs.filter((o) => o.status === 'POSTED').length,
-  }), [outputs])
+  }), [outputs, total])
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
   async function handleConfirm(id: string) {
     setActingId(id)
-    const updated = await confirmProductionOutput(id)
-    if (updated) setOutputs((prev) => prev.map((o) => o.id === id ? updated : o))
+    await confirmProductionOutput(id)
+    setTick((k) => k + 1)
     setActingId(null)
   }
 
   async function handlePost(id: string) {
     setActingId(id)
-    const updated = await postProductionOutput(id)
-    if (updated) setOutputs((prev) => prev.map((o) => o.id === id ? updated : o))
+    await postProductionOutput(id)
+    setTick((k) => k + 1)
     setActingId(null)
   }
 
@@ -128,12 +130,13 @@ export default function LotsProductionPage() {
     if (!confirm('Supprimer ce brouillon ?')) return
     setActingId(id)
     const ok = await deleteProductionOutput(id)
-    if (ok) setOutputs((prev) => prev.filter((o) => o.id !== id))
+    if (ok) setTick((k) => k + 1)
     setActingId(null)
   }
 
-  function handleSave(output: ProductionOutputRow) {
-    setOutputs((prev) => [output, ...prev])
+  function handleSave(_output: ProductionOutputRow) {
+    setPage(0)
+    setTick((k) => k + 1)
     setShowModal(false)
   }
 
@@ -228,7 +231,7 @@ export default function LotsProductionPage() {
         {(['ALL', 'DRAFT', 'CONFIRMED', 'POSTED'] as FilterTab[]).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => { setFilter(f); setPage(0) }}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               filter === f
                 ? 'bg-foreground text-background'
@@ -479,6 +482,8 @@ export default function LotsProductionPage() {
           </p>
         </div>
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       {/* Modals */}
       {showModal && (

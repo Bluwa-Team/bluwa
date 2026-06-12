@@ -23,7 +23,10 @@ import {
   Article, ArticleType, ArticleStatut,
   TYPE_COLORS, STATUT_COLORS, APPRO_COLORS,
 } from './_components/types'
-import { getArticles, createArticle, updateArticle } from '@/lib/actions/articles'
+import { getArticles, getArticlesPage, createArticle, updateArticle } from '@/lib/actions/articles'
+import { Paginator } from '@/components/ui/paginator'
+
+const PAGE_SIZE = 50
 import { downloadCsv } from '@/lib/csv-utils'
 import { CsvImportMapper, type CsvField } from '@/components/ui/csv-import-mapper'
 import type { ArticleAppro } from './_components/types'
@@ -90,6 +93,9 @@ export default function ArticlesPage() {
 
   const [articles,      setArticles]      = useState<Article[]>([])
   const [loading,       setLoading]       = useState(true)
+  const [page,          setPage]          = useState(0)
+  const [total,         setTotal]         = useState(0)
+  const [searchInput,   setSearchInput]   = useState('')
   const [search,        setSearch]        = useState('')
   const [filterType,    setFilterType]    = useState<'TOUS' | ArticleType>('TOUS')
   const [filterStatut,  setFilterStatut]  = useState<'Tous' | ArticleStatut>('Tous')
@@ -108,20 +114,28 @@ export default function ArticlesPage() {
   )
 
   useEffect(() => {
-    getArticles().then((data) => { setArticles(data); setLoading(false) })
-  }, [])
+    const t = setTimeout(() => { setSearch(searchInput); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
-  const filtered = useMemo(() => {
-    return articles.filter((a) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!a.code.toLowerCase().includes(q) && !a.designation.toLowerCase().includes(q)) return false
-      }
-      if (filterType !== 'TOUS' && a.type !== filterType) return false
-      if (filterStatut !== 'Tous' && a.statut !== filterStatut) return false
-      return true
-    })
-  }, [articles, search, filterType, filterStatut])
+  useEffect(() => {
+    setLoading(true)
+    getArticlesPage({
+      page, pageSize: PAGE_SIZE,
+      search:  search      || undefined,
+      type:    filterType  !== 'TOUS' ? filterType  : undefined,
+      statut:  filterStatut !== 'Tous' ? filterStatut : undefined,
+    }).then(({ data, total: t }) => { setArticles(data); setTotal(t); setLoading(false) })
+  }, [page, search, filterType, filterStatut])
+
+  function resetAndRefresh() {
+    setPage(0)
+    getArticlesPage({ page: 0, pageSize: PAGE_SIZE,
+      search: search || undefined,
+      type: filterType !== 'TOUS' ? filterType : undefined,
+      statut: filterStatut !== 'Tous' ? filterStatut : undefined,
+    }).then(({ data, total: t }) => { setArticles(data); setTotal(t) })
+  }
 
   async function handleSave(data: Partial<Article>): Promise<boolean> {
     if (editArticle) {
@@ -135,7 +149,7 @@ export default function ArticlesPage() {
     const code = generateCode(type)
     const created = await createArticle({ ...data, code, type, famille } as Article & { code: string })
     if (!created) return false
-    setArticles((prev) => [created, ...prev])
+    resetAndRefresh()
     return true
   }
 
@@ -205,10 +219,7 @@ export default function ArticlesPage() {
       if (result) created++; else errors++
     }
 
-    if (created > 0) {
-      const data = await getArticles()
-      setArticles(data)
-    }
+    if (created > 0) resetAndRefresh()
     return { created, errors }
   }
 
@@ -222,12 +233,11 @@ export default function ArticlesPage() {
   }
 
   function toggleAll() {
-    if (selected.size === filtered.length) setSelected(new Set())
-    else setSelected(new Set(filtered.map((a) => a.id)))
+    if (selected.size === articles.length) setSelected(new Set())
+    else setSelected(new Set(articles.map((a) => a.id)))
   }
 
-  const count = filtered.length
-  const countLabel = count > 1 ? t('countPlural', { count }) : t('count', { count })
+  const countLabel = total > 1 ? t('countPlural', { count: total }) : t('count', { count: total })
 
   return (
     <div className="space-y-5">
@@ -281,8 +291,8 @@ export default function ArticlesPage() {
           <Input
             className="pl-9"
             placeholder={t('searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
@@ -291,7 +301,7 @@ export default function ArticlesPage() {
           {TYPES.map((tp) => (
             <button
               key={tp}
-              onClick={() => setFilterType(tp)}
+              onClick={() => { setFilterType(tp); setPage(0) }}
               className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                 filterType === tp
                   ? 'bg-background shadow-sm text-foreground'
@@ -303,7 +313,7 @@ export default function ArticlesPage() {
           ))}
         </div>
 
-        <Select value={filterStatut} onValueChange={(v) => setFilterStatut(v as typeof filterStatut)}>
+        <Select value={filterStatut} onValueChange={(v) => { setFilterStatut(v as typeof filterStatut); setPage(0) }}>
           <SelectTrigger className="w-auto min-w-[9rem] h-9">
             <span className="text-sm">
               {filterStatut === 'Tous' ? t('columns.status') : t(`statuts.${filterStatut}` as any)}
@@ -351,7 +361,7 @@ export default function ArticlesPage() {
               <TableHead className="pl-4">
                 <input
                   type="checkbox"
-                  checked={selected.size === filtered.length && filtered.length > 0}
+                  checked={selected.size === articles.length && articles.length > 0}
                   onChange={toggleAll}
                   className="rounded border-input"
                 />
@@ -406,14 +416,14 @@ export default function ArticlesPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : articles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                   {t('empty')}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((article) => (
+              articles.map((article) => (
                 <TableRow key={article.id} className={selected.has(article.id) ? 'bg-primary/5' : ''}>
                   <TableCell className="pl-4">
                     <input
@@ -479,6 +489,8 @@ export default function ArticlesPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Paginator page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onPage={setPage} />
 
       <ArticleModal
         open={modalOpen}

@@ -71,20 +71,32 @@ async function resolveFactoryId(supabase: SupabaseClient, orgId: string): Promis
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
-/** Tous les documents d'inventaire, du plus récent au plus ancien. */
-export async function getInventoryDocuments(): Promise<InventoryDocument[]> {
+export async function getInventoryDocuments(params: {
+  page?:     number
+  pageSize?: number
+  statut?:   string
+} = {}): Promise<{ data: InventoryDocument[]; total: number }> {
   try {
     const { supabase, orgId } = await getSupabaseWithOrg()
-    const { data, error } = await supabase
-      .from('inventory_documents')
-      .select('*')
+    const { page = 0, pageSize = 50, statut } = params
+
+    let q = supabase.from('inventory_documents')
+      .select('*', { count: 'exact' })
       .eq('organization_id', orgId)
+
+    if (statut && statut !== 'ALL') q = q.eq('status', statut)
+
+    const { data, error, count } = await q
       .order('created_at', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (error) throw error
-    return (data ?? []).map((r) => toDocument(r as unknown as Record<string, unknown>))
+    return {
+      data:  (data ?? []).map((r) => toDocument(r as unknown as Record<string, unknown>)),
+      total: count ?? 0,
+    }
   } catch (e) {
     console.error('[inventaire] getInventoryDocuments:', e)
-    return []
+    return { data: [], total: 0 }
   }
 }
 
