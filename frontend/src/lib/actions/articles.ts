@@ -118,12 +118,28 @@ export async function getArticleById(id: string): Promise<Article | null> {
     const { supabase, orgId } = await getSupabaseWithOrg()
     const { data, error } = await supabase
       .from('articles')
-      .select('*, remplace_par:articles!remplace_par_id(id, code, designation)')
+      .select('*')
       .eq('id', id)
       .eq('organization_id', orgId)
       .single()
     if (error) throw error
-    return data ? toArticle(data) : null
+    if (!data) return null
+
+    const article = toArticle(data)
+
+    if (article.remplaceParId) {
+      const { data: rp } = await supabase
+        .from('articles')
+        .select('id, code, designation')
+        .eq('id', article.remplaceParId)
+        .single()
+      if (rp) {
+        article.remplaceParCode = rp.code as string
+        article.remplaceParDesignation = rp.designation as string
+      }
+    }
+
+    return article
   } catch (e) {
     console.error('[articles action] error:', e)
     return null
