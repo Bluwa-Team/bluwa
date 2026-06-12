@@ -718,37 +718,6 @@ export default function ApprovisionnementPage() {
 
       {tab === 'commandes' && (
         <>
-          {/* Stat cards */}
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-            <StatCard
-              label="En cours"
-              value={stats.enCours}
-              sub="Commandes non reçues"
-              bgClass="bg-orange-50 dark:bg-orange-950/30 border"
-              iconBgClass="bg-orange-100 dark:bg-orange-900/50"
-              iconColorClass="text-orange-600 dark:text-orange-400"
-              icon={Clock}
-            />
-            <StatCard
-              label="Reçues"
-              value={stats.recues}
-              sub="Livraisons complètes"
-              bgClass="bg-emerald-50 dark:bg-emerald-950/30 border"
-              iconBgClass="bg-emerald-100 dark:bg-emerald-900/50"
-              iconColorClass="text-emerald-600 dark:text-emerald-400"
-              icon={PackageCheck}
-            />
-            <StatCard
-              label="Total commandes"
-              value={stats.total}
-              sub={`dont ${stats.recues} reçue(s)`}
-              bgClass="bg-blue-50 dark:bg-blue-950/30 border"
-              iconBgClass="bg-blue-100 dark:bg-blue-900/50"
-              iconColorClass="text-blue-600 dark:text-blue-400"
-              icon={ShoppingBag}
-            />
-          </div>
-
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-64 max-w-md">

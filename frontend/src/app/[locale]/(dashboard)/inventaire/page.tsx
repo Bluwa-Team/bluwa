@@ -394,69 +394,6 @@ export default function InventairePage() {
         </Button>
       </div>
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          {
-            label: 'Documents total',
-            value: String(kpis.total),
-            sub: 'sur la période',
-            color: 'bg-slate-50/50 border',
-            iconBg: 'bg-slate-100', iconColor: 'text-slate-600',
-            Icon: ClipboardCheck,
-          },
-          {
-            label: 'En attente de comptage',
-            value: String(kpis.proposed),
-            sub: 'PROPOSED',
-            color: 'bg-blue-50/50 border',
-            iconBg: 'bg-blue-100', iconColor: 'text-blue-600',
-            Icon: ClipboardCheck,
-          },
-          {
-            label: 'Prêts à valider',
-            value: String(kpis.counted),
-            sub: 'COUNTED — en attente de posting',
-            color: `bg-amber-50/50 border${kpis.counted > 0 ? ' ring-1 ring-amber-300/50' : ''}`,
-            iconBg: 'bg-amber-100', iconColor: 'text-amber-600',
-            Icon: AlertTriangle,
-          },
-          {
-            label: 'Écart cumulé',
-            value: kpis.totalEcart !== 0
-              ? `${kpis.totalEcart > 0 ? '+' : ''}${kpis.totalEcart.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}`
-              : '0',
-            sub: kpis.nbEcarts > 0
-              ? `${kpis.nbEcarts} ligne(s) avec écart`
-              : 'Aucun écart détecté',
-            color: kpis.totalEcart !== 0
-              ? 'bg-red-50/50 border ring-1 ring-red-300/40'
-              : 'bg-emerald-50/50 border',
-            iconBg: kpis.totalEcart !== 0 ? 'bg-red-100' : 'bg-emerald-100',
-            iconColor: kpis.totalEcart !== 0 ? 'text-red-600' : 'text-emerald-600',
-            Icon: kpis.totalEcart > 0
-              ? TrendingUp
-              : kpis.totalEcart < 0 ? TrendingDown : CheckCircle2,
-          },
-        ].map((c) => (
-          <div
-            key={c.label}
-            className={`rounded-2xl p-4 transition-all hover:scale-[1.02] hover:shadow-md ${c.color}`}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.iconBg}`}>
-                <c.Icon className={`size-4 ${c.iconColor}`} />
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {c.label}
-              </span>
-            </div>
-            <p className="text-2xl font-bold tabular-nums">{c.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{c.sub}</p>
-          </div>
-        ))}
-      </div>
-
       {/* Filter tabs */}
       <div className="flex gap-1 border-b">
         {FILTER_TABS.map((t) => (
