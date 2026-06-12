@@ -8,7 +8,7 @@ import {
   ShieldAlert, Layers, Plus, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useLocale } from 'next-intl'
-import { formatNumber } from '@/lib/format'
+import { formatNumber, formatAmount } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
@@ -200,6 +200,8 @@ export default function StocksPage() {
     return String(n)
   }
 
+  function fmtXOF(n: number) { return `${fmtK(n)} XOF` }
+
   return (
     <div className="space-y-6">
 
@@ -230,7 +232,7 @@ export default function StocksPage() {
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Valeur totale"
-          value={fmtK(stats.valeurTotale)}
+          value={fmtXOF(stats.valeurTotale)}
           sub={`${lots.length} lot${lots.length > 1 ? 's' : ''} · Valorisation PMP`}
           bgClass="bg-blue-50 dark:bg-blue-950/30"
           iconBgClass="bg-blue-100 dark:bg-blue-900/50"
@@ -239,7 +241,7 @@ export default function StocksPage() {
         />
         <StatCard
           label="Stocks dormants"
-          value={fmtK(stats.dormants)}
+          value={fmtXOF(stats.dormants)}
           sub="Sans sortie ≥ 60j"
           bgClass="bg-orange-50 dark:bg-orange-950/30"
           iconBgClass="bg-orange-100 dark:bg-orange-900/50"
@@ -248,7 +250,7 @@ export default function StocksPage() {
         />
         <StatCard
           label="Obsolètes"
-          value={fmtK(stats.obsoletes)}
+          value={fmtXOF(stats.obsoletes)}
           sub="À détruire / destocker"
           bgClass="bg-red-50 dark:bg-red-950/30"
           iconBgClass="bg-red-100 dark:bg-red-900/50"
@@ -371,7 +373,7 @@ export default function StocksPage() {
                 Qté<ColumnResizer columnId="quantite" onStart={startResize} />
               </th>
               <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
-                PMP<ColumnResizer columnId="pmp" onStart={startResize} />
+                Coût unit.<ColumnResizer columnId="pmp" onStart={startResize} />
               </th>
               <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">
                 Valeur<ColumnResizer columnId="valeur" onStart={startResize} />
@@ -438,11 +440,11 @@ export default function StocksPage() {
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.pmp, locale)}
+                  {formatAmount(l.unitCost, locale, 'XOF')}
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono text-sm truncate">
-                  {formatNumber(l.valeur, locale)}
+                  {formatAmount(l.valeur, locale, 'XOF')}
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs truncate">{l.bcBa}</td>

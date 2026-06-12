@@ -21,7 +21,7 @@ export interface LotStock {
   type: ArticleType
   quantite: number
   unite: string
-  pmp: number
+  unitCost: number   // coût unitaire propre au lot (prix BC/BA ou PMP en fallback)
   valeur: number
   bcBa: string
   reception: string
@@ -76,35 +76,35 @@ export const ETAT_LABELS: Record<EtatLot, string> = {
 export const MOCK_LOTS: LotStock[] = [
   {
     id: '1', numero: 'MP-20260510-0001', sku: 'MP-FAR-001', designation: 'Farine de blé T55',
-    type: 'MP', quantite: 480, unite: 'Kg', pmp: 438, valeur: 210240,
+    type: 'MP', quantite: 480, unite: 'Kg', unitCost:438, valeur: 210240,
     bcBa: 'BC-2026-040', reception: 'REC-2026-040', dateEntree: '2026-05-10',
     dlc: '2026-08-20', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
     seuilAlertePeremption: 30,   // 87 jours restants → OK
   },
   {
     id: '2', numero: 'MP-20260510-0002', sku: 'MP-ARA-002', designation: 'Arachides brutes',
-    type: 'MP', quantite: 180, unite: 'Kg', pmp: 720, valeur: 129600,
+    type: 'MP', quantite: 180, unite: 'Kg', unitCost:720, valeur: 129600,
     bcBa: 'BA-2026-015', reception: 'REC-2026-015', dateEntree: '2026-02-16',
     dlc: '2026-06-21', origine: 'Informel', statutQC: 'Libere', etat: 'Dormant',
     seuilAlertePeremption: 30,   // 27 jours restants → ALERTE
   },
   {
     id: '3', numero: 'AC-20260510-0003', sku: 'AC-ETI-003', designation: 'Étiquettes anciennes',
-    type: 'AC', quantite: 3500, unite: 'Unité', pmp: 12, valeur: 42000,
+    type: 'AC', quantite: 3500, unite: 'Unité', unitCost:12, valeur: 42000,
     bcBa: 'BC-2026-005', reception: 'REC-2026-005', dateEntree: '2025-11-23',
     dlc: '2026-05-17', origine: 'Formel', statutQC: 'Bloque', etat: 'Obsolete',
     seuilAlertePeremption: 14,   // expiré → CRITIQUE
   },
   {
     id: '4', numero: 'PF-20260510-0004', sku: 'PF-PAI-004', designation: 'Pain de mie',
-    type: 'PF', quantite: 120, unite: 'Kg', pmp: 700, valeur: 84000,
+    type: 'PF', quantite: 120, unite: 'Kg', unitCost:700, valeur: 84000,
     bcBa: 'BC-2026-038', reception: 'REC-2026-038', dateEntree: '2026-05-05',
     dlc: '2026-05-28', origine: 'Formel', statutQC: 'Libere', etat: 'Disponible',
     seuilAlertePeremption: 7,    // 3 jours restants → ALERTE
   },
   {
     id: '5', numero: 'PF-20260510-0005', sku: 'PF-JUS-005', designation: 'Jus de bissap bouteille 1L',
-    type: 'PF', quantite: 250, unite: 'Unité', pmp: 292, valeur: 73000,
+    type: 'PF', quantite: 250, unite: 'Unité', unitCost:292, valeur: 73000,
     bcBa: 'BC-2026-033', reception: 'REC-2026-033', dateEntree: '2026-04-18',
     dlc: '2026-10-18', origine: 'Formel', statutQC: 'EnControle', etat: 'Disponible',
     seuilAlertePeremption: 30,   // 146 jours restants → OK
@@ -286,7 +286,7 @@ export interface StockLigne {
   datePeremption: string | null
   quantite: number
   unite: string
-  pmp: number | null
+  unitCost:number | null
   valeurStock: number | null
   stockSecurite: number | null
   pointCommande: number | null

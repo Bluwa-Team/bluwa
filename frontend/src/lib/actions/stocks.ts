@@ -210,6 +210,11 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
   const dateEntree = ((gr?.received_at as string) ?? '').split('T')[0]
   const receivedTs = gr?.received_at ? new Date(gr.received_at as string).getTime() : 0
 
+  // Coût unitaire propre au lot : prix de la ligne BC/BA dont le batch_number correspond
+  const griList: any[] = Array.isArray(gr?.goods_receipt_items) ? gr.goods_receipt_items : []
+  const gri = griList.find((i: any) => i.batch_number === row.batch_number) ?? null
+  const unitCost = Number(gri?.purchase_order_items?.unit_price_ht) || pmp
+
   let etat: EtatLot = 'Disponible'
   if (dlc) {
     if (Math.floor((new Date(dlc).getTime() - today) / 86_400_000) < 0) etat = 'Obsolete'
@@ -228,8 +233,8 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
     type:                  (art?.type ?? 'MP') as ArticleType,
     quantite,
     unite:                 art?.unite_stock ?? '',
-    pmp,
-    valeur:                Math.round(pmp * quantite),
+    unitCost,
+    valeur:                Math.round(unitCost * quantite),
     bcBa:                  po?.order_number ?? '',
     reception:             gr?.receipt_number ?? '',
     dateEntree,
@@ -245,6 +250,7 @@ const LOT_SELECT = `
   id, batch_number, quantity_initial, quantity_remaining, statut_qc, expiry_date, created_at,
   goods_receipts!goods_receipt_id (
     receipt_number, received_at, fournisseur_type,
+    goods_receipt_items ( batch_number, purchase_order_items!purchase_order_item_id ( unit_price_ht ) ),
     purchase_orders!purchase_order_id (
       order_number,
       fournisseurs!fournisseur_id ( raison_sociale, statut )
