@@ -111,7 +111,8 @@ export function ReceptionDirecteModal({ open, onClose, articles, onSave }: Props
 
   function autoLotValue(idx: number): string {
     const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-    return `LF-${datePart}-${String(idx + 1).padStart(4, '0')}`
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase()
+    return `LF-${datePart}-${String(idx + 1).padStart(2, '0')}${rand}`
   }
 
   function selectArticle(key: string, articleId: string) {
