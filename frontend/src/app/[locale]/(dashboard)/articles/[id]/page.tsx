@@ -41,6 +41,9 @@ import {
 import { getWorkCenters } from '@/lib/actions/work-centers'
 import { WorkCenter } from '@/types/erp'
 import ConfigPlanControle from '@/components/quality/ConfigPlanControle'
+import {
+  useResizableColumns, ColumnResizer, type ResizableColumn,
+} from '@/hooks/use-resizable-columns'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -71,6 +74,26 @@ function EmptyTab({ label }: { label: string }) {
   )
 }
 
+const MOUVEMENTS_COLUMNS: ResizableColumn[] = [
+  { id: 'date',      defaultWidth: 110, minWidth: 90  },
+  { id: 'type',      defaultWidth: 130, minWidth: 100 },
+  { id: 'lot',       defaultWidth: 140, minWidth: 100 },
+  { id: 'quantite',  defaultWidth: 120, minWidth: 90  },
+  { id: 'reference', defaultWidth: 140, minWidth: 100 },
+  { id: 'motif',     defaultWidth: null },
+]
+const MOTIF_MIN = 180
+
+const LOTS_COLUMNS: ResizableColumn[] = [
+  { id: 'lot',        defaultWidth: 160, minWidth: 120 },
+  { id: 'entrepot',   defaultWidth: null },
+  { id: 'quantite',   defaultWidth: 130, minWidth: 90  },
+  { id: 'reception',  defaultWidth: 110, minWidth: 86  },
+  { id: 'peremption', defaultWidth: 110, minWidth: 86  },
+  { id: 'statut',     defaultWidth: 130, minWidth: 100 },
+]
+const ENTREPOT_MIN = 180
+
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -88,6 +111,16 @@ export default function ArticleDetailPage() {
   const [gammeEtapes, setGammeEtapes] = useState<GammeEtape[]>([])
   const [gammeEditOpen, setGammeEditOpen] = useState(false)
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
+
+  const { widths: mWidths, startResize: startMResize } = useResizableColumns('bluwa:cols:article-mouvements', MOUVEMENTS_COLUMNS)
+  const mouvementsMinWidth = MOUVEMENTS_COLUMNS.reduce(
+    (s, c) => s + (c.defaultWidth == null ? MOTIF_MIN : (mWidths[c.id] ?? c.defaultWidth!)), 0,
+  )
+
+  const { widths: lWidths, startResize: startLResize } = useResizableColumns('bluwa:cols:article-lots', LOTS_COLUMNS)
+  const lotsMinWidth = LOTS_COLUMNS.reduce(
+    (s, c) => s + (c.defaultWidth == null ? ENTREPOT_MIN : (lWidths[c.id] ?? c.defaultWidth!)), 0,
+  )
 
   useEffect(() => {
     getWorkCenters().then(setWorkCenters)
@@ -289,15 +322,20 @@ export default function ArticleDetailPage() {
           {mouvements.length === 0 ? (
             <EmptyTab label={tCommon('noData')} />
           ) : (
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border overflow-x-auto">
+              <table className="w-full text-sm table-fixed" style={{ minWidth: mouvementsMinWidth }}>
+                <colgroup>
+                  {MOUVEMENTS_COLUMNS.map(c => (
+                    <col key={c.id} style={c.defaultWidth == null ? undefined : { width: mWidths[c.id] }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr className="bg-muted/40 border-b">
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Date</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Type</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
-                    <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Référence</th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Date<ColumnResizer columnId="date" onStart={startMResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Type<ColumnResizer columnId="type" onStart={startMResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot<ColumnResizer columnId="lot" onStart={startMResize} /></th>
+                    <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité<ColumnResizer columnId="quantite" onStart={startMResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Référence<ColumnResizer columnId="reference" onStart={startMResize} /></th>
                     <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Motif</th>
                   </tr>
                 </thead>
@@ -332,16 +370,21 @@ export default function ArticleDetailPage() {
           {lots.length === 0 ? (
             <EmptyTab label={tCommon('noData')} />
           ) : (
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border overflow-x-auto">
+              <table className="w-full text-sm table-fixed" style={{ minWidth: lotsMinWidth }}>
+                <colgroup>
+                  {LOTS_COLUMNS.map(c => (
+                    <col key={c.id} style={c.defaultWidth == null ? undefined : { width: lWidths[c.id] }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr className="bg-muted/40 border-b">
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot</th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Lot<ColumnResizer columnId="lot" onStart={startLResize} /></th>
                     <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Entrepôt</th>
-                    <th className="text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Réception</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Péremption</th>
-                    <th className="text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut</th>
+                    <th className="relative text-right px-4 py-3 font-semibold text-xs tracking-wide">Quantité<ColumnResizer columnId="quantite" onStart={startLResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Réception<ColumnResizer columnId="reception" onStart={startLResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Péremption<ColumnResizer columnId="peremption" onStart={startLResize} /></th>
+                    <th className="relative text-left px-4 py-3 font-semibold text-xs tracking-wide">Statut<ColumnResizer columnId="statut" onStart={startLResize} /></th>
                   </tr>
                 </thead>
                 <tbody>
