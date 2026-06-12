@@ -25,8 +25,8 @@ export async function getForecasts(weeksCount = 6): Promise<ForecastRow[]> {
     .from('articles')
     .select('id, code, designation, unite_stock')
     .eq('organization_id', orgId)
-    .in('type_article', ['PF', 'PSF'])
-    .eq('statut', 'actif')
+    .in('type', ['PF', 'PSF'])
+    .eq('statut', 'Actif')
     .order('code')
 
   if (!articles?.length) return []

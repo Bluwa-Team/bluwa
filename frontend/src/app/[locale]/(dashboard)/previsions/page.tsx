@@ -96,31 +96,30 @@ export default function PrevisionsPage() {
   }, [])
 
   async function loadGrid(orgId: string, factoryId: string) {
-    const { data, error } = await supabase
-      .from('view_previsions_onboarding')
-      .select('*')
-      .eq('organization_id', orgId)
+    const [articlesRes, gridRes] = await Promise.all([
+      supabase
+        .from('articles')
+        .select('id, code, designation, type')
+        .eq('organization_id', orgId)
+        .in('type', ['PF', 'PSF'])
+        .eq('statut', 'Actif')
+        .order('code'),
+      supabase
+        .from('view_previsions_onboarding')
+        .select('article_id, factory_id, week_code, quantity')
+        .eq('organization_id', orgId),
+    ])
 
-    if (error) { console.error(error); return }
+    if (gridRes.error) console.error(gridRes.error)
 
-    const uniqueArticles: Record<string, any> = {}
-    const grid: Record<string, number>        = {}
+    setArticles(articlesRes.data ?? [])
 
-    data?.forEach((row: ArticlePrevision) => {
-      if (!uniqueArticles[row.article_id]) {
-        uniqueArticles[row.article_id] = {
-          id:          row.article_id,
-          code:        row.article_code,
-          designation: row.article_name,
-          type:        row.article_type,
-        }
-      }
+    const grid: Record<string, number> = {}
+    gridRes.data?.forEach((row: ArticlePrevision) => {
       if (row.factory_id === factoryId && row.week_code) {
         grid[`${row.article_id}_${row.week_code}`] = Number(row.quantity)
       }
     })
-
-    setArticles(Object.values(uniqueArticles))
     setGridData(grid)
   }
 
