@@ -35,9 +35,10 @@ const STOCK_INIT_CSV_FIELDS: CsvField[] = [
 type QuickFilter = 'all' | 'Dormant' | 'Obsolete'
 
 const ETAT_ICONS: Record<EtatLot, React.ReactNode> = {
-  Disponible: <Check className="size-3 shrink-0" />,
-  Dormant:    <Moon className="size-3 shrink-0" />,
-  Obsolete:   <AlertTriangle className="size-3 shrink-0" />,
+  Disponible:  <Check className="size-3 shrink-0" />,
+  Dormant:     <Moon className="size-3 shrink-0" />,
+  Obsolete:    <AlertTriangle className="size-3 shrink-0" />,
+  Quarantaine: <ShieldAlert className="size-3 shrink-0" />,
 }
 
 const QC_ICONS: Record<StatutQC, React.ReactNode> = {
