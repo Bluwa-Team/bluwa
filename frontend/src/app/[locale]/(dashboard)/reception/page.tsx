@@ -382,15 +382,15 @@ export default function ReceptionPage() {
                 {/* Bon */}
                 <td className="px-4 py-3">
                   <button
-                    title={r.typeFournisseur === 'Formel' ? 'Télécharger le bon de commande' : "Télécharger le bon d'achat"}
+                    title={r.numeroBon?.startsWith('BC') ? 'Télécharger le bon de commande' : "Télécharger le bon d'achat"}
                     className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                      r.typeFournisseur === 'Formel'
+                      r.numeroBon?.startsWith('BC')
                         ? 'text-blue-700 bg-blue-50 hover:bg-blue-100'
                         : 'text-orange-700 bg-orange-50 hover:bg-orange-100'
                     }`}
                   >
                     <FileDown className="size-3.5 shrink-0" />
-                    {r.typeFournisseur === 'Formel' ? 'BC' : 'BA'}
+                    {r.numeroBon?.startsWith('BC') ? 'BC' : 'BA'}
                   </button>
                 </td>
 
