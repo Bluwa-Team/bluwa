@@ -393,7 +393,7 @@ export async function getLotStocksStats(): Promise<{
     const { supabase, orgId } = await getSupabaseWithOrg()
     const { data } = await supabase
       .from('lots')
-      .select('quantity_remaining, expiry_date, created_at, articles!article_id(pmp)')
+      .select('quantity_remaining, expiry_date, created_at, unit_cost, articles!article_id(pmp)')
       .eq('organization_id', orgId)
 
     const now    = Date.now()
@@ -402,9 +402,13 @@ export async function getLotStocksStats(): Promise<{
     const total = (data ?? []).length
 
     for (const row of data ?? []) {
-      const pmp    = Number((row as any).articles?.pmp) || 0
+      // Même priorité que mapLotRow : lots.unit_cost > articles.pmp
+      // (articles.pmp est déjà en XOF/unité_stock depuis migration 007)
+      const lotUnitCost = Number(row.unit_cost) || 0
+      const pmp         = Number((row as any).articles?.pmp) || 0
+      const unitCost    = lotUnitCost > 0 ? lotUnitCost : pmp
       const qty    = Number(row.quantity_remaining) || 0
-      const valeur = Math.round(pmp * qty)
+      const valeur = Math.round(unitCost * qty)
       valeurTotale += valeur
 
       const dlcTs       = row.expiry_date ? new Date(row.expiry_date as string).getTime() : null
