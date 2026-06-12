@@ -393,7 +393,13 @@ export async function getLotStocksStats(): Promise<{
     const { supabase, orgId } = await getSupabaseWithOrg()
     const { data } = await supabase
       .from('lots')
-      .select('quantity_remaining, expiry_date, created_at, unit_cost, articles!article_id(pmp)')
+      .select(`
+        quantity_remaining, expiry_date, created_at, unit_cost, batch_number,
+        articles!article_id ( pmp, coeff_conversion_achat ),
+        goods_receipts!goods_receipt_id (
+          goods_receipt_items ( batch_number, purchase_order_items!purchase_order_item_id ( unit_price_ht ) )
+        )
+      `)
       .eq('organization_id', orgId)
 
     const now    = Date.now()
@@ -402,11 +408,17 @@ export async function getLotStocksStats(): Promise<{
     const total = (data ?? []).length
 
     for (const row of data ?? []) {
-      // Même priorité que mapLotRow : lots.unit_cost > articles.pmp
-      // (articles.pmp est déjà en XOF/unité_stock depuis migration 007)
+      // Même chaîne de priorité que mapLotRow :
+      //   lots.unit_cost > unit_price_ht ÷ coeff_conversion_achat > articles.pmp
       const lotUnitCost = Number(row.unit_cost) || 0
-      const pmp         = Number((row as any).articles?.pmp) || 0
-      const unitCost    = lotUnitCost > 0 ? lotUnitCost : pmp
+      const art         = (row as any).articles
+      const gr          = (row as any).goods_receipts
+      const pmp         = Number(art?.pmp) || 0
+      const coeff       = Math.max(Number(art?.coeff_conversion_achat) || 1, 1)
+      const griList: any[] = Array.isArray(gr?.goods_receipt_items) ? gr.goods_receipt_items : []
+      const gri         = griList.find((i: any) => i.batch_number === row.batch_number) ?? null
+      const priceHt     = Number(gri?.purchase_order_items?.unit_price_ht) || 0
+      const unitCost    = lotUnitCost > 0 ? lotUnitCost : (priceHt > 0 ? priceHt / coeff : pmp)
       const qty    = Number(row.quantity_remaining) || 0
       const valeur = Math.round(unitCost * qty)
       valeurTotale += valeur
