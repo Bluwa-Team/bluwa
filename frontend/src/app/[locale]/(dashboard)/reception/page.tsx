@@ -112,12 +112,8 @@ export default function ReceptionPage() {
     ]).then(([rec, po, arts, name]) => {
       setRecHeaders(rec.headers)
       setRecItems(rec.items)
-      // BC : APPROVED ou SENT — BA : tout statut non terminal (pas d'approbation formelle)
-      const TERMINAL = ['RECEIVED', 'CANCELLED']
       setBcHeaders(po.headers.filter((h) =>
-        h.type === 'BA'
-          ? !TERMINAL.includes(h.statut)
-          : h.statut === 'APPROVED' || h.statut === 'SENT',
+        h.statut === 'APPROVED' || h.statut === 'SENT',
       ))
       setBcItems(po.items)
       setArticlesRef(arts)
