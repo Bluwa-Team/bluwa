@@ -10,7 +10,7 @@ import type { ArticleType } from '@/types/erp'
 import type { StatutQC } from '@/types/erp'
 import type { InventoryDocument, InventoryDocumentItem } from '@/types/erp'
 
-export type EtatLot = 'Disponible' | 'Dormant' | 'Obsolete'
+export type EtatLot = 'Disponible' | 'Dormant' | 'Obsolete' | 'Quarantaine'
 export type OrigineType = 'Formel' | 'Informel'
 
 export interface LotStock {
@@ -62,15 +62,17 @@ export const STATUT_QC_LABELS: Record<StatutQC, string> = {
 }
 
 export const ETAT_COLORS: Record<EtatLot, string> = {
-  Disponible: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  Dormant:    'bg-pink-100 text-pink-700 border border-pink-200',
-  Obsolete:   'bg-orange-100 text-orange-700 border border-orange-200',
+  Disponible:  'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  Dormant:     'bg-pink-100 text-pink-700 border border-pink-200',
+  Obsolete:    'bg-orange-100 text-orange-700 border border-orange-200',
+  Quarantaine: 'bg-amber-100 text-amber-700 border border-amber-200',
 }
 
 export const ETAT_LABELS: Record<EtatLot, string> = {
-  Disponible: 'Disponible',
-  Dormant:    'Dormant',
-  Obsolete:   'Obsolète',
+  Disponible:  'Disponible',
+  Dormant:     'Dormant',
+  Obsolete:    'Obsolète',
+  Quarantaine: 'Quarantaine',
 }
 
 export const MOCK_LOTS: LotStock[] = [

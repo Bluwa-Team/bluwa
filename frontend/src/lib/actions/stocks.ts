@@ -261,6 +261,9 @@ function mapLotRow(row: Record<string, unknown>): LotStock {
   const statutQC: StatutQC = (rawQC === 'EnControle' || rawQC === 'Libere' || rawQC === 'Bloque')
     ? (rawQC as StatutQC) : 'Libere'
 
+  // Un lot EnControle ou Bloque est toujours en Quarantaine, quelle que soit la date
+  if (rawQC === 'EnControle' || rawQC === 'Bloque') etat = 'Quarantaine'
+
   return {
     id:                    row.id as string,
     numero:                (row.batch_number as string) || `XX-${new Date().toISOString().slice(0,10).replace(/-/g,'')}−${(row.id as string).substring(0, 4)}`,
