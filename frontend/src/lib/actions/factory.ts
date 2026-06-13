@@ -5,12 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export interface Factory {
-  id:        string
-  name:      string
-  code:      string
-  country:   string
-  city:      string | null
-  is_active: boolean
+  id:                string
+  name:              string
+  code:              string
+  country:           string
+  city:              string | null
+  is_active:         boolean
+  oh_rate:           number   // taux FG — ex: 0.08 = 8 %
+  energie_unit_cost: number   // forfait énergie XOF/unité PF
 }
 
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED'
@@ -54,7 +56,7 @@ export async function getUserFactories(): Promise<Factory[]> {
     // Owner / admin → toutes les usines de l'organisation
     const { data } = await supabase
       .from('factories')
-      .select('id, name, code, country, city, is_active')
+      .select('id, name, code, country, city, is_active, oh_rate, energie_unit_cost')
       .eq('organization_id', profile.organization_id)
       .order('name')
     return (data ?? []) as Factory[]
@@ -63,7 +65,7 @@ export async function getUserFactories(): Promise<Factory[]> {
   // Autres rôles → uniquement les usines assignées
   const { data } = await supabase
     .from('user_site_access')
-    .select('factories(id, name, code, country, city, is_active)')
+    .select('factories(id, name, code, country, city, is_active, oh_rate, energie_unit_cost)')
     .eq('user_id', user.id)
 
   return data?.flatMap(r => r.factories ? [r.factories as unknown as Factory] : []) ?? []
@@ -105,4 +107,37 @@ export async function getFactorySubscription(
     expiresAt:    data.subscription_expires_at ?? null,
     maxUsers:     plan.max_users_allowed,
   }
+}
+
+// ── Paramètres coûts usine (migration 021) ────────────────────────────────────
+
+export async function updateFactoryCostSettings(
+  factoryId: string,
+  ohRate:           number,
+  energieUnitCost:  number,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  // Seuls owner/admin peuvent modifier les paramètres usine
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (!['owner', 'admin'].includes(profile?.role ?? '')) {
+    return { error: 'Droits insuffisants' }
+  }
+
+  const { error } = await supabase
+    .from('factories')
+    .update({ oh_rate: ohRate, energie_unit_cost: energieUnitCost })
+    .eq('id', factoryId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings')
+  revalidatePath('/analyse-marge')
+  return {}
 }

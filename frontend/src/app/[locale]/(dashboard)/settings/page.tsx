@@ -8,6 +8,7 @@ import { AbonnementSection } from './_components/AbonnementSection'
 import { listOrgUsers, type UserRole } from '@/lib/actions/users'
 import { getUserFactories, getFactorySubscription } from '@/lib/actions/factory'
 import { FactorySwitcherSettings } from './_components/FactorySwitcherSettings'
+import { FactoryCostSettings } from './_components/FactoryCostSettings'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Paramètres · Bluwa ERP' }
@@ -85,6 +86,22 @@ export default async function SettingsPage() {
         factories={factories}
         activeFactoryId={activeFactoryId ?? factories[0]?.id ?? null}
       />
+
+      {/* Paramètres coûts usine */}
+      {activeId && (() => {
+        const activeFactory = factories.find(f => f.id === activeId)
+        if (!activeFactory) return null
+        const canEdit = ['owner', 'admin'].includes(effectiveRole)
+        return (
+          <FactoryCostSettings
+            factoryId={activeId}
+            factoryName={activeFactory.name}
+            ohRate={activeFactory.oh_rate ?? 0.08}
+            energieUnitCost={activeFactory.energie_unit_cost ?? 50}
+            canEdit={canEdit}
+          />
+        )
+      })()}
 
       {/* Compte utilisateur */}
       <section className="rounded-xl border bg-card p-5 space-y-4">
