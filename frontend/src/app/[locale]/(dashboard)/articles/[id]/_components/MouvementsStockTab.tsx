@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
+import { Loader2, ArrowUpRight, ArrowDownLeft, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   useResizableColumns, ColumnResizer, type ResizableColumn,
@@ -13,27 +15,52 @@ const COLUMNS: ResizableColumn[] = [
   { id: 'lot',      defaultWidth: 150, minWidth: 110 },
   { id: 'quantite', defaultWidth: 110, minWidth: 90  },
   { id: 'solde',    defaultWidth: 130, minWidth: 100 },
-  { id: 'doc',      defaultWidth: 160, minWidth: 120 },
+  { id: 'doc',      defaultWidth: 180, minWidth: 130 },
   { id: 'motif',    defaultWidth: null },
 ]
 const MOTIF_MIN = 180
 
-function formatReason(reason: string | null): string {
-  switch (reason) {
-    case 'ENTREE_RECEPTION':        return 'Réception fournisseur'
-    case 'SORTIE_PRODUCTION':       return 'Consommation production'
-    case 'ENTREE_PRODUCTION':       return 'Entrée produits finis'
-    case 'AJUSTEMENT_INVENTAIRE':   return 'Ajustement inventaire'
-    case 'SORTIE_VENTE':            return 'Sortie vente'
-    case 'RETOUR_FOURNISSEUR':      return 'Retour fournisseur'
-    case 'RETOUR_CLIENT':           return 'Retour client'
-    default: return reason?.replace(/_/g, ' ') ?? 'Mouvement manuel'
+function formatReason(type: string | null): string {
+  switch (type) {
+    case 'ENTREE_RECEPTION':      return 'Réception fournisseur'
+    case 'SORTIE_PRODUCTION':     return 'Consommation production'
+    case 'ENTREE_PRODUCTION':     return 'Entrée produits finis'
+    case 'AJUSTEMENT_INVENTAIRE': return 'Ajustement inventaire'
+    case 'SORTIE_VENTE':          return 'Sortie vente'
+    case 'RETOUR_FOURNISSEUR':    return 'Retour fournisseur'
+    case 'RETOUR_CLIENT':         return 'Retour client'
+    default: return type?.replace(/_/g, ' ') ?? 'Mouvement manuel'
   }
 }
 
+function docLink(locale: string, refType: string | null, refId: string | null): string | null {
+  if (!refId) return null
+  switch (refType) {
+    case 'GOODS_RECEIPT':      return `/${locale}/reception?id=${refId}`
+    case 'PURCHASE_ORDER':     return `/${locale}/achats?id=${refId}`
+    case 'DELIVERY_NOTE':      return `/${locale}/ventes?id=${refId}`
+    case 'PRODUCTION_ORDER':   return `/${locale}/mrp?id=${refId}`
+    case 'INVENTORY_DOCUMENT': return `/${locale}/stocks?id=${refId}`
+    default: return null
+  }
+}
+
+type Movement = {
+  id: string
+  created_at: string
+  movement_type: string
+  quantity: number
+  batch_number: string | null
+  reference_type: string | null
+  reference_id: string | null
+  doc_label: string | null
+  computed_stock: number
+}
+
 export default function MouvementsStockTab({ articleId }: { articleId: string }) {
-  const supabase = createClient()
-  const [mouvements, setMouvements] = useState<any[]>([])
+  const supabase  = createClient()
+  const { locale } = useParams<{ locale: string }>()
+  const [mouvements, setMouvements] = useState<Movement[]>([])
   const [loading, setLoading]       = useState(true)
 
   const { widths, startResize } = useResizableColumns('bluwa:cols:article-mouvements', COLUMNS)
@@ -43,14 +70,46 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+
+    // ASC pour calculer le stock cumulé chronologiquement
+    const { data: mvts } = await supabase
       .from('stock_movements')
       .select('id, created_at, movement_type, quantity, batch_number, reference_type, reference_id')
       .eq('article_id', articleId)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .limit(200)
 
-    setMouvements(data ?? [])
+    if (!mvts?.length) { setMouvements([]); setLoading(false); return }
+
+    // Calcul du stock résultant (running total)
+    let running = 0
+    const withStock = mvts.map(m => {
+      running += Number(m.quantity)
+      return { ...m, computed_stock: running }
+    })
+
+    // Résoudre les numéros de document pour GOODS_RECEIPT
+    const receiptIds = [...new Set(
+      mvts.filter(m => m.reference_type === 'GOODS_RECEIPT' && m.reference_id)
+          .map(m => m.reference_id as string)
+    )]
+    let receiptMap: Record<string, string> = {}
+    if (receiptIds.length > 0) {
+      const { data: receipts } = await supabase
+        .from('goods_receipts')
+        .select('id, receipt_number')
+        .in('id', receiptIds)
+      receiptMap = Object.fromEntries((receipts ?? []).map(r => [r.id, r.receipt_number]))
+    }
+
+    const resolved: Movement[] = withStock.reverse().map(m => ({
+      ...m,
+      doc_label: m.reference_type === 'GOODS_RECEIPT'
+        ? (receiptMap[m.reference_id!] ?? null)
+        : m.reference_id?.slice(0, 8) ?? null,
+    }))
+
+    setMouvements(resolved)
     setLoading(false)
   }, [articleId, supabase])
 
@@ -106,10 +165,8 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
         </thead>
         <tbody>
           {mouvements.map((mvt) => {
-            const isEntree  = mvt.movement_type === 'IN' || Number(mvt.quantity) > 0
-            const docNumber = mvt.reference_id
-              ? `${mvt.reference_type ?? ''}#${mvt.reference_id.slice(0, 8)}`
-              : null
+            const isEntree = Number(mvt.quantity) > 0
+            const href     = docLink(locale, mvt.reference_type, mvt.reference_id)
 
             return (
               <tr key={mvt.id} className="border-b last:border-0 hover:bg-muted/20">
@@ -140,16 +197,30 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
 
                 <td className="px-4 py-3 text-right font-mono font-semibold">
                   <span className={isEntree ? 'text-emerald-700' : 'text-red-700'}>
-                    {isEntree ? '+' : '−'}{Math.abs(Number(mvt.quantity))}
+                    {isEntree ? '+' : '−'}{Math.abs(Number(mvt.quantity)).toLocaleString('fr-FR')}
                   </span>
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">
-                  <span className="text-muted-foreground/50">—</span>
+                  {mvt.computed_stock.toLocaleString('fr-FR')}
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs">
-                  {docNumber ?? <span className="text-muted-foreground">—</span>}
+                  {mvt.doc_label ? (
+                    href ? (
+                      <Link
+                        href={href}
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        {mvt.doc_label}
+                        <ExternalLink className="size-3 opacity-60" />
+                      </Link>
+                    ) : (
+                      <span>{mvt.doc_label}</span>
+                    )
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
 
                 <td className="px-4 py-3 text-xs text-muted-foreground truncate">
