@@ -63,10 +63,20 @@ export async function listOrgUsers(overrideFactoryId?: string | null): Promise<O
   // Priorité : paramètre explicite > cookie (permet fallback factories[0] depuis page.tsx)
   const factoryId = overrideFactoryId ?? await getActiveFactoryId()
 
-  // Profils de la même org (filtrés par RLS) — role inclus pour fallback owner/admin
+  // Récupérer l'org du user courant (filtre explicite — ne jamais dépendre uniquement du RLS)
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!myProfile?.organization_id) return []
+
+  // Profils de la même org uniquement
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, full_name, role, is_active, created_at')
+    .eq('organization_id', myProfile.organization_id)
     .order('created_at', { ascending: true })
 
   if (!profiles?.length) return []
