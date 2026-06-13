@@ -51,13 +51,12 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
         movement_type,
         quantity,
         batch_number,
-        movement_type,
         resulting_stock_quantity,
-        goods_receipt_items (
-          goods_receipts ( reception_number )
-        ),
-        production_order_id,
-        production_orders ( order_number )
+        reference_type,
+        reference_id,
+        goods_receipt_items!goods_receipt_item_id (
+          goods_receipts ( receipt_number )
+        )
       `)
       .eq('article_id', articleId)
       .order('created_at', { ascending: false })
@@ -121,8 +120,8 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
           {mouvements.map((mvt) => {
             const isEntree  = mvt.movement_type === 'IN' || Number(mvt.quantity) > 0
             const docNumber =
-              (mvt.goods_receipt_items as any)?.goods_receipts?.reception_number ??
-              (mvt.production_orders as any)?.order_number ??
+              (mvt.goods_receipt_items as any)?.goods_receipts?.receipt_number ??
+              mvt.reference_id?.slice(0, 8) ??
               null
 
             return (
