@@ -85,6 +85,7 @@ export default async function SettingsPage() {
       <FactorySwitcherSettings
         factories={factories}
         activeFactoryId={activeFactoryId ?? factories[0]?.id ?? null}
+        canAdd={['owner', 'admin'].includes(effectiveRole)}
       />
 
       {/* Paramètres coûts usine */}
