@@ -87,17 +87,17 @@ export default async function SettingsPage() {
         activeFactoryId={activeFactoryId ?? factories[0]?.id ?? null}
       />
 
-      {/* Paramètres coûts usine */}
-      {activeId && (() => {
+      {/* Paramètres coûts usine — visible même si aucun site (upsert à la sauvegarde) */}
+      {(() => {
         const activeFactory = factories.find(f => f.id === activeId)
-        if (!activeFactory) return null
         const canEdit = ['owner', 'admin'].includes(effectiveRole)
         return (
           <FactoryCostSettings
             factoryId={activeId}
-            factoryName={activeFactory.name}
-            ohRate={activeFactory.oh_rate ?? 0.08}
-            energieUnitCost={activeFactory.energie_unit_cost ?? 50}
+            orgId={profile?.organization_id ?? ''}
+            factoryName={activeFactory?.name ?? ''}
+            ohRate={activeFactory?.oh_rate ?? 0.08}
+            energieUnitCost={activeFactory?.energie_unit_cost ?? 50}
             canEdit={canEdit}
           />
         )
