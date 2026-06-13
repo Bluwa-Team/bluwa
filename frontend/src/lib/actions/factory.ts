@@ -112,11 +112,11 @@ export async function getFactorySubscription(
 // ── Paramètres coûts usine (migration 021) ────────────────────────────────────
 
 export async function updateFactoryCostSettings(
-  factoryId:       string | null,   // null = aucun site existant → on en crée un
+  factoryId:       string,
   orgId:           string,
   ohRate:          number,
   energieUnitCost: number,
-): Promise<{ error?: string; createdFactoryId?: string }> {
+): Promise<{ error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
@@ -131,34 +131,6 @@ export async function updateFactoryCostSettings(
     return { error: 'Droits insuffisants' }
   }
 
-  // ── Cas 1 : aucun site existant → création du site par défaut ────────────
-  if (!factoryId) {
-    const { data: newFactory, error: createErr } = await supabase
-      .from('factories')
-      .insert({
-        organization_id:   orgId,
-        name:              'Site Principal',
-        code:              'SITE1',
-        country:           'Sénégal',
-        timezone:          'Africa/Dakar',
-        currency:          'XOF',
-        site_type:         'usine',
-        is_owned:          true,
-        is_active:         true,
-        oh_rate:           ohRate,
-        energie_unit_cost: energieUnitCost,
-      })
-      .select('id')
-      .single()
-
-    if (createErr) return { error: createErr.message }
-
-    revalidatePath('/settings')
-    revalidatePath('/analyse-marge')
-    return { createdFactoryId: (newFactory as any).id as string }
-  }
-
-  // ── Cas 2 : site existant → mise à jour des deux colonnes ────────────────
   const { error } = await supabase
     .from('factories')
     .update({ oh_rate: ohRate, energie_unit_cost: energieUnitCost })

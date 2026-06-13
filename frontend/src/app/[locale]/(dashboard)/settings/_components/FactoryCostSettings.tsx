@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { TrendingUp, Zap, Save, Check, AlertCircle, Factory } from 'lucide-react'
+import { TrendingUp, Zap, Save, Check, AlertCircle } from 'lucide-react'
 import { updateFactoryCostSettings } from '@/lib/actions/factory'
 
 interface Props {
-  factoryId:        string | null   // null = organisation sans aucun site configuré
+  factoryId:        string
   orgId:            string
   factoryName:      string
   ohRate:           number
@@ -23,14 +22,11 @@ export function FactoryCostSettings({
   canEdit,
 }: Props) {
   const [pending, startTransition] = useTransition()
-  const router = useRouter()
 
   // Affichage en % (0.08 → "8"), stockage interne en décimal
   const [ohInput,      setOhInput]      = useState(String(Math.round(ohRate * 100)))
   const [energieInput, setEnergieInput] = useState(String(energieUnitCost))
   const [feedback,     setFeedback]     = useState<{ ok: boolean; msg: string } | null>(null)
-
-  const noFactory = !factoryId
 
   function flash(ok: boolean, msg: string) {
     setFeedback({ ok, msg })
@@ -52,15 +48,8 @@ export function FactoryCostSettings({
 
     startTransition(async () => {
       const res = await updateFactoryCostSettings(factoryId, orgId, oh / 100, nrj)
-      if (res.error) {
-        flash(false, res.error)
-      } else if (res.createdFactoryId) {
-        // Premier site créé → recharger pour que le switcher d'usine l'affiche
-        flash(true, 'Site "Site Principal" créé et paramètres enregistrés')
-        setTimeout(() => router.refresh(), 1200)
-      } else {
-        flash(true, 'Paramètres enregistrés')
-      }
+      if (res.error) flash(false, res.error)
+      else           flash(true,  'Paramètres enregistrés')
     })
   }
 
@@ -75,28 +64,13 @@ export function FactoryCostSettings({
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold text-sm">
             Paramètres de marge
-            {!noFactory && <span className="font-normal text-muted-foreground"> — {factoryName}</span>}
+            <span className="font-normal text-muted-foreground"> — {factoryName}</span>
           </h2>
           <p className="text-xs text-muted-foreground">
             Utilisés dans le calcul du coût de revient standard (Analyse Marges).
           </p>
         </div>
       </div>
-
-      {/* Bannière avertissement — aucun site configuré */}
-      {noFactory && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
-          <Factory className="size-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-700 dark:text-amber-300 space-y-0.5">
-            <p className="font-semibold">Aucun site de production configuré</p>
-            <p>
-              L&apos;enregistrement créera automatiquement un site par défaut
-              nommé <span className="font-medium">&quot;Site Principal&quot;</span> pour votre organisation,
-              avec les taux saisis ci-dessous.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Champs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -194,9 +168,7 @@ export function FactoryCostSettings({
                        text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="size-3.5" />
-            {pending
-              ? (noFactory ? 'Création du site…' : 'Enregistrement…')
-              : (noFactory ? 'Créer le site et enregistrer' : 'Enregistrer')}
+            {pending ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         ) : (
           <p className="text-xs text-muted-foreground italic">
