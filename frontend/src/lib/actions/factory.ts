@@ -178,52 +178,5 @@ export async function updateFactoryCostSettings(
   return {}
 }
 
-// ── Créer un nouveau site de production ───────────────────────────────────────
-
-export interface CreateFactoryInput {
-  name:             string
-  code:             string   // ex. 'DAK2', 'SITE2' — max 20 chars
-  country:          string
-  ohRate:           number   // décimal, ex. 0.08
-  energieUnitCost:  number
-}
-
-export async function createFactory(
-  input: CreateFactoryInput,
-): Promise<{ factory?: Factory; error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Non authentifié' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile || !['owner', 'admin'].includes(profile.role ?? '')) {
-    return { error: 'Droits insuffisants' }
-  }
-
-  const { data, error } = await supabase
-    .from('factories')
-    .insert({
-      organization_id:   profile.organization_id,
-      name:              input.name.trim(),
-      code:              input.code.trim().toUpperCase().slice(0, 20),
-      country:           input.country.trim(),
-      timezone:          'Africa/Dakar',
-      currency:          'XOF',
-      site_type:         'usine',
-      is_owned:          true,
-      is_active:         true,
-      oh_rate:           input.ohRate,
-      energie_unit_cost: input.energieUnitCost,
-    })
-    .select('id, name, code, country, city, is_active')
-    .single()
-
-  if (error) return { error: error.message }
-
-  revalidatePath('/settings')
-  return { factory: data as Factory }
-}
+// La création de sites est réservée à l'application Bluwa Merchant.
+// Voir migration 022 — RLS INSERT factories restreint à @bluwa.io.

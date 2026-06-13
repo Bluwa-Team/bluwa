@@ -2,81 +2,24 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Factory, Plus, X, AlertCircle } from 'lucide-react'
-import {
-  switchFactory,
-  createFactory,
-  type Factory as FactoryType,
-} from '@/lib/actions/factory'
+import { Check, Factory, Plus, X, Mail } from 'lucide-react'
+import { switchFactory, type Factory as FactoryType } from '@/lib/actions/factory'
 
 interface Props {
   factories:       FactoryType[]
   activeFactoryId: string | null
-  canAdd:          boolean   // true si owner ou admin
-}
-
-// Dérive un code court depuis le nom (ex: "Usine Dakar 2" → "USDA")
-function nameToCode(name: string): string {
-  return name
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')  // retire accents
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .split(' ')
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 5)
+  canAdd:          boolean
 }
 
 export function FactorySwitcherSettings({ factories, activeFactoryId, canAdd }: Props) {
-  const [switching, startSwitch]   = useTransition()
-  const [creating,  startCreate]   = useTransition()
+  const [switching, startSwitch] = useTransition()
   const router = useRouter()
-
-  // État de la modale
-  const [open,        setOpen]        = useState(false)
-  const [name,        setName]        = useState('')
-  const [code,        setCode]        = useState('')
-  const [country,     setCountry]     = useState('Sénégal')
-  const [ohInput,     setOhInput]     = useState('8')
-  const [nrgInput,    setNrgInput]    = useState('50')
-  const [formError,   setFormError]   = useState<string | null>(null)
-
-  function openModal() {
-    setName(''); setCode(''); setCountry('Sénégal')
-    setOhInput('8'); setNrgInput('50'); setFormError(null)
-    setOpen(true)
-  }
-
-  function handleNameChange(v: string) {
-    setName(v)
-    // Auto-dérive le code seulement si l'utilisateur ne l'a pas modifié manuellement
-    setCode(nameToCode(v))
-  }
+  const [infoOpen, setInfoOpen] = useState(false)
 
   function handleSwitch(id: string) {
     if (id === activeFactoryId) return
     startSwitch(async () => {
       await switchFactory(id)
-      router.refresh()
-    })
-  }
-
-  function handleCreate() {
-    const oh  = parseFloat(ohInput.replace(',', '.'))
-    const nrj = parseFloat(nrgInput.replace(',', '.'))
-
-    if (!name.trim())              { setFormError('Le nom est requis');                return }
-    if (!code.trim())              { setFormError('Le code est requis');               return }
-    if (isNaN(oh)  || oh  < 0 || oh  > 100) { setFormError('Taux FG invalide (0–100 %)'); return }
-    if (isNaN(nrj) || nrj < 0)    { setFormError('Coût énergie invalide (≥ 0)');     return }
-
-    startCreate(async () => {
-      const res = await createFactory({ name, code, country, ohRate: oh / 100, energieUnitCost: nrj })
-      if (res.error) { setFormError(res.error); return }
-      // Switcher automatiquement vers le nouveau site puis fermer
-      if (res.factory) await switchFactory(res.factory.id)
-      setOpen(false)
       router.refresh()
     })
   }
@@ -95,7 +38,7 @@ export function FactorySwitcherSettings({ factories, activeFactoryId, canAdd }: 
 
           {canAdd && (
             <button
-              onClick={openModal}
+              onClick={() => setInfoOpen(true)}
               className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border border-teal-300
                          dark:border-teal-700 bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-300
                          text-xs font-medium hover:bg-teal-100 dark:hover:bg-teal-950/50 transition-colors"
@@ -162,142 +105,63 @@ export function FactorySwitcherSettings({ factories, activeFactoryId, canAdd }: 
         )}
       </section>
 
-      {/* ── Modale "Ajouter un site" ───────────────────────────────────────── */}
-      {open && (
+      {/* ── Modale information extension infrastructure ─────────────────────── */}
+      {infoOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border bg-card shadow-xl p-6 space-y-5">
+          <div className="w-full max-w-md rounded-2xl border bg-card shadow-xl overflow-hidden">
 
-            {/* En-tête modale */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center">
-                  <Factory className="size-4 text-teal-600 dark:text-teal-400" />
-                </div>
-                <h3 className="font-semibold text-sm">Nouveau site de production</h3>
-              </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 hover:bg-muted transition-colors"
-              >
-                <X className="size-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* Champs */}
-            <div className="space-y-4">
-
-              {/* Nom */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Nom du site *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => handleNameChange(e.target.value)}
-                  placeholder="Ex: Usine Dakar Nord"
-                  disabled={creating}
-                  className="w-full px-3 py-2 text-sm rounded-lg border bg-background
-                             focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500
-                             disabled:opacity-50"
-                />
-              </div>
-
-              {/* Code + Pays — sur 2 colonnes */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Code court *</label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={e => setCode(e.target.value.toUpperCase().slice(0, 20))}
-                    placeholder="DAK2"
-                    disabled={creating}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-background font-mono
-                               focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500
-                               disabled:opacity-50"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Pays</label>
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={e => setCountry(e.target.value)}
-                    placeholder="Sénégal"
-                    disabled={creating}
-                    className="w-full px-3 py-2 text-sm rounded-lg border bg-background
-                               focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500
-                               disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              {/* Séparateur coûts */}
-              <div className="border-t pt-3">
-                <p className="text-xs font-medium text-muted-foreground mb-3">Paramètres de marge</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">Taux FG (OH)</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0} max={100} step={0.5}
-                        value={ohInput}
-                        onChange={e => setOhInput(e.target.value)}
-                        disabled={creating}
-                        className="w-full pr-8 pl-3 py-2 text-sm rounded-lg border bg-background
-                                   focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500
-                                   disabled:opacity-50"
-                        placeholder="8"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-                    </div>
+            {/* Bandeau */}
+            <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Factory className="size-5 text-white" />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">Forfait Énergie</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0} step={1}
-                        value={nrgInput}
-                        onChange={e => setNrgInput(e.target.value)}
-                        disabled={creating}
-                        className="w-full pr-14 pl-3 py-2 text-sm rounded-lg border bg-background
-                                   focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500
-                                   disabled:opacity-50"
-                        placeholder="50"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">XOF/u</span>
-                    </div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">Bluwa ERP</p>
+                    <p className="text-teal-100 text-xs">Extension d&apos;infrastructure</p>
                   </div>
                 </div>
+                <button
+                  onClick={() => setInfoOpen(false)}
+                  className="rounded-lg p-1.5 hover:bg-white/10 transition-colors"
+                >
+                  <X className="size-4 text-white" />
+                </button>
               </div>
-
-              {/* Erreur */}
-              {formError && (
-                <div className="flex items-center gap-2 text-xs text-red-500 dark:text-red-400">
-                  <AlertCircle className="size-3.5 shrink-0" />
-                  {formError}
-                </div>
-              )}
             </div>
 
-            {/* Boutons */}
-            <div className="flex gap-2 justify-end pt-1">
-              <button
-                onClick={() => setOpen(false)}
-                disabled={creating}
-                className="px-4 py-1.5 rounded-lg text-xs font-medium border hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={creating}
-                className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium
-                           transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creating ? 'Création…' : 'Créer le site'}
-              </button>
+            {/* Corps */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-foreground leading-relaxed">
+                Extension de votre infrastructure — Pour ajouter un nouveau site de production
+                (usine, entrepôt, comptoir) à votre espace Bluwa, veuillez contacter votre
+                gestionnaire de compte ou envoyer une demande à{' '}
+                <a
+                  href="mailto:commercial@bluwa.io"
+                  className="font-medium text-teal-600 dark:text-teal-400 hover:underline"
+                >
+                  commercial@bluwa.io
+                </a>{' '}
+                afin d&apos;ajuster votre offre tarifaire.
+              </p>
+
+              <div className="flex gap-3 pt-1">
+                <a
+                  href="mailto:commercial@bluwa.io?subject=Demande%20d%27ajout%20de%20site%20de%20production"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl
+                             bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium transition-colors"
+                >
+                  <Mail className="size-3.5" />
+                  Contacter commercial@bluwa.io
+                </a>
+                <button
+                  onClick={() => setInfoOpen(false)}
+                  className="px-4 py-2 rounded-xl border text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
             </div>
 
           </div>
