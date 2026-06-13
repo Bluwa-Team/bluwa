@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseWithOrg } from './helpers'
-import { getWeekStarts } from '@/lib/planning-utils'
+import { getWeekStarts, isoToWeekCode, weekCodeToMonday } from '@/lib/planning-utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,23 +32,25 @@ export async function getForecasts(weeksCount = 6): Promise<ForecastRow[]> {
   if (!articles?.length) return []
 
   const articleIds = articles.map((a: any) => a.id)
+  const weekCodes  = weeks.map(isoToWeekCode)
 
   let query = supabase
-    .from('demand_forecasts')
-    .select('article_id, week_start, quantity')
+    .from('sales_forecasts')
+    .select('article_id, week_code, quantity_forecasted')
     .in('article_id', articleIds)
-    .in('week_start', weeks)
+    .in('week_code', weekCodes)
     .eq('organization_id', orgId)
 
   if (factoryId) query = query.eq('factory_id', factoryId)
 
   const { data: forecasts } = await query
 
+  // Clé de la map = ISO date du lundi (convention ForecastRow.weeks)
   const map: Record<string, Record<string, number>> = {}
   forecasts?.forEach((f: any) => {
-    const w = f.week_start.split('T')[0]
+    const isoKey = weekCodeToMonday(f.week_code)
     if (!map[f.article_id]) map[f.article_id] = {}
-    map[f.article_id][w] = Number(f.quantity)
+    map[f.article_id][isoKey] = Number(f.quantity_forecasted)
   })
 
   return articles.map((a: any) => ({
@@ -73,17 +75,17 @@ export async function upsertForecast(articleId: string, weekStart: string, quant
   const { data: { user } } = await supabaseClient.auth.getUser()
 
   const { error } = await supabase
-    .from('demand_forecasts')
+    .from('sales_forecasts')
     .upsert(
       {
-        organization_id: orgId,
-        factory_id:      factoryId,
-        article_id:      articleId,
-        week_start:      weekStart,
-        quantity,
-        created_by:      user?.id ?? null,
+        organization_id:     orgId,
+        factory_id:          factoryId,
+        article_id:          articleId,
+        week_code:           isoToWeekCode(weekStart),
+        quantity_forecasted: quantity,
+        updated_by:          user?.id ?? null,
       },
-      { onConflict: 'factory_id,article_id,week_start' },
+      { onConflict: 'factory_id,article_id,week_code' },
     )
 
   if (error) return { error: error.message }
