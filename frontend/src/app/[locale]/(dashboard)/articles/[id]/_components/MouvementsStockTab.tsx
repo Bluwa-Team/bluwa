@@ -45,19 +45,7 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
     setLoading(true)
     const { data } = await supabase
       .from('stock_movements')
-      .select(`
-        id,
-        created_at,
-        movement_type,
-        quantity,
-        batch_number,
-        resulting_stock_quantity,
-        reference_type,
-        reference_id,
-        goods_receipt_items!goods_receipt_item_id (
-          goods_receipts ( receipt_number )
-        )
-      `)
+      .select('id, created_at, movement_type, quantity, batch_number, reference_type, reference_id')
       .eq('article_id', articleId)
       .order('created_at', { ascending: false })
       .limit(200)
@@ -119,10 +107,9 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
         <tbody>
           {mouvements.map((mvt) => {
             const isEntree  = mvt.movement_type === 'IN' || Number(mvt.quantity) > 0
-            const docNumber =
-              (mvt.goods_receipt_items as any)?.goods_receipts?.receipt_number ??
-              mvt.reference_id?.slice(0, 8) ??
-              null
+            const docNumber = mvt.reference_id
+              ? `${mvt.reference_type ?? ''}#${mvt.reference_id.slice(0, 8)}`
+              : null
 
             return (
               <tr key={mvt.id} className="border-b last:border-0 hover:bg-muted/20">
@@ -158,9 +145,7 @@ export default function MouvementsStockTab({ articleId }: { articleId: string })
                 </td>
 
                 <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">
-                  {mvt.resulting_stock_quantity != null
-                    ? Number(mvt.resulting_stock_quantity).toLocaleString('fr-FR')
-                    : <span className="text-muted-foreground/50">—</span>}
+                  <span className="text-muted-foreground/50">—</span>
                 </td>
 
                 <td className="px-4 py-3 font-mono text-xs">
