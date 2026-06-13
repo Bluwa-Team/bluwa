@@ -91,7 +91,8 @@ export async function getFactoryCostParams(
       .eq('id', factoryId)
       .maybeSingle()
     if (error) {
-      console.error('[getFactoryCostParams]', error.message)
+      // Colonnes absentes = migration 021 non appliquée → valeurs par défaut
+      console.warn('[getFactoryCostParams] migration 021 non appliquée — appliquer ALTER TABLE factories ADD COLUMN oh_rate / energie_unit_cost')
       return fallback
     }
     if (!data) return fallback
