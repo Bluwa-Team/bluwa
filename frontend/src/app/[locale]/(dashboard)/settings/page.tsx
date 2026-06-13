@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { UsersSection } from './_components/UsersSection'
 import { AbonnementSection } from './_components/AbonnementSection'
 import { listOrgUsers, type UserRole } from '@/lib/actions/users'
-import { getUserFactories, getFactorySubscription } from '@/lib/actions/factory'
+import { getUserFactories, getFactorySubscription, getFactoryCostParams } from '@/lib/actions/factory'
 import { FactorySwitcherSettings } from './_components/FactorySwitcherSettings'
 import { FactoryCostSettings } from './_components/FactoryCostSettings'
 
@@ -51,7 +51,10 @@ export default async function SettingsPage() {
   const effectiveRole: UserRole = (siteAccess?.role as UserRole)
     ?? (['owner', 'admin'].includes(profile?.role ?? '') ? profile?.role as UserRole : 'viewer')
 
-  const subscription = activeId ? await getFactorySubscription(activeId) : null
+  const [subscription, costParams] = await Promise.all([
+    activeId ? getFactorySubscription(activeId) : Promise.resolve(null),
+    activeId ? getFactoryCostParams(activeId)   : Promise.resolve({ oh_rate: 0.08, energie_unit_cost: 50 }),
+  ])
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -97,8 +100,8 @@ export default async function SettingsPage() {
             factoryId={activeId}
             orgId={profile?.organization_id ?? ''}
             factoryName={activeFactory.name}
-            ohRate={activeFactory.oh_rate ?? 0.08}
-            energieUnitCost={activeFactory.energie_unit_cost ?? 50}
+            ohRate={costParams.oh_rate}
+            energieUnitCost={costParams.energie_unit_cost}
             canEdit={['owner', 'admin'].includes(effectiveRole)}
           />
         )

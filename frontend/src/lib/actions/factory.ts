@@ -5,14 +5,17 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export interface Factory {
-  id:                string
-  name:              string
-  code:              string
-  country:           string
-  city:              string | null
-  is_active:         boolean
-  oh_rate:           number   // taux FG — ex: 0.08 = 8 %
-  energie_unit_cost: number   // forfait énergie XOF/unité PF
+  id:        string
+  name:      string
+  code:      string
+  country:   string
+  city:      string | null
+  is_active: boolean
+}
+
+export interface FactoryCostParams {
+  oh_rate:           number
+  energie_unit_cost: number
 }
 
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED'
@@ -54,21 +57,51 @@ export async function getUserFactories(): Promise<Factory[]> {
 
   if (isAdmin) {
     // Owner / admin → toutes les usines de l'organisation
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('factories')
-      .select('id, name, code, country, city, is_active, oh_rate, energie_unit_cost')
+      .select('id, name, code, country, city, is_active')
       .eq('organization_id', profile.organization_id)
       .order('name')
+    if (error) console.error('[getUserFactories] admin query:', error.message)
     return (data ?? []) as Factory[]
   }
 
-  // Autres rôles → uniquement les usines assignées
-  const { data } = await supabase
+  // Autres rôles → uniquement les usines assignées via user_site_access
+  const { data, error } = await supabase
     .from('user_site_access')
-    .select('factories(id, name, code, country, city, is_active, oh_rate, energie_unit_cost)')
+    .select('factories(id, name, code, country, city, is_active)')
     .eq('user_id', user.id)
+  if (error) console.error('[getUserFactories] site_access query:', error.message)
 
   return data?.flatMap(r => r.factories ? [r.factories as unknown as Factory] : []) ?? []
+}
+
+// ── Paramètres de coût d'un site (migration 021) ──────────────────────────────
+// Fetch isolé pour ne pas bloquer getUserFactories() si la migration n'est pas appliquée.
+
+export async function getFactoryCostParams(
+  factoryId: string,
+): Promise<FactoryCostParams> {
+  const fallback: FactoryCostParams = { oh_rate: 0.08, energie_unit_cost: 50 }
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('factories')
+      .select('oh_rate, energie_unit_cost')
+      .eq('id', factoryId)
+      .maybeSingle()
+    if (error) {
+      console.error('[getFactoryCostParams]', error.message)
+      return fallback
+    }
+    if (!data) return fallback
+    return {
+      oh_rate:           Number(data.oh_rate           ?? fallback.oh_rate),
+      energie_unit_cost: Number(data.energie_unit_cost ?? fallback.energie_unit_cost),
+    }
+  } catch {
+    return fallback
+  }
 }
 
 // ── Abonnement de l'usine active ─────────────────────────────────────────────
@@ -185,7 +218,7 @@ export async function createFactory(
       oh_rate:           input.ohRate,
       energie_unit_cost: input.energieUnitCost,
     })
-    .select('id, name, code, country, city, is_active, oh_rate, energie_unit_cost')
+    .select('id, name, code, country, city, is_active')
     .single()
 
   if (error) return { error: error.message }
