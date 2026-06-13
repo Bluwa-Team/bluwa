@@ -2,13 +2,9 @@
 
 import { getSupabaseWithOrg } from './helpers'
 
-// ── Constants (server-side only) ──────────────────────────────────────────
-
-/** Taux de frais généraux de fabrication (% des coûts directs). */
-const OH_RATE = 0.08
-
-/** Forfait énergie process (vapeur, froid, eau) — XOF/unité de PF. */
-const ENERGIE_UNIT = 50
+// Valeurs de repli si la factory n'a pas encore été paramétrée (migration 021).
+const OH_RATE_DEFAULT      = 0.08
+const ENERGIE_UNIT_DEFAULT = 50
 
 // ── Output types ───────────────────────────────────────────────────────────
 
@@ -65,7 +61,22 @@ export interface MarginLine {
  */
 export async function getMarginAnalysis(): Promise<MarginLine[]> {
   try {
-    const { supabase, orgId } = await getSupabaseWithOrg()
+    const { supabase, orgId, factoryId } = await getSupabaseWithOrg()
+
+    // ── 0. Paramètres coûts usine (migration 021) ─────────────────────────
+    let ohRate         = OH_RATE_DEFAULT
+    let energieUnit    = ENERGIE_UNIT_DEFAULT
+    if (factoryId) {
+      const { data: fac } = await supabase
+        .from('factories')
+        .select('oh_rate, energie_unit_cost')
+        .eq('id', factoryId)
+        .maybeSingle()
+      if (fac) {
+        ohRate      = parseFloat(String(fac.oh_rate      ?? OH_RATE_DEFAULT))
+        energieUnit = parseFloat(String(fac.energie_unit_cost ?? ENERGIE_UNIT_DEFAULT))
+      }
+    }
 
     // ── 1. Articles PF ────────────────────────────────────────────────────
     const { data: articles, error: artErr } = await supabase
@@ -208,9 +219,9 @@ export async function getMarginAnalysis(): Promise<MarginLine[]> {
       })
       const coutGamme = lignesGamme.reduce((s, l) => s + l.cout, 0)
 
-      // ③④ FG + Énergie
-      const coutFG      = (coutMatiere + coutGamme) * OH_RATE
-      const coutEnergie = ENERGIE_UNIT
+      // ③④ FG + Énergie — taux lus depuis factories (migration 021)
+      const coutFG      = (coutMatiere + coutGamme) * ohRate
+      const coutEnergie = energieUnit
       const coutTotal   = coutMatiere + coutGamme + coutFG + coutEnergie
       const prixVente   = parseFloat(String(article.prix_vente ?? 0))
       const margeGross  = prixVente - coutTotal
